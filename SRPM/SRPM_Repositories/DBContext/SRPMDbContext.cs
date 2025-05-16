@@ -34,20 +34,28 @@ namespace SRPM_Repositories.DBContext
         public DbSet<Notification> Notifications { get; set; }
 
 
-        public static string GetConnectionString(string connectionStringName)
+        private string GetConnectionString()
         {
-            var config = new ConfigurationBuilder()
-                .SetBasePath(AppDomain.CurrentDomain.BaseDirectory)
+            IConfiguration configuration = new ConfigurationBuilder()
+            .SetBasePath(Directory.GetCurrentDirectory())   //Path.Combine(Directory.GetCurrentDirectory(),"testApi")
+            .AddJsonFile("appsettings.json", true, true).Build();
+            return configuration["ConnectionStrings:DefaultConnection"];
+        }
+    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+    {
+        if (!optionsBuilder.IsConfigured)
+        {
+            string root = Directory.GetParent(Directory.GetCurrentDirectory())?.FullName ?? "";
+            string apiDirectory = Path.Combine(root, "SRPM_APIServices");
+            var configuration = new ConfigurationBuilder()
+                .SetBasePath(apiDirectory)
                 .AddJsonFile("appsettings.json")
                 .Build();
+            var connectionString = configuration.GetConnectionString("DefaultConnection");
+            optionsBuilder.UseSqlServer(connectionString ?? "");
 
-            string connectionString = config.GetConnectionString(connectionStringName);
-            return connectionString;
         }
-
-        protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-            => optionsBuilder.UseSqlServer(GetConnectionString("DefaultConnection")).UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking);
-
+    }
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
