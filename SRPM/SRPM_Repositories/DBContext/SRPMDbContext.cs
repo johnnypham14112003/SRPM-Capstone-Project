@@ -1,6 +1,4 @@
-﻿
-
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using SRPM_Repositories.Models;
 
@@ -8,11 +6,6 @@ namespace SRPM_Repositories.DBContext
 {
     public class SRPMDbContext : DbContext
     {
-        public SRPMDbContext(DbContextOptions<SRPMDbContext> options)
-           : base(options)
-        {
-        }
-
         // DbSets
         public DbSet<Field> Fields { get; set; }
         public DbSet<Major> Majors { get; set; }
@@ -33,29 +26,20 @@ namespace SRPM_Repositories.DBContext
         public DbSet<Transaction> Transactions { get; set; }
         public DbSet<Notification> Notifications { get; set; }
 
-
-        private string GetConnectionString()
+        protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
-            IConfiguration configuration = new ConfigurationBuilder()
-            .SetBasePath(Directory.GetCurrentDirectory())   //Path.Combine(Directory.GetCurrentDirectory(),"testApi")
-            .AddJsonFile("appsettings.json", true, true).Build();
-            return configuration["ConnectionStrings:DefaultConnection"];
+            if (!optionsBuilder.IsConfigured)
+            {
+                string root = Directory.GetParent(Directory.GetCurrentDirectory())?.FullName ?? "";
+                string apiDirectory = Path.Combine(root, "SRPM_APIServices");
+                var configuration = new ConfigurationBuilder()
+                    .SetBasePath(apiDirectory)
+                    .AddJsonFile("appsettings.json")
+                    .Build();
+                var connectionString = configuration.GetConnectionString("DefaultConnection");
+                optionsBuilder.UseSqlServer(connectionString ?? "");
+            }
         }
-    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-    {
-        if (!optionsBuilder.IsConfigured)
-        {
-            string root = Directory.GetParent(Directory.GetCurrentDirectory())?.FullName ?? "";
-            string apiDirectory = Path.Combine(root, "SRPM_APIServices");
-            var configuration = new ConfigurationBuilder()
-                .SetBasePath(apiDirectory)
-                .AddJsonFile("appsettings.json")
-                .Build();
-            var connectionString = configuration.GetConnectionString("DefaultConnection");
-            optionsBuilder.UseSqlServer(connectionString ?? "");
-
-        }
-    }
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
@@ -165,7 +149,7 @@ namespace SRPM_Repositories.DBContext
                 .HasMany(p => p.ProjectTeams)
                 .WithOne(pt => pt.Project)
                 .HasForeignKey(pt => pt.ProjectId)
-                .OnDelete(DeleteBehavior.NoAction); 
+                .OnDelete(DeleteBehavior.NoAction);
 
 
             modelBuilder.Entity<Project>()
@@ -196,7 +180,7 @@ namespace SRPM_Repositories.DBContext
                 .HasOne(pt => pt.Account)
                 .WithMany(a => a.ProjectTeams)
                 .HasForeignKey(pt => pt.AccountId)
-                .OnDelete(DeleteBehavior.Cascade); 
+                .OnDelete(DeleteBehavior.Cascade);
 
 
             modelBuilder.Entity<Milestone>()
@@ -278,7 +262,7 @@ namespace SRPM_Repositories.DBContext
             // Explicitly set precision and scale for decimal properties
             modelBuilder.Entity<Milestone>()
                 .Property(m => m.Cost)
-                .HasPrecision(18, 2); 
+                .HasPrecision(18, 2);
 
             modelBuilder.Entity<Project>()
                 .Property(p => p.Budget)
@@ -286,7 +270,7 @@ namespace SRPM_Repositories.DBContext
 
             modelBuilder.Entity<Project>()
                 .Property(p => p.Progress)
-                .HasPrecision(5, 2); 
+                .HasPrecision(5, 2);
 
             modelBuilder.Entity<Models.Task>()
                 .Property(t => t.Progress)

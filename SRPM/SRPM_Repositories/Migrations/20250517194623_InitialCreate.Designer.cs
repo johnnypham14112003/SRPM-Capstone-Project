@@ -12,7 +12,7 @@ using SRPM_Repositories.DBContext;
 namespace SRPM_Repositories.Migrations
 {
     [DbContext(typeof(SRPMDbContext))]
-    [Migration("20250515210419_InitialCreate")]
+    [Migration("20250517194623_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
