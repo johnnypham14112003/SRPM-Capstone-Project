@@ -1,47 +1,68 @@
 ﻿using System;
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace SRPM_Repositories.Models
 {
     public class Notification
     {
         [Key]
-        public Guid Id { get; set; } = Guid.NewGuid();
+        public Guid Id { get; set; }
 
-        [Required]
-        [MaxLength(255)]
+        [Required, MaxLength(255)]
         public string Title { get; set; }
 
-        [Required]
-        [MaxLength(30)]
+        [Required, MaxLength(30)]
         public string Type { get; set; }
 
+        [Required]
         public bool IsSystemSend { get; set; } = false;
 
+        [Required]
         public bool IsRead { get; set; } = false;
 
         [Required]
-        public DateTime CreateDate { get; set; } = DateTime.UtcNow;
+        public DateTime CreateDate { get; set; } = DateTime.Now;
 
-        [Required]
-        [MaxLength(30)]
-        public string Status { get; set; } = "Unread";
+        [Required, MaxLength(30)]
+        public string Status { get; set; } = "sent";
 
-        public Guid? SenderId { get; set; }
-        public Guid? ReceiverId { get; set; }
-        public Guid? ProjectId { get; set; }
-        public Guid? ProjectTeamId { get; set; }
-        public Guid? MemberTaskId { get; set; }
-        public Guid? EvaluationId { get; set; }
         public Guid? TransactionId { get; set; }
-
-        // Navigation properties
-        public virtual Account Sender { get; set; }
-        public virtual Account Receiver { get; set; }
-        public virtual Project Project { get; set; }
-        public virtual ProjectTeam ProjectTeam { get; set; }
-        public virtual MemberTask MemberTask { get; set; }
-        public virtual Evaluation Evaluation { get; set; }
+        [ForeignKey(nameof(TransactionId))]
         public virtual Transaction Transaction { get; set; }
+
+        public Guid? IndividualEvaluationId { get; set; }
+        [ForeignKey(nameof(IndividualEvaluationId))]
+        public virtual IndividualEvaluation IndividualEvaluation { get; set; }
+
+        public Guid? EvaluationStageId { get; set; }
+
+        [ForeignKey(nameof(EvaluationStageId))]
+        public virtual EvaluationStage EvaluationStage { get; set; }
+
+
+        public Guid? EvaluationId { get; set; }
+        [ForeignKey(nameof(EvaluationId))]
+        public virtual Evaluation Evaluation { get; set; }
+
+        public Guid? GroupUserId { get; set; }
+        [ForeignKey(nameof(GroupUserId))]
+        public virtual UserRole GroupUser { get; set; }
+
+        public Guid? DocumentId { get; set; }
+        [ForeignKey(nameof(DocumentId))]
+        public virtual Document Document { get; set; }
+
+        public Guid? MemberTaskId { get; set; }
+        [ForeignKey(nameof(MemberTaskId))]
+        public virtual MemberTask MemberTask { get; set; }
+
+        public Guid? TaskId { get; set; }
+        [ForeignKey(nameof(TaskId))]
+        public virtual Task Task { get; set; }
+
+        public Guid? SystemConfigurationId { get; set; }
+        [ForeignKey(nameof(SystemConfigurationId))]
+        public virtual SystemConfiguration SystemConfiguration { get; set; }
     }
 }

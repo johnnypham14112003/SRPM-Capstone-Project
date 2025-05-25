@@ -1,12 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace SRPM_Repositories.Models
 {
     public class MemberTask
     {
-        [Key]
         public Guid Id { get; set; } = Guid.NewGuid();
 
         [Required]
@@ -15,11 +15,27 @@ namespace SRPM_Repositories.Models
         [Required]
         public Guid TaskId { get; set; }
 
-        // Navigation properties for relationships
-        public virtual Account Member { get; set; }
-        public virtual Task Task { get; set; }
+        [Required]
+        public DateTime JoinedAt { get; set; } = DateTime.UtcNow;
 
-        // **New:** Collection of Notifications related to this MemberTask
+        public DateTime? DeliveryDate { get; set; }
+
+        [Required]
+        [Column(TypeName = "decimal(5,2)")]
+        public decimal Progress { get; set; } = 0;
+
+        [Required]
+        public int Overdue { get; set; } = 0;
+
+        public string? Note { get; set; }
+
+        [Required]
+        [MaxLength(30)]
+        public string Status { get; set; } = "draft";
+
+        // Navigation properties
+        public virtual Account Member { get; set; } = null!;
+        public virtual Task Task { get; set; } = null!;
         public virtual ICollection<Notification> Notifications { get; set; } = new List<Notification>();
     }
 }

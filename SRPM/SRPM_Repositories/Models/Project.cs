@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace SRPM_Repositories.Models
 {
@@ -8,59 +9,61 @@ namespace SRPM_Repositories.Models
     {
         [Key]
         public Guid Id { get; set; }
-
         public string LogoURL { get; set; }
         public string PictureURL { get; set; }
-        public string DocURL { get; set; }
-
-        [MaxLength(50)]
-        public string Abbreviations { get; set; }
 
         [Required]
-        public string Title { get; set; }
+        public string EnglishTitle { get; set; }
 
         [Required]
         public string VietnameseTitle { get; set; }
 
-        public string Description { get; set; }
-        public string RequirementNote { get; set; }
-
-        [Required]
-        public decimal Budget { get; set; } = 0;
-
-        [Required]
-        public int Duration { get; set; } = 1; // Number of months
-
-        [Required]
-        public decimal Progress { get; set; } = 0;
-
-        [Required]
-        public int MaximumMember { get; set; } = 0;
-
-        [Required]
-        [MaxLength(30)]
-        public string Language { get; set; }
+        public int Duration { get; set; } = 1;  // month
 
         public DateTime? StartDate { get; set; }
         public DateTime? EndDate { get; set; }
 
-        [Required]
-        [MaxLength(30)]
-        public string Status { get; set; } = "Created";
+        [MaxLength(50)]
+        public string Abbreviations { get; set; }
 
-        // Foreign Key
+        public string Description { get; set; }
+        public string RequirementNote { get; set; }
+        public decimal Budget { get; set; } = 0;
+        public decimal Progress { get; set; } = 0;
+        public int MaximumMember { get; set; } = 0;
+
+        [Required, MaxLength(30)]
+        public string Language { get; set; }
+
+        [Required, MaxLength(30)]
+        public string Category { get; set; } = "basic";
+
+        [Required, MaxLength(30)]
+        public string Type { get; set; } = "normal";
+
+        public DateTime CreatedAt { get; set; }
+        public DateTime UpdatedAt { get; set; }
+
+        [Required, MaxLength(30)]
+        public string Status { get; set; } = "draft";
+
+        // Foreign keys
         [Required]
         public Guid HostInstitutionId { get; set; }
         public Account HostInstitution { get; set; }
 
-        // Navigation Properties
-        public ICollection<Milestone> Milestones { get; set; } = new List<Milestone>();
-        public ICollection<ProjectTag> ProjectTags { get; set; } = new List<ProjectTag>();
-        public ICollection<ProjectTeam> ProjectTeams { get; set; } = new List<ProjectTeam>();
-        public ICollection<ProjectField> ProjectFields { get; set; } = new List<ProjectField>();
-        public ICollection<ProjectMajor> ProjectMajors { get; set; } = new List<ProjectMajor>();
-        public ICollection<Evaluation> Evaluations { get; set; } = new List<Evaluation>();
-        public ICollection<Transaction> Transactions { get; set; } = new List<Transaction>();
-        public ICollection<Notification> Notifications { get; set; } = new List<Notification>();
+        [Required]
+        public Guid CreateBy { get; set; }
+        [ForeignKey("CreateBy")]
+        public Account CreatedByAccount { get; set; }
+
+        // Navigation
+        public virtual ResearchPaper ResearchPaper { get; set; }
+        public virtual ICollection<ProjectTag> ProjectTags { get; set; }
+        public virtual ICollection<ProjectMajor> ProjectMajors { get; set; }
+        public virtual ICollection<Milestone> Milestones { get; set; }
+        public virtual ICollection<Document> Documents { get; set; }
+        public virtual ICollection<UserRole> UserRoles { get; set; }
+        public virtual ICollection<Evaluation> Evaluations { get; set; }
     }
 }

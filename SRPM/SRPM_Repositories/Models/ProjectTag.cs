@@ -5,15 +5,15 @@ namespace SRPM_Repositories.Models
 {
     public class ProjectTag
     {
-        [Key]
-        public Guid Id { get; set; }
+        public Guid Id { get; set; } = Guid.NewGuid();
 
         [MaxLength(150)]
-        public string Name { get; set; }
+        public string? Name { get; set; }
 
-        // Foreign Key
         [Required]
         public Guid ProjectId { get; set; }
-        public Project Project { get; set; } // One Project -> Many Tags
+
+        // Navigation properties
+        public virtual Project Project { get; set; } = null!;
     }
 }

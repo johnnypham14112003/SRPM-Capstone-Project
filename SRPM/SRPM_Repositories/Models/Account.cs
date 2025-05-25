@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.Reflection.Metadata;
 
 namespace SRPM_Repositories.Models
 {
@@ -9,75 +10,67 @@ namespace SRPM_Repositories.Models
         [Key]
         public Guid Id { get; set; }
 
-        [Required]
-        [MaxLength(30)]
-        public string IdentityCode { get; set; } // Unique, required identifier (e.g., SE172789...)
+        public string FirebaseUid { get; set; }
+        public string Website { get; set; }
+        public string FacebookURL { get; set; }
+        public string LinkedInURL { get; set; }
 
-        [Required]
-        [MaxLength(50)]
+        // Basic Info
+        public string AvatarURL { get; set; }
+
+        [Required, MaxLength(30)]
+        public string IdentityCode { get; set; } // e.g. se172789...
+
+        [Required, MaxLength(50)]
         public string FullName { get; set; }
 
-        [Required]
-        [MaxLength(320)]
+        [Required, MaxLength(320)]
         public string Email { get; set; }
 
-        [Required]
-        [MaxLength(320)]
+        [Required, MaxLength(320)]
         public string AlternativeEmail { get; set; }
+
+        public string Password { get; set; } // hash code
 
         [MaxLength(15)]
         public string PhoneNumber { get; set; }
 
         public string Address { get; set; }
         public DateTime? DateOfBirth { get; set; }
-        public bool Gender { get; set; }
+        public bool? Gender { get; set; }
 
-        // Authentication & Profile Data
-        public string FirebaseUid { get; set; }
-        public string Website { get; set; }
-        public string FacebookURL { get; set; }
-        public string LinkedInURL { get; set; }
-        public string AvatarURL { get; set; }
-        public string Password { get; set; } // Stored as hashed values
-
-        // Research Role & Affiliation
+        // Principal Investigator
         public string SelfDescription { get; set; }
-        [MaxLength(250)]
         public string Degree { get; set; }
+
         [MaxLength(50)]
         public string DegreeType { get; set; }
-        [MaxLength(50)]
+
         public string ProficiencyLevel { get; set; }
+
+        // Host Institution
         [MaxLength(150)]
         public string CompanyName { get; set; }
 
-        public DateTime CreateTime { get; set; } = DateTime.UtcNow;
+        [Required]
+        [MaxLength(30)]
+        public string Status { get; set; } = "created";
+
+        public DateTime CreateTime { get; set; }
         public DateTime? DeleteTime { get; set; }
 
-        [Required]
-        [MaxLength(30)]
-        public string Role { get; set; } = "Member"; // Principal Investigator, Host Institution, etc.
-
-        [Required]
-        [MaxLength(30)]
-        public string Status { get; set; } = "Created";
-
-        // Foreign Key Relationships
-        public Guid FieldId { get; set; }
-        public Field Field { get; set; }
-
-        public Guid MajorId { get; set; }
+        // Foreign key to Major, if applicable
+        public Guid? MajorId { get; set; }
         public Major Major { get; set; }
 
-        // Navigation Properties
-        public ICollection<ResearchPaper> ResearchPapers { get; set; } = new List<ResearchPaper>();
-        public ICollection<ProjectTeam> ProjectTeams { get; set; } = new List<ProjectTeam>();
-        public ICollection<Transaction> RequestedTransactions { get; set; } = new List<Transaction>();
-        public ICollection<Transaction> HandledTransactions { get; set; } = new List<Transaction>();
-        public ICollection<Evaluation> Evaluations { get; set; } = new List<Evaluation>();
-        public ICollection<MemberTask> MemberTasks { get; set; } = new List<MemberTask>();
-        public ICollection<Notification> SentNotifications { get; set; } = new List<Notification>();
-        public ICollection<Notification> ReceivedNotifications { get; set; } = new List<Notification>();
-        public ICollection<OTPCode> OTPCodes { get; set; } = new List<OTPCode>();
+        // Navigation properties
+        public virtual ICollection<OTPCode> OTPCodes { get; set; }
+        public virtual ICollection<Project> ProjectsAsHost { get; set; }  // Projects where this account is HostInstitution
+        public virtual ICollection<Project> CreatedProjects { get; set; }   // Projects created by this account
+        public virtual ICollection<Task> CreatedTasks { get; set; }
+        public virtual ICollection<Milestone> CreatedMilestones { get; set; }
+        public virtual ICollection<MemberTask> MemberTasks { get; set; }
+        public virtual ICollection<Document> UploadedDocuments { get; set; }
+        public virtual ICollection<UserRole> UserRoles { get; set; }
     }
 }

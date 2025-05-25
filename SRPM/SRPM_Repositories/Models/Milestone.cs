@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace SRPM_Repositories.Models
 {
@@ -12,30 +13,30 @@ namespace SRPM_Repositories.Models
         [MaxLength(30)]
         public string Code { get; set; }
 
-        [Required]
-        [MaxLength(255)]
+        [Required, MaxLength(255)]
         public string Name { get; set; }
 
         public string Description { get; set; }
         public string Objective { get; set; }
-
-        [Required]
         public decimal Cost { get; set; } = 0;
-
         public DateTime? StartDate { get; set; }
         public DateTime? EndDate { get; set; }
 
-        [Required]
-        [MaxLength(30)]
-        public string Status { get; set; } = "Draft";
+        public DateTime CreatedAt { get; set; }
 
-        // Foreign Key
+        [Required, MaxLength(30)]
+        public string Status { get; set; } = "draft";
+
         [Required]
         public Guid ProjectId { get; set; }
-        public Project Project { get; set; } // One Project -> Many Milestones
+        public Project Project { get; set; }
 
-        // Navigation Properties
-        public ICollection<Task> Tasks { get; set; } = new List<Task>();
-        public ICollection<Evaluation> Evaluations { get; set; } = new List<Evaluation>();
+        [Required]
+        public Guid CreateBy { get; set; }
+        [ForeignKey("CreateBy")]
+        public Account CreateByAccount { get; set; }
+
+        public ICollection<Task> Tasks { get; set; }
+        public ICollection<Evaluation> Evaluations { get; set; }
     }
 }
