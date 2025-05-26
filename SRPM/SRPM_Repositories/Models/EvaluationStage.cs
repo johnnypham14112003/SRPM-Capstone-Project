@@ -1,12 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.ComponentModel.DataAnnotations;
 
-namespace SRPM_Repositories.Models
-{
+namespace SRPM_Repositories.Models;
     public class EvaluationStage
     {
         public Guid Id { get; set; } = Guid.NewGuid();
@@ -30,5 +24,3 @@ namespace SRPM_Repositories.Models
         public virtual ICollection<Transaction> Transactions { get; set; } = new List<Transaction>();
         public virtual ICollection<Notification> Notifications { get; set; } = new List<Notification>();
     }
-
-}

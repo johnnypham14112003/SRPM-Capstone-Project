@@ -1,30 +1,35 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.ComponentModel.DataAnnotations;
 
-namespace SRPM_Repositories.Models
+namespace SRPM_Repositories.Models;
+public class UserRole
 {
-    public class UserRole
-    {
-        public Guid Id { get; set; } = Guid.NewGuid();
+    public Guid Id { get; set; } = Guid.NewGuid();
 
-        [Required]
-        public Guid AccountId { get; set; }
+    [Required]
+    public Guid AccountId { get; set; }
 
-        [Required]
-        public Guid RoleId { get; set; }
+    [Required]
+    public Guid RoleId { get; set; }
 
-        public Guid? ProjectId { get; set; }
-        public Guid? CouncilId { get; set; }
+    [Required]
+    [MaxLength(30)]
+    public string Code { get; set; } = string.Empty;
 
-        // Navigation properties
-        public virtual Account Account { get; set; } = null!;
-        public virtual Role Role { get; set; } = null!;
-        public virtual Project? Project { get; set; }
-        public virtual AppraisalCouncil? Council { get; set; }
-        public virtual ICollection<Notification> Notifications { get; set; } = new List<Notification>();
-    }
+    public string? GroupName { get; set; }
+    public bool IsOfficial { get; set; } = false;
+
+    [Required]
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    [Required, MaxLength(30)]
+    public string Status { get; set; } = "draft";
+
+    public Guid? ProjectId { get; set; }
+    public Guid? CouncilId { get; set; }
+
+    // Navigation properties
+    public virtual Account Account { get; set; } = null!;
+    public virtual Role Role { get; set; } = null!;
+    public virtual Project? Project { get; set; }
+    public virtual AppraisalCouncil? Council { get; set; }
+    public virtual ICollection<Notification> Notifications { get; set; } = new List<Notification>();
 }
