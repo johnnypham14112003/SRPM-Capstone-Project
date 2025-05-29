@@ -16,6 +16,7 @@ public static class DIContainer
     public static IServiceCollection RegisterServices(this IServiceCollection services, IConfiguration configuration)
     {
         //System Services
+        services.InjectDbContext(configuration);
         services.InjectBusinessServices();
         services.InjectRepository();
         services.ConfigCORS();
@@ -32,6 +33,13 @@ public static class DIContainer
 
     //XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
     //XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+    private static IServiceCollection InjectDbContext(this IServiceCollection services, IConfiguration configuration)
+    {
+        var connectionString = configuration.GetConnectionString("DefaultConnection");
+        services.AddDbContext<SRPMDbContext>(options => options.UseSqlServer(connectionString));
+        return services;
+    }
+
     private static IServiceCollection InjectBusinessServices(this IServiceCollection services)
     {
         services.AddScoped<IAccountService, AccountService>();

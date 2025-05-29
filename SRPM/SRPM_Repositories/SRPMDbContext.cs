@@ -7,6 +7,13 @@ namespace SRPM_Repositories;
 
 public class SRPMDbContext : DbContext
 {
+    /*Uncomment after migration to use with Dependency Injection*/
+    /* ============================================================================================== */
+    //Constructor
+    public SRPMDbContext() { }
+    public SRPMDbContext(DbContextOptions<SRPMDbContext> options) : base(options) { }
+    /* ============================================================================================== */
+
     //Binding Models
     public DbSet<Field> Fields { get; set; }
     public DbSet<Major> Majors { get; set; }
@@ -43,8 +50,14 @@ public class SRPMDbContext : DbContext
             .AddJsonFile("appsettings.json", true, true).Build();
         return configuration["ConnectionStrings:DefaultConnection"]!;
     }
-    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-        => optionsBuilder.UseSqlServer(GetConnectionString());
+
+    /**/
+    // Comment Method OnConfiguring(...) after migration to avoid conflic in Dependency Injection
+    /* ============================================================================================== */
+    //protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+    //    => optionsBuilder.UseSqlServer(GetConnectionString());
+    /* ============================================================================================== */
+    /**/
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
