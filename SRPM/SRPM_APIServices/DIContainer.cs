@@ -1,6 +1,7 @@
 ﻿using Mapster;
 using Microsoft.AspNetCore.Mvc.ApplicationModels;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json.Serialization;
 using SRPM_Repositories;
 using SRPM_Repositories.Repositories.Interfaces;
@@ -45,6 +46,7 @@ public static class DIContainer
         services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
         //---------------------------------------------------------------------------
         services.AddScoped<IAccountRepository, AccountRepository>();
+        services.AddScoped<IUnitOfWork, UnitOfWork>();
         //Add other repository here...
 
         return services;

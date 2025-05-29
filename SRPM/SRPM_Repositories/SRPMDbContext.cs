@@ -7,6 +7,9 @@ namespace SRPM_Repositories;
 
 public class SRPMDbContext : DbContext
 {
+    public SRPMDbContext(DbContextOptions<SRPMDbContext> options) : base(options)
+    {
+    }
     //Binding Models
     public DbSet<Field> Fields { get; set; }
     public DbSet<Major> Majors { get; set; }
