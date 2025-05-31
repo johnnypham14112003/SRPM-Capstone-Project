@@ -43,6 +43,7 @@ public static class DIContainer
     private static IServiceCollection InjectBusinessServices(this IServiceCollection services)
     {
         services.AddScoped<IAccountService, AccountService>();
+        services.AddScoped<ISystemConfigurationService, SystemConfigurationService>();
         //Add other BusinessServices here...
 
         return services;
@@ -53,6 +54,7 @@ public static class DIContainer
         services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
         //---------------------------------------------------------------------------
         services.AddScoped<IAccountRepository, AccountRepository>();
+        services.AddScoped<ISystemConfigurationRepository, SystemConfigurationRepository>();
         //Add other repository here...
 
         return services;
