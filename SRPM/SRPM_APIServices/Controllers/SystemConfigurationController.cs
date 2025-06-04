@@ -1,7 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using SRPM_Services.BusinessModels.RequestModels;
 using SRPM_Services.Interfaces;
-using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
 
 namespace SRPM_APIServices.Controllers
 {
@@ -21,8 +20,14 @@ namespace SRPM_APIServices.Controllers
         [HttpPost]
         public async Task<IActionResult> AddNew([FromBody] RQ_SystemConfiguration inputData)
         {
-            bool result = await _systemConfigurationService.AddNewConfig(inputData);
-            return result ? Created(nameof(AddNew), "Create Successfully!") : BadRequest("Create Failed!");
+            var response = await _systemConfigurationService.AddNewConfig(inputData);
+
+            if (response.scResult == false) return BadRequest("Create Failed!");
+
+            if (response.scResult == true && response.notiResult == false)
+                return Created(nameof(AddNew), "Create System Configuration Successfully but failed to create Notification!");
+
+            return Created(nameof(AddNew), "Create Successfully!");
         }
 
         [HttpGet("{id}")]

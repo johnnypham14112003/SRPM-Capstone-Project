@@ -10,13 +10,16 @@ namespace SRPM_Services.Repositories;
 public class SystemConfigurationService : ISystemConfigurationService
 {
     private readonly ISystemConfigurationRepository _systemConfigurationRepository;
-    public SystemConfigurationService(ISystemConfigurationRepository systemConfigurationRepository)
+    private readonly INotificationService _notificationService;
+    public SystemConfigurationService(ISystemConfigurationRepository systemConfigurationRepository,
+         INotificationService notificationService)
     {
         _systemConfigurationRepository = systemConfigurationRepository;
+        _notificationService = notificationService;
     }
     //=============================================================================
 
-    public async Task<bool> AddNewConfig(RQ_SystemConfiguration inputData)
+    public async Task<(bool scResult, bool notiResult)> AddNewConfig(RQ_SystemConfiguration inputData)
     {
         var existConfig = await _systemConfigurationRepository.GetOneAsync(sys =>
         sys.ConfigType.Equals(inputData.ConfigType) &&
@@ -30,8 +33,21 @@ public class SystemConfigurationService : ISystemConfigurationService
         bool hasInvalidFields = new[] { inputData.ConfigKey, inputData.ConfigValue, inputData.ConfigType }
         .Any(string.IsNullOrWhiteSpace);
 
-        await _systemConfigurationRepository.AddAsync(inputData.Adapt<SystemConfiguration>());
-        return await _systemConfigurationRepository.SaveChangeAsync();
+        if (hasInvalidFields) throw new BadRequestException("ConfigKey or ConfigValue or ConfigType cannot be empty!");
+
+        SystemConfiguration systemConfigurationDTO = inputData.Adapt<SystemConfiguration>();
+        await _systemConfigurationRepository.AddAsync(systemConfigurationDTO);
+        var resultSys = await _systemConfigurationRepository.SaveChangeAsync();
+
+        //Create Notification After Add SystemConfig
+        var (resultNoti, notiId) =await _notificationService.CreateNew(new RQ_Notification
+        {
+            Title = "New System Configuration just added!",
+            IsGlobalSend = true,
+            Type = "SystemConfiguration",
+            ObjecNotificationId = systemConfigurationDTO.Id
+        });
+        return (resultSys, resultNoti);
     }
 
     public async Task<List<RQ_SystemConfiguration>> ListConfig(string typeData, string? keyData)
@@ -60,6 +76,8 @@ public class SystemConfigurationService : ISystemConfigurationService
         //Check Null Data
         bool hasInvalidFields = new[] { newConfig.ConfigKey, newConfig.ConfigValue, newConfig.ConfigType }
         .Any(string.IsNullOrWhiteSpace);
+
+        if (hasInvalidFields) throw new BadRequestException("ConfigKey or ConfigValue or ConfigType cannot be empty!");
 
         //Transfer new Data to old Data
         newConfig.Adapt(existConfig);

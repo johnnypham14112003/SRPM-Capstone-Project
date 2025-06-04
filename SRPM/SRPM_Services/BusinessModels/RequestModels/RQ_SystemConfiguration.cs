@@ -3,7 +3,7 @@
 namespace SRPM_Services.BusinessModels.RequestModels;
 public class RQ_SystemConfiguration
 {
-    public Guid? Id { get; set; } = Guid.Empty;
+    public Guid? Id { get; set; }
     public string? ConfigKey { get; set; }//Name
     public string? ConfigValue { get; set; }
 
