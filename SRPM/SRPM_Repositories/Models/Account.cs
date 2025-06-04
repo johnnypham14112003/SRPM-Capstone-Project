@@ -69,5 +69,6 @@ namespace SRPM_Repositories.Models
         public virtual ICollection<MemberTask> MemberTasks { get; set; }
         public virtual ICollection<Document> UploadedDocuments { get; set; }
         public virtual ICollection<UserRole> UserRoles { get; set; }
+        public virtual ICollection<AccountNotification> AccountNotifications { get; set; }
     }
 }
