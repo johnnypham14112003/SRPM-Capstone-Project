@@ -5,9 +5,11 @@ using Newtonsoft.Json.Serialization;
 using SRPM_Repositories;
 using SRPM_Repositories.Repositories.Interfaces;
 using SRPM_Repositories.Repositories.Repositories;
+using SRPM_Services.BusinessModels.ResponseModels;
 using SRPM_Services.Extensions;
 using SRPM_Services.Interfaces;
 using SRPM_Services.Repositories;
+using SRPM_Services.Extensions.Mapster;
 
 namespace SRPM_APIServices;
 
@@ -44,6 +46,7 @@ public static class DIContainer
     {
         services.AddScoped<IAccountService, AccountService>();
         services.AddScoped<ISystemConfigurationService, SystemConfigurationService>();
+        services.AddScoped<INotificationService, NotificationService>();
         //Add other BusinessServices here...
 
         return services;
@@ -55,6 +58,16 @@ public static class DIContainer
         //---------------------------------------------------------------------------
         services.AddScoped<IAccountRepository, AccountRepository>();
         services.AddScoped<ISystemConfigurationRepository, SystemConfigurationRepository>();
+        services.AddScoped<INotificationRepository, NotificationRepository>();
+        services.AddScoped<IAccountNotificationRepository, AccountNotificationRepository>();
+        services.AddScoped<IDocumentRepository, DocumentRepository>();
+        services.AddScoped<IEvaluationRepository, EvaluationRepository>();
+        services.AddScoped<IEvaluationStageRepository, EvaluationStageRepository>();
+        services.AddScoped<IIndividualEvaluationRepository, IndividualEvaluationRepository>();
+        services.AddScoped<IMemberTaskRepository, MemberTaskRepository>();
+        services.AddScoped<ITaskRepository, TaskRepository>();
+        services.AddScoped<ITransactionRepository, TransactionRepository>();
+        services.AddScoped<IUserRoleRepository, UserRoleRepository>();
         //Add other repository here...
 
         return services;
@@ -81,7 +94,6 @@ public static class DIContainer
 
     private static IServiceCollection ConfigMapster(this IServiceCollection services)
     {
-        //services.AddMapster();
         //TypeAdapterConfig<AccountRequested, Account>.NewConfig().IgnoreNullValues(true);
         //TypeAdapterConfig<OrderDetail_InfoDto, OrderDetail>.NewConfig().IgnoreNullValues(true)
         //    .Map(destination => destination.Id, startFrom => startFrom.OrderDetailId);
@@ -138,8 +150,22 @@ public static class DIContainer
         TypeAdapterConfig<EducationBM, Education>.NewConfig()
             .Map(dest => dest.Freelancer, src => new Account { Id = src.FreeLancerId });
         */
+
+        // Config NotificationWithReadStatus -> RS_AccountNotification
+        TypeAdapterConfig<NotificationWithReadStatus, RS_AccountNotification>.NewConfig()
+            .Map(dest => dest.Id, src => src.Notification.Id)
+            .Map(dest => dest.Title, src => src.Notification.Title)
+            .Map(dest => dest.Type, src => src.Notification.Type)
+            .Map(dest => dest.CreateDate, src => src.Notification.CreateDate)
+            .Map(dest => dest.IsGlobalSend, src => src.Notification.IsGlobalSend)
+            .Map(dest => dest.Status, src => src.Notification.Status)
+            .Map(dest => dest.IsRead, src => src.IsRead)
+            .Map(dest => dest.AccountId, src => src.AccountId)
+            .Map(dest => dest.TypeObjectId, src => MapsterConfigMethods.GetTypeObjectIdByType(src.Notification));
+
         return services;
     }
+    
 
     private static IServiceCollection ConfigJsonLoopDeserielize(this IServiceCollection services)
     {
