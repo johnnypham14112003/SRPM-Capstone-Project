@@ -15,31 +15,31 @@ public class SRPMDbContext : DbContext
     /* ============================================================================================== */
 
     //Binding Models
-    public DbSet<Field> Fields { get; set; }
-    public DbSet<Major> Majors { get; set; }
-    public DbSet<Account> Accounts { get; set; }
-    public DbSet<Role> Roles { get; set; }
-    public DbSet<OTPCode> OTPCodes { get; set; }
-    public DbSet<SystemConfiguration> SystemConfigurations { get; set; }
-    public DbSet<Project> Projects { get; set; }
-    public DbSet<ResearchPaper> ResearchPapers { get; set; }
-    public DbSet<ProjectTag> ProjectTags { get; set; }
-    public DbSet<ProjectMajor> ProjectMajors { get; set; }
-    public DbSet<Milestone> Milestones { get; set; }
-    public DbSet<Task> Tasks { get; set; }
-    public DbSet<MemberTask> MemberTasks { get; set; }
-    public DbSet<Document> Documents { get; set; }
-    public DbSet<DocumentField> DocumentFields { get; set; }
-    public DbSet<FieldContent> FieldContents { get; set; }
-    public DbSet<ContentTable> ContentTables { get; set; }
-    public DbSet<AppraisalCouncil> AppraisalCouncils { get; set; }
-    public DbSet<UserRole> UserRoles { get; set; }
-    public DbSet<Evaluation> Evaluations { get; set; }
-    public DbSet<EvaluationStage> EvaluationStages { get; set; }
-    public DbSet<IndividualEvaluation> IndividualEvaluations { get; set; }
-    public DbSet<Transaction> Transactions { get; set; }
-    public DbSet<Notification> Notifications { get; set; }
-    public DbSet<AccountNotification> AccountNotifications { get; set; }
+    public DbSet<Field> Field { get; set; }
+    public DbSet<Major> Major { get; set; }
+    public DbSet<Account> Account { get; set; }
+    public DbSet<Role> Role { get; set; }
+    public DbSet<OTPCode> OTPCode { get; set; }
+    public DbSet<SystemConfiguration> SystemConfiguration { get; set; }
+    public DbSet<Project> Project { get; set; }
+    public DbSet<ResearchPaper> ResearchPaper { get; set; }
+    public DbSet<ProjectTag> ProjectTag { get; set; }
+    public DbSet<ProjectMajor> ProjectMajor { get; set; }
+    public DbSet<Milestone> Milestone { get; set; }
+    public DbSet<Task> Task { get; set; }
+    public DbSet<MemberTask> MemberTask { get; set; }
+    public DbSet<Document> Document { get; set; }
+    public DbSet<DocumentField> DocumentField { get; set; }
+    public DbSet<FieldContent> FieldContent { get; set; }
+    public DbSet<ContentTable> ContentTable { get; set; }
+    public DbSet<AppraisalCouncil> AppraisalCouncil { get; set; }
+    public DbSet<UserRole> UserRole { get; set; }
+    public DbSet<Evaluation> Evaluation { get; set; }
+    public DbSet<EvaluationStage> EvaluationStage { get; set; }
+    public DbSet<IndividualEvaluation> IndividualEvaluation { get; set; }
+    public DbSet<Transaction> Transaction { get; set; }
+    public DbSet<Notification> Notification { get; set; }
+    public DbSet<AccountNotification> AccountNotification { get; set; }
 
     private string GetConnectionString()
     {
@@ -84,15 +84,9 @@ public class SRPMDbContext : DbContext
             .OnDelete(DeleteBehavior.SetNull);
 
         modelBuilder.Entity<Project>()
-            .HasOne(p => p.HostInstitution)
-            .WithMany(a => a.ProjectsAsHost)
-            .HasForeignKey(p => p.HostInstitutionId)
-            .OnDelete(DeleteBehavior.Restrict);
-
-        modelBuilder.Entity<Project>()
             .HasOne(p => p.CreatedByAccount)
-            .WithMany(a => a.CreatedProjects)
-            .HasForeignKey(p => p.CreateBy)
+            .WithMany(ur => ur.HadProjects)
+            .HasForeignKey(p => p.CreateById)
             .OnDelete(DeleteBehavior.Restrict);
 
         modelBuilder.Entity<Milestone>()
@@ -132,7 +126,7 @@ public class SRPMDbContext : DbContext
             .OnDelete(DeleteBehavior.Restrict);
 
         modelBuilder.Entity<Document>()
-            .HasOne(d => d.UploaderAccount)
+            .HasOne(d => d.UploaderUser)
             .WithMany(a => a.UploadedDocuments)
             .HasForeignKey(d => d.Uploader)
             .OnDelete(DeleteBehavior.Restrict);
@@ -173,9 +167,8 @@ public class SRPMDbContext : DbContext
             .HasForeignKey(ur => ur.RoleId)
             .OnDelete(DeleteBehavior.Restrict);
 
-
             userRole.HasOne(ur => ur.Project)
-            .WithMany(p => p.UserRoles)
+            .WithMany(p => p.Members)
             .HasForeignKey(ur => ur.ProjectId)
             .OnDelete(DeleteBehavior.SetNull);
 
@@ -292,9 +285,9 @@ public class SRPMDbContext : DbContext
             .HasForeignKey(n => n.EvaluationId)
             .OnDelete(DeleteBehavior.Restrict);
 
-            noti.HasOne(n => n.GroupUser)
-            .WithMany()
-            .HasForeignKey(n => n.GroupUserId)
+            noti.HasOne(n => n.User)
+            .WithMany(ur => ur.Notifications)
+            .HasForeignKey(n => n.UserId)
             .OnDelete(DeleteBehavior.Restrict);
 
             noti.HasOne(n => n.Document)
@@ -308,7 +301,7 @@ public class SRPMDbContext : DbContext
             .OnDelete(DeleteBehavior.Restrict);
 
             noti.HasOne(n => n.Task)
-            .WithMany()
+            .WithMany(t => t.Notifications)
             .HasForeignKey(n => n.TaskId)
             .OnDelete(DeleteBehavior.Restrict);
 

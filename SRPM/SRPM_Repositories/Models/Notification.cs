@@ -41,9 +41,9 @@ public class Notification
     [ForeignKey(nameof(EvaluationId))]
     public virtual Evaluation? Evaluation { get; set; }
 
-    public Guid? GroupUserId { get; set; }
-    [ForeignKey(nameof(GroupUserId))]
-    public virtual UserRole? GroupUser { get; set; }
+    public Guid? UserId { get; set; }
+    [ForeignKey(nameof(UserId))]
+    public virtual UserRole? User { get; set; }
 
     public Guid? DocumentId { get; set; }
     [ForeignKey(nameof(DocumentId))]

@@ -21,5 +21,5 @@ public class SystemConfiguration
     public DateTime CreateDate { get; set; } = DateTime.Now;
 
     // Navigation properties
-    public virtual ICollection<Notification> Notifications { get; set; } = new List<Notification>();
+    public virtual ICollection<Notification>? Notifications { get; set; }
 }

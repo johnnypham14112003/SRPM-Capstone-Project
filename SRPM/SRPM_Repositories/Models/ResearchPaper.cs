@@ -6,15 +6,12 @@ public class ResearchPaper
     public Guid Id { get; set; } = Guid.NewGuid();
 
     [Required]
-    public string RefLink { get; set; } = string.Empty;
+    public string RefLink { get; set; } = null!;
 
     [MaxLength(250)]
     public string? Title { get; set; }
 
     public string? Content { get; set; }
-
-    [Required]
-    public int Viewed { get; set; } = 0;
 
     [MaxLength(100)]
     public string? ProviderName { get; set; }
@@ -30,5 +27,5 @@ public class ResearchPaper
 
     // Navigation properties
     public virtual Project Project { get; set; } = null!;
-    public virtual Account PrincipalInvestigator { get; set; } = null!;
+    public virtual UserRole PrincipalInvestigator { get; set; } = null!;
 }

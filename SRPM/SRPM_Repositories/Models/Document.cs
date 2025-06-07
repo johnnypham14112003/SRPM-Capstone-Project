@@ -62,10 +62,10 @@ public class Document
     public Guid? ProjectId { get; set; }
 
     // Navigation properties
-    public virtual Account UploaderAccount { get; set; } = null!;
+    public virtual UserRole UploaderUser { get; set; } = null!;
     public virtual Project? Project { get; set; }
     public virtual ICollection<DocumentField> DocumentFields { get; set; } = new List<DocumentField>();
-    public virtual ICollection<Evaluation> EvaluationsWithFinalDoc { get; set; } = new List<Evaluation>();
-    public virtual ICollection<Transaction> FundRequestTransactions { get; set; } = new List<Transaction>();
-    public virtual ICollection<Notification> Notifications { get; set; } = new List<Notification>();
+    public virtual Evaluation? EvaluationsWithFinalDoc { get; set; }
+    public virtual Transaction? FundRequestTransaction { get; set; }
+    public virtual ICollection<Notification>? Notifications { get; set; }
 }

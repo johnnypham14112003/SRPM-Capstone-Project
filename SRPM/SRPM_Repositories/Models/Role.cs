@@ -7,7 +7,7 @@ public class Role
 
     [Required]
     [MaxLength(40)]
-    public string Name { get; set; } = "researchmember";
+    public string Name { get; set; } = "ResearchMember";
 
     [Required]
     public bool IsGroupRole { get; set; } = false;
@@ -17,5 +17,5 @@ public class Role
     public string Status { get; set; } = "created";
 
     // Navigation properties
-    public virtual ICollection<UserRole> UserRoles { get; set; } = new List<UserRole>();
+    public virtual ICollection<UserRole>? UserRoles { get; set; }
 }

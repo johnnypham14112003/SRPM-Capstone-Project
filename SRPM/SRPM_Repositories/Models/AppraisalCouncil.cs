@@ -10,9 +10,8 @@ public class AppraisalCouncil
     [MaxLength(30)]
     public string Code { get; set; } = string.Empty;
 
-    [Required]
     [MaxLength(200)]
-    public string Name { get; set; } = string.Empty;
+    public string? Name { get; set; } = string.Empty;
 
     [Required]
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
@@ -23,6 +22,9 @@ public class AppraisalCouncil
     public string Status { get; set; } = "draft";
 
     // Navigation properties
-    public virtual ICollection<UserRole> UserRoles { get; set; } = new List<UserRole>();
-    public virtual ICollection<Evaluation> Evaluations { get; set; } = new List<Evaluation>();
+    public Guid? EvaluationId { get; set; }
+    public Guid? EvaluationStageId { get; set; }
+    public virtual ICollection<Evaluation>? Evaluations { get; set; }
+    public virtual EvaluationStage? EvaluationStage { get; set; }
+    public virtual ICollection<UserRole>? UserRoles { get; set; }
 }

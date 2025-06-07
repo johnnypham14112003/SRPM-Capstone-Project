@@ -28,15 +28,15 @@ public class Transaction
     [MaxLength(50)]
     public string? SenderBankName { get; set; }
 
-    // Receiver
+    // Receiver (Person who request this)
     [MaxLength(30)]
-    public string? ReceiverAccount { get; set; }
+    public string ReceiverAccount { get; set; } = null!;
 
     [MaxLength(50)]
-    public string? ReceiverName { get; set; }
+    public string ReceiverName { get; set; } = null!;
 
     [MaxLength(50)]
-    public string? ReceiverBankName { get; set; }
+    public string ReceiverBankName { get; set; } = null!;
 
     [MaxLength(50)]
     public string? TransferContent { get; set; }
@@ -74,13 +74,13 @@ public class Transaction
 
     // Navigation properties
     [ForeignKey(nameof(RequestPersonId))]
-    public virtual Account RequestPerson { get; set; } = null!;
+    public virtual UserRole RequestPerson { get; set; } = null!;
     [ForeignKey(nameof(HandlePersonId))]
-    public virtual Account HandlePerson { get; set; } = null!;
+    public virtual UserRole HandlePerson { get; set; } = null!;
     public virtual Project? Project { get; set; }
     [ForeignKey(nameof(EvaluationStageId))]
     public virtual EvaluationStage? EvaluationStage { get; set; }
     [ForeignKey(nameof(FundRequestDocId))]
-    public virtual Document FundRequestDoc { get; set; }
-    public virtual ICollection<Notification> Notifications { get; set; } = new List<Notification>();
+    public virtual Document? FundRequestDoc { get; set; }
+    public virtual ICollection<Notification>? Notifications { get; set; }
 }

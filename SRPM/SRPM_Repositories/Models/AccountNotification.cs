@@ -14,6 +14,6 @@ public class AccountNotification
     public DateTime CreateDate { get; set; } = DateTime.Now;
 
     // Navigation properties
-    public virtual Account Account { get; set; }
-    public virtual Notification Notification { get; set; }
+    public virtual Account Account { get; set; } = null!;
+    public virtual Notification Notification { get; set; } = null!;
 }
