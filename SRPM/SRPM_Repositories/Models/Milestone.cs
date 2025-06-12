@@ -8,13 +8,13 @@ public class Milestone
     public Guid Id { get; set; }
 
     [MaxLength(30)]
-    public string Code { get; set; }
+    public string Code { get; set; } = null!;
 
-    [Required, MaxLength(255)]
-    public string Name { get; set; }
+    [MaxLength(255)]
+    public string Name { get; set; } = null!;
 
-    public string Description { get; set; }
-    public string Objective { get; set; }
+    public string? Description { get; set; }
+    public string? Objective { get; set; }
     public decimal Cost { get; set; } = 0;
     public DateTime? StartDate { get; set; }
     public DateTime? EndDate { get; set; }
@@ -26,13 +26,13 @@ public class Milestone
 
     [Required]
     public Guid ProjectId { get; set; }
-    public Project Project { get; set; }
+    public Project Project { get; set; } = null!;
 
     [Required]
     public Guid CreateBy { get; set; }
     [ForeignKey("CreateBy")]
-    public Account CreateByAccount { get; set; }
+    public UserRole CreateByAccount { get; set; } = null!;
 
-    public ICollection<Task> Tasks { get; set; }
-    public ICollection<Evaluation> Evaluations { get; set; }
+    public ICollection<Task>? Tasks { get; set; }
+    public ICollection<Evaluation>? Evaluations { get; set; }
 }

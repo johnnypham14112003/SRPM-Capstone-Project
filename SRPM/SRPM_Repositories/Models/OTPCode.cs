@@ -20,5 +20,5 @@ public class OTPCode
     // Foreign Key
     [Required]
     public Guid AccountId { get; set; }
-    public Account Account { get; set; } // One Account -> Many OTP Codes
+    public Account Account { get; set; } = null!;// One Account -> Many OTP Codes
 }

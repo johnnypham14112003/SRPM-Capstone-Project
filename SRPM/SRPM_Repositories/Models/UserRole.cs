@@ -29,7 +29,14 @@ public class UserRole
     // Navigation properties
     public virtual Account Account { get; set; } = null!;
     public virtual Role Role { get; set; } = null!;
-    public virtual Project? Project { get; set; }
+    //---------
     public virtual AppraisalCouncil? Council { get; set; }
-    public virtual ICollection<Notification> Notifications { get; set; } = new List<Notification>();
+    public virtual Project? Project { get; set; }//This user belong to which project
+    public virtual ICollection<Project>? HadProjects { get; set; }//HostInstitute have many project || CreatedProject
+    public virtual ICollection<Task>? CreatedTasks { get; set; }//who create those task
+    public virtual ICollection<Milestone>? CreatedMilestones { get; set; }// who create those milestone
+    public virtual ICollection<MemberTask>? MemberTasks { get; set; }//n task - 1 member
+    public virtual ICollection<Document>? UploadedDocuments { get; set; }
+    public virtual ICollection<Transaction>? Transactions { get; set; }
+    public virtual ICollection<Notification>? Notifications { get; set; }
 }

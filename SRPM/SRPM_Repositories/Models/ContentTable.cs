@@ -8,10 +8,10 @@ public class ContentTable
 
     // Index
     [Required]
-    public int ColumnIndex { get; set; } = 1;
+    public int ColumnIndex { get; set; } = -1;
 
     [Required]
-    public int RowIndex { get; set; } = 1;
+    public int RowIndex { get; set; } = -1;
 
     // Column Title
     [MaxLength(255)]

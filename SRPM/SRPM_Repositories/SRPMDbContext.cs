@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using SRPM_Repositories.Models;
 using Task = SRPM_Repositories.Models.Task;
@@ -7,34 +7,39 @@ namespace SRPM_Repositories;
 
 public class SRPMDbContext : DbContext
 {
-    public SRPMDbContext(DbContextOptions<SRPMDbContext> options) : base(options)
-    {
-    }
+    /*Uncomment after migration to use with Dependency Injection*/
+    /* ============================================================================================== */
+    //Constructor
+    public SRPMDbContext() { }
+    public SRPMDbContext(DbContextOptions<SRPMDbContext> options) : base(options) { }
+    /* ============================================================================================== */
+
     //Binding Models
-    public DbSet<Field> Fields { get; set; }
-    public DbSet<Major> Majors { get; set; }
-    public DbSet<Account> Accounts { get; set; }
-    public DbSet<Role> Roles { get; set; }
-    public DbSet<OTPCode> OTPCodes { get; set; }
-    public DbSet<SystemConfiguration> SystemConfigurations { get; set; }
-    public DbSet<Project> Projects { get; set; }
-    public DbSet<ResearchPaper> ResearchPapers { get; set; }
-    public DbSet<ProjectTag> ProjectTags { get; set; }
-    public DbSet<ProjectMajor> ProjectMajors { get; set; }
-    public DbSet<Milestone> Milestones { get; set; }
-    public DbSet<Task> Tasks { get; set; }
-    public DbSet<MemberTask> MemberTasks { get; set; }
-    public DbSet<Document> Documents { get; set; }
-    public DbSet<DocumentField> DocumentFields { get; set; }
-    public DbSet<FieldContent> FieldContents { get; set; }
-    public DbSet<ContentTable> ContentTables { get; set; }
-    public DbSet<AppraisalCouncil> AppraisalCouncils { get; set; }
-    public DbSet<UserRole> UserRoles { get; set; }
-    public DbSet<Evaluation> Evaluations { get; set; }
-    public DbSet<EvaluationStage> EvaluationStages { get; set; }
-    public DbSet<IndividualEvaluation> IndividualEvaluations { get; set; }
-    public DbSet<Transaction> Transactions { get; set; }
-    public DbSet<Notification> Notifications { get; set; }
+    public DbSet<Field> Field { get; set; }
+    public DbSet<Major> Major { get; set; }
+    public DbSet<Account> Account { get; set; }
+    public DbSet<Role> Role { get; set; }
+    public DbSet<OTPCode> OTPCode { get; set; }
+    public DbSet<SystemConfiguration> SystemConfiguration { get; set; }
+    public DbSet<Project> Project { get; set; }
+    public DbSet<ResearchPaper> ResearchPaper { get; set; }
+    public DbSet<ProjectTag> ProjectTag { get; set; }
+    public DbSet<ProjectMajor> ProjectMajor { get; set; }
+    public DbSet<Milestone> Milestone { get; set; }
+    public DbSet<Task> Task { get; set; }
+    public DbSet<MemberTask> MemberTask { get; set; }
+    public DbSet<Document> Document { get; set; }
+    public DbSet<DocumentField> DocumentField { get; set; }
+    public DbSet<FieldContent> FieldContent { get; set; }
+    public DbSet<ContentTable> ContentTable { get; set; }
+    public DbSet<AppraisalCouncil> AppraisalCouncil { get; set; }
+    public DbSet<UserRole> UserRole { get; set; }
+    public DbSet<Evaluation> Evaluation { get; set; }
+    public DbSet<EvaluationStage> EvaluationStage { get; set; }
+    public DbSet<IndividualEvaluation> IndividualEvaluation { get; set; }
+    public DbSet<Transaction> Transaction { get; set; }
+    public DbSet<Notification> Notification { get; set; }
+    public DbSet<AccountNotification> AccountNotification { get; set; }
 
     private string GetConnectionString()
     {
@@ -46,8 +51,14 @@ public class SRPMDbContext : DbContext
             .AddJsonFile("appsettings.json", true, true).Build();
         return configuration["ConnectionStrings:DefaultConnection"]!;
     }
-    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-        => optionsBuilder.UseSqlServer(GetConnectionString());
+
+    /**/
+    // Comment Method OnConfiguring(...) after migration to avoid conflic in Dependency Injection
+    /* ============================================================================================== */
+    //protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+    //    => optionsBuilder.UseSqlServer(GetConnectionString());
+    /* ============================================================================================== */
+    /**/
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -73,15 +84,9 @@ public class SRPMDbContext : DbContext
             .OnDelete(DeleteBehavior.SetNull);
 
         modelBuilder.Entity<Project>()
-            .HasOne(p => p.HostInstitution)
-            .WithMany(a => a.ProjectsAsHost)
-            .HasForeignKey(p => p.HostInstitutionId)
-            .OnDelete(DeleteBehavior.Restrict);
-
-        modelBuilder.Entity<Project>()
             .HasOne(p => p.CreatedByAccount)
-            .WithMany(a => a.CreatedProjects)
-            .HasForeignKey(p => p.CreateBy)
+            .WithMany(ur => ur.HadProjects)
+            .HasForeignKey(p => p.CreateById)
             .OnDelete(DeleteBehavior.Restrict);
 
         modelBuilder.Entity<Milestone>()
@@ -121,7 +126,7 @@ public class SRPMDbContext : DbContext
             .OnDelete(DeleteBehavior.Restrict);
 
         modelBuilder.Entity<Document>()
-            .HasOne(d => d.UploaderAccount)
+            .HasOne(d => d.UploaderUser)
             .WithMany(a => a.UploadedDocuments)
             .HasForeignKey(d => d.Uploader)
             .OnDelete(DeleteBehavior.Restrict);
@@ -150,56 +155,53 @@ public class SRPMDbContext : DbContext
             .HasForeignKey(ct => ct.FieldContentId)
             .OnDelete(DeleteBehavior.Cascade);
 
-        modelBuilder.Entity<UserRole>()
-            .HasOne(ur => ur.Account)
+        modelBuilder.Entity<UserRole>(userRole =>
+        {
+            userRole.HasOne(ur => ur.Account)
             .WithMany(a => a.UserRoles)
             .HasForeignKey(ur => ur.AccountId)
             .OnDelete(DeleteBehavior.Restrict);
 
-        modelBuilder.Entity<UserRole>()
-            .HasOne(ur => ur.Role)
+            userRole.HasOne(ur => ur.Role)
             .WithMany(r => r.UserRoles)
             .HasForeignKey(ur => ur.RoleId)
             .OnDelete(DeleteBehavior.Restrict);
 
-
-        modelBuilder.Entity<UserRole>()
-            .HasOne(ur => ur.Project)
-            .WithMany(p => p.UserRoles)
+            userRole.HasOne(ur => ur.Project)
+            .WithMany(p => p.Members)
             .HasForeignKey(ur => ur.ProjectId)
             .OnDelete(DeleteBehavior.SetNull);
 
 
-        modelBuilder.Entity<UserRole>()
-            .HasOne(ur => ur.Council)
+            userRole.HasOne(ur => ur.Council)
             .WithMany(c => c.UserRoles)
             .HasForeignKey(ur => ur.CouncilId)
             .OnDelete(DeleteBehavior.SetNull);
+        });
 
 
-        modelBuilder.Entity<Evaluation>()
-            .HasOne(e => e.Council)
+        modelBuilder.Entity<Evaluation>(eva =>
+        {
+            eva.HasOne(e => e.Council)
             .WithMany(c => c.Evaluations)
             .HasForeignKey(e => e.CouncilId)
             .OnDelete(DeleteBehavior.Restrict);
 
-        modelBuilder.Entity<Evaluation>()
-            .HasOne(e => e.Project)
+            eva.HasOne(e => e.Project)
             .WithMany(p => p.Evaluations)
             .HasForeignKey(e => e.ProjectId)
             .OnDelete(DeleteBehavior.NoAction);
 
-        modelBuilder.Entity<Evaluation>()
-            .HasOne(e => e.Milestone)
+            eva.HasOne(e => e.Milestone)
             .WithMany(m => m.Evaluations)
             .HasForeignKey(e => e.MilestoneId)
             .OnDelete(DeleteBehavior.SetNull);
 
-        modelBuilder.Entity<Evaluation>()
-            .HasOne(e => e.FinalDoc)
+            eva.HasOne(e => e.FinalDoc)
             .WithMany()
             .HasForeignKey(e => e.FinalDocId)
             .OnDelete(DeleteBehavior.SetNull);
+        });
 
         modelBuilder.Entity<EvaluationStage>()
             .HasOne(es => es.Evaluation)
@@ -207,120 +209,124 @@ public class SRPMDbContext : DbContext
             .HasForeignKey(es => es.EvaluationId)
             .OnDelete(DeleteBehavior.Cascade);
 
-        modelBuilder.Entity<IndividualEvaluation>()
-            .HasOne(ie => ie.EvaluationStage)
+        modelBuilder.Entity<IndividualEvaluation>(inEva =>
+        {
+            inEva.HasOne(ie => ie.EvaluationStage)
             .WithMany(es => es.IndividualEvaluations)
             .HasForeignKey(ie => ie.EvaluationStageId)
             .OnDelete(DeleteBehavior.Restrict);
 
 
-        modelBuilder.Entity<IndividualEvaluation>()
-            .HasOne(ie => ie.Reviewer)
+            inEva.HasOne(ie => ie.Reviewer)
             .WithMany()
             .HasForeignKey(ie => ie.ReviewerId)
             .OnDelete(DeleteBehavior.Restrict);
 
-        modelBuilder.Entity<IndividualEvaluation>()
-            .HasOne(ie => ie.Project)
+            inEva.HasOne(ie => ie.Project)
             .WithMany()
             .HasForeignKey(ie => ie.ProjectId)
             .OnDelete(DeleteBehavior.NoAction);
 
-        modelBuilder.Entity<IndividualEvaluation>()
-            .HasOne(ie => ie.Milestone)
+            inEva.HasOne(ie => ie.Milestone)
             .WithMany()
             .HasForeignKey(ie => ie.MilestoneId)
             .OnDelete(DeleteBehavior.NoAction);
+        });
 
         // Transaction relationships
-        modelBuilder.Entity<Transaction>()
-            .HasOne(t => t.RequestPerson)
-            .WithMany()
-            .HasForeignKey(t => t.RequestPersonId)
-            .OnDelete(DeleteBehavior.Restrict);
+        modelBuilder.Entity<Transaction>(transac =>
+        {
+            transac.HasOne(t => t.RequestPerson)
+                .WithMany()
+                .HasForeignKey(t => t.RequestPersonId)
+                .OnDelete(DeleteBehavior.Restrict);
 
-        modelBuilder.Entity<Transaction>()
-            .HasOne(t => t.HandlePerson)
-            .WithMany()
-            .HasForeignKey(t => t.HandlePersonId)
-            .OnDelete(DeleteBehavior.Restrict);
+            transac.HasOne(t => t.HandlePerson)
+                .WithMany()
+                .HasForeignKey(t => t.HandlePersonId)
+                .OnDelete(DeleteBehavior.Restrict);
 
-        modelBuilder.Entity<Transaction>()
-            .HasOne(t => t.Project)
-            .WithMany()
-            .HasForeignKey(t => t.ProjectId)
-            .OnDelete(DeleteBehavior.SetNull);
+            transac.HasOne(t => t.Project)
+                .WithMany()
+                .HasForeignKey(t => t.ProjectId)
+                .OnDelete(DeleteBehavior.SetNull);
 
-        modelBuilder.Entity<Transaction>()
-            .HasOne(t => t.EvaluationStage)
-            .WithMany(es => es.Transactions)
-            .HasForeignKey(t => t.EvaluationStageId)
-            .OnDelete(DeleteBehavior.SetNull);
+            transac.HasOne(t => t.EvaluationStage)
+                .WithMany(es => es.Transactions)
+                .HasForeignKey(t => t.EvaluationStageId)
+                .OnDelete(DeleteBehavior.SetNull);
 
-        modelBuilder.Entity<Transaction>()
-            .HasOne(t => t.FundRequestDoc)
-            .WithMany()
-            .HasForeignKey(t => t.FundRequestDocId)
-            .OnDelete(DeleteBehavior.SetNull);
+            transac.HasOne(t => t.FundRequestDoc)
+                .WithMany()
+                .HasForeignKey(t => t.FundRequestDocId)
+                .OnDelete(DeleteBehavior.SetNull);
+        });
 
-
-        modelBuilder.Entity<Notification>()
-            .HasOne(n => n.Transaction)
+        // Notification relationships
+        modelBuilder.Entity<Notification>(noti =>
+        {
+            noti.HasOne(n => n.Transaction)
             .WithMany(t => t.Notifications)
             .HasForeignKey(n => n.TransactionId)
-            .OnDelete(DeleteBehavior.SetNull);
+            .OnDelete(DeleteBehavior.Restrict);
 
-        modelBuilder.Entity<Notification>()
-            .HasOne(n => n.IndividualEvaluation)
+            noti.HasOne(n => n.IndividualEvaluation)
             .WithMany(ie => ie.Notifications)
             .HasForeignKey(n => n.IndividualEvaluationId)
-            .OnDelete(DeleteBehavior.SetNull);
+            .OnDelete(DeleteBehavior.Restrict);
 
-        modelBuilder.Entity<Notification>()
-            .HasOne(n => n.EvaluationStage)
+            noti.HasOne(n => n.EvaluationStage)
             .WithMany(es => es.Notifications)
             .HasForeignKey(n => n.EvaluationStageId)
-            .OnDelete(DeleteBehavior.SetNull);
+            .OnDelete(DeleteBehavior.Restrict);
 
-
-
-        modelBuilder.Entity<Notification>()
-            .HasOne(n => n.Evaluation)
+            noti.HasOne(n => n.Evaluation)
             .WithMany(e => e.Notifications)
             .HasForeignKey(n => n.EvaluationId)
-            .OnDelete(DeleteBehavior.NoAction);
+            .OnDelete(DeleteBehavior.Restrict);
 
-        modelBuilder.Entity<Notification>()
-            .HasOne(n => n.GroupUser)
-            .WithMany()
-            .HasForeignKey(n => n.GroupUserId)
-            .OnDelete(DeleteBehavior.SetNull);
+            noti.HasOne(n => n.User)
+            .WithMany(ur => ur.Notifications)
+            .HasForeignKey(n => n.UserId)
+            .OnDelete(DeleteBehavior.Restrict);
 
-        modelBuilder.Entity<Notification>()
-            .HasOne(n => n.Document)
+            noti.HasOne(n => n.Document)
             .WithMany(d => d.Notifications)
             .HasForeignKey(n => n.DocumentId)
-            .OnDelete(DeleteBehavior.SetNull);
+            .OnDelete(DeleteBehavior.Restrict);
 
-        modelBuilder.Entity<Notification>()
-            .HasOne(n => n.MemberTask)
+            noti.HasOne(n => n.MemberTask)
             .WithMany(mt => mt.Notifications)
             .HasForeignKey(n => n.MemberTaskId)
-            .OnDelete(DeleteBehavior.SetNull);
+            .OnDelete(DeleteBehavior.Restrict);
 
-        modelBuilder.Entity<Notification>()
-            .HasOne(n => n.Task)
-            .WithMany()
+            noti.HasOne(n => n.Task)
+            .WithMany(t => t.Notifications)
             .HasForeignKey(n => n.TaskId)
-            .OnDelete(DeleteBehavior.NoAction);
+            .OnDelete(DeleteBehavior.Restrict);
 
-        modelBuilder.Entity<Notification>()
-            .HasOne(n => n.SystemConfiguration)
+            noti.HasOne(n => n.SystemConfiguration)
             .WithMany(sc => sc.Notifications)
             .HasForeignKey(n => n.SystemConfigurationId)
-            .OnDelete(DeleteBehavior.SetNull);
+            .OnDelete(DeleteBehavior.Restrict);
+        });
 
+        modelBuilder.Entity<AccountNotification>(userNoti =>
+        {
+            userNoti.HasKey(an => new { an.AccountId, an.NotificationId });
 
+            userNoti.HasOne(an => an.Account)
+            .WithMany(acc => acc.AccountNotifications)
+            .HasForeignKey(acc => acc.AccountId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+            userNoti.HasOne(an => an.Notification)
+            .WithMany(noti => noti.AccountNotifications)
+            .HasForeignKey(noti => noti.NotificationId)
+            .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // Config Column Type
         modelBuilder.Entity<Project>()
             .Property(p => p.Progress)
             .HasColumnType("decimal(5,2)");

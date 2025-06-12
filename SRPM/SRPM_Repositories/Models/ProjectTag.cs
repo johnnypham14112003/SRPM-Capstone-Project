@@ -5,8 +5,8 @@ public class ProjectTag
 {
     public Guid Id { get; set; } = Guid.NewGuid();
 
-    [MaxLength(150)]
-    public string? Name { get; set; }
+    [Required, MaxLength(150)]
+    public string Name { get; set; }
 
     [Required]
     public Guid ProjectId { get; set; }

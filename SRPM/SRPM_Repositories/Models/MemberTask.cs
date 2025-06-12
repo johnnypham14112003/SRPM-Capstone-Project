@@ -21,8 +21,7 @@ public class MemberTask
     [Column(TypeName = "decimal(5,2)")]
     public decimal Progress { get; set; } = 0;
 
-    [Required]
-    public int Overdue { get; set; } = 0;
+    public int? Overdue { get; set; } = 0;
 
     public string? Note { get; set; }
 
@@ -31,7 +30,7 @@ public class MemberTask
     public string Status { get; set; } = "draft";
 
     // Navigation properties
-    public virtual Account Member { get; set; } = null!;
+    public virtual UserRole Member { get; set; } = null!;
     public virtual Task Task { get; set; } = null!;
-    public virtual ICollection<Notification> Notifications { get; set; } = new List<Notification>();
+    public virtual ICollection<Notification>? Notifications { get; set; }
 }

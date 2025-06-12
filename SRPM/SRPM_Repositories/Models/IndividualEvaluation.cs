@@ -23,21 +23,26 @@ public class IndividualEvaluation
 
     [Required]
     public Guid EvaluationStageId { get; set; }
-
     [Required]
     public Guid ReviewerId { get; set; }
-
+    public Guid? CouncilId { get; set; }
     public Guid? ProjectId { get; set; }
     public Guid? MilestoneId { get; set; }
 
     // Navigation properties
     [ForeignKey(nameof(EvaluationStageId))]
-    public EvaluationStage EvaluationStage { get; set; }
+    public virtual EvaluationStage EvaluationStage { get; set; } = null!;
+
     [ForeignKey(nameof(ReviewerId))]
-    public Account Reviewer { get; set; }
+    public UserRole Reviewer { get; set; } = null!;
+
+    [ForeignKey(nameof(CouncilId))]
+    public virtual AppraisalCouncil? Council { get; set; }
+
     [ForeignKey(nameof(ProjectId))]
     public virtual Project? Project { get; set; }
+
     [ForeignKey(nameof(MilestoneId))]
     public virtual Milestone? Milestone { get; set; }
-    public virtual ICollection<Notification> Notifications { get; set; } = new List<Notification>();
+    public virtual ICollection<Notification>? Notifications { get; set; }
 }
