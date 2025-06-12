@@ -1,27 +1,19 @@
-﻿using System;
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 
-namespace SRPM_Repositories.Models
+namespace SRPM_Repositories.Models;
+
+public class OTPCode
 {
-    public class OTPCode
-    {
-        [Key]
-        public Guid Id { get; set; }
+    [Key] public Guid Id { get; set; } = Guid.NewGuid();
 
-        [Required]
-        public string Code { get; set; } // Stores the OTP code for authentication
+    [Required] public string Code { get; set; } = null!;// Stores the OTP code for authentication
+    public DateTime? ExpiresAt { get; set; } // Expiration timestamp for the OTP
+    [Required] public byte Attempt { get; set; } = 1; // Tracks the number of attempts
+    [Required] public int TTL { get; set; } = 1; // Time to live (TTL) in minutes
 
-        public DateTime? ExpiresAt { get; set; } // Expiration timestamp for the OTP
+    // Foreign keys
+    [Required] public Guid AccountId { get; set; }
 
-        [Required]
-        public byte Attempt { get; set; } = 1; // Tracks the number of attempts
-
-        [Required]
-        public int TTL { get; set; } = 1; // Time to live (TTL) in minutes
-
-        // Foreign Key
-        [Required]
-        public Guid AccountId { get; set; }
-        public Account Account { get; set; } // One Account -> Many OTP Codes
-    }
+    // Navigation properties
+    public virtual Account Account { get; set; } = null!;// One Account -> Many OTP Codes
 }

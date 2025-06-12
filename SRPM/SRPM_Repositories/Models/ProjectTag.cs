@@ -1,19 +1,16 @@
-﻿using System;
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 
-namespace SRPM_Repositories.Models
+namespace SRPM_Repositories.Models;
+
+public class ProjectTag
 {
-    public class ProjectTag
-    {
-        [Key]
-        public Guid Id { get; set; }
+    [Key] public Guid Id { get; set; } = Guid.NewGuid();
 
-        [MaxLength(150)]
-        public string Name { get; set; }
+    [Required, MaxLength(150)] public string Name { get; set; } = null!;
 
-        // Foreign Key
-        [Required]
-        public Guid ProjectId { get; set; }
-        public Project Project { get; set; } // One Project -> Many Tags
-    }
+    // Foreign keys
+    [Required] public Guid ProjectId { get; set; }
+
+    // Navigation properties
+    public virtual Project Project { get; set; } = null!;
 }

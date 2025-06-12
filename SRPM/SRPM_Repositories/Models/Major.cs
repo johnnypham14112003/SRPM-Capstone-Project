@@ -1,22 +1,18 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 
-namespace SRPM_Repositories.Models
+namespace SRPM_Repositories.Models;
+
+public class Major
 {
-    public class Major
-    {
-        [Key]
-        public Guid Id { get; set; }
+    [Key] public Guid Id { get; set; } = Guid.NewGuid();
 
-        [Required]
-        [MaxLength(100)]
-        public string Name { get; set; }
+    [Required, MaxLength(100)] public string Name { get; set; } = null!;
 
-        // Navigation property: One Major -> Many Accounts
-        public ICollection<Account> Accounts { get; set; } = new List<Account>();
+    // Foreign keys
+    [Required] public Guid FieldId { get; set; }
 
-        // Navigation property: Many-to-many relationship with Projects via the ProjectMajor join entity
-        public ICollection<ProjectMajor> ProjectMajors { get; set; } = new List<ProjectMajor>();
-    }
+    // Navigation properties
+    public virtual Field Field { get; set; } = null!;
+    public virtual ICollection<Account>? Accounts { get; set; }
+    public virtual ICollection<ProjectMajor>? ProjectMajors { get; set; }
 }

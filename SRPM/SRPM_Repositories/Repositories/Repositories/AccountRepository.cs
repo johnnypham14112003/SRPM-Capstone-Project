@@ -1,6 +1,4 @@
-﻿
-using SRPM_Repositories.DBContext;
-using SRPM_Repositories.Models;
+﻿using SRPM_Repositories.Models;
 using SRPM_Repositories.Repositories.Interfaces;
 
 namespace SRPM_Repositories.Repositories.Repositories;

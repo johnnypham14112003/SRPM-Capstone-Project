@@ -3,8 +3,6 @@ using SRPM_Repositories.DTOs;
 using SRPM_Repositories.Models;
 using SRPM_Repositories.Repositories.Interfaces;
 using SRPM_Services.Interfaces;
-using System;
-using System.Threading.Tasks;
 using System.Diagnostics;
 
 namespace SRPM_Services.Repositories
@@ -34,7 +32,7 @@ namespace SRPM_Services.Repositories
                     throw new UnauthorizedAccessException($"Email must end with {expectedDomain}.");
 
                 // Attempt to get an existing account by email.
-                var account = await _unitOfWork.AccountRepository
+                var account = await _unitOfWork.GetAccountRepository()
                     .GetOneAsync(a => a.Email == request.Email, hasTrackings: false);
 
                 if (account == null)
@@ -47,14 +45,14 @@ namespace SRPM_Services.Repositories
                         FullName = request.Name
                     };
 
-                    await _unitOfWork.AccountRepository.AddAsync(account);
+                    await _unitOfWork.GetAccountRepository().AddAsync(account);
                     await _unitOfWork.SaveChangesAsync();
                 }
                 else
                 {
                     // Optionally update the account information.
                     account.FullName = request.Name;
-                    await _unitOfWork.AccountRepository.UpdateAsync(account);
+                    await _unitOfWork.GetAccountRepository().UpdateAsync(account);
                     await _unitOfWork.SaveChangesAsync();
                 }
 

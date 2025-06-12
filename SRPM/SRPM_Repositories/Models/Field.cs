@@ -1,25 +1,13 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 
-namespace SRPM_Repositories.Models
+namespace SRPM_Repositories.Models;
+
+public class Field
 {
-    public class Field
-    {
-        [Key]
-        public Guid Id { get; set; }
+    [Key] public Guid Id { get; set; } = Guid.NewGuid();
 
-        [Required]
-        [MaxLength(100)]
-        public string Name { get; set; }
+    [Required, MaxLength(100)] public string Name { get; set; } = null!;
 
-        // Navigation property: One Field -> Many Accounts
-        public ICollection<Account> Accounts { get; set; } = new List<Account>();
-
-        // Navigation property: One Field -> Many ResearchPapers
-        public ICollection<ResearchPaper> ResearchPapers { get; set; } = new List<ResearchPaper>();
-
-        // Navigation property: Many-to-many relationship with Projects via the ProjectField join entity
-        public ICollection<ProjectField> ProjectFields { get; set; } = new List<ProjectField>();
-    }
+    // Navigation properties
+    public virtual ICollection<Major>? Majors { get; set; }
 }

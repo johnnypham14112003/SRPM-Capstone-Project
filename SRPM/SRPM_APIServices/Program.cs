@@ -1,25 +1,16 @@
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.Google;
-using Microsoft.EntityFrameworkCore;
-using SRPM_Repositories.DBContext;
+using SRPM_APIServices;
 using SRPM_Repositories.Repositories.Interfaces;
 using SRPM_Repositories.Repositories.Repositories;
-using SRPM_Services.Interfaces;
-using SRPM_Services.Repositories;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-builder.Services.AddControllers();
+builder.Services.RegisterServices(builder.Configuration);
+
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
-
-// Register DbContext before building the app
-builder.Services.AddDbContext<SRPMDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
-builder.Services.AddScoped<IAccountService, AccountService>();
-builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
-builder.Services.AddScoped<IAccountRepository, AccountRepository>();
 
 builder.Services.AddAuthentication(options =>
 {

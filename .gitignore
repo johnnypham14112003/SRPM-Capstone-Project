@@ -797,6 +797,5 @@ FodyWeavers.xsd
 *.msm
 *.msp
 
-# JetBrains Rider
-*.sln.iml
-*.json
+# Custom Ignore
+/SRPM/SRPM_Repositories/Migrations/

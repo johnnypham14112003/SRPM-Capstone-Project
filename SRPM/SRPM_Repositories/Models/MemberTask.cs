@@ -1,25 +1,24 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 
-namespace SRPM_Repositories.Models
+namespace SRPM_Repositories.Models;
+
+public class MemberTask
 {
-    public class MemberTask
-    {
-        [Key]
-        public Guid Id { get; set; } = Guid.NewGuid();
+    [Key] public Guid Id { get; set; } = Guid.NewGuid();
 
-        [Required]
-        public Guid MemberId { get; set; }
+    [Required] public decimal Progress { get; set; } = 0m;//100.00
+    [Required] public int Overdue { get; set; } = 0;
+    public string? Note { get; set; }
+    public DateTime? DeliveryDate { get; set; }
+    [Required] public DateTime JoinedAt { get; set; } = DateTime.Now;
+    [Required, MaxLength(30)] public string Status { get; set; } = "created";
 
-        [Required]
-        public Guid TaskId { get; set; }
+    // Foreign keys
+    [Required] public Guid MemberId { get; set; }
+    [Required] public Guid TaskId { get; set; }
 
-        // Navigation properties for relationships
-        public virtual Account Member { get; set; }
-        public virtual Task Task { get; set; }
-
-        // **New:** Collection of Notifications related to this MemberTask
-        public virtual ICollection<Notification> Notifications { get; set; } = new List<Notification>();
-    }
+    // Navigation properties
+    public virtual UserRole Member { get; set; } = null!;
+    public virtual Task Task { get; set; } = null!;
+    public virtual ICollection<Notification>? Notifications { get; set; }
 }

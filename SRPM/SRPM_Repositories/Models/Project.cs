@@ -1,66 +1,44 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 
-namespace SRPM_Repositories.Models
+namespace SRPM_Repositories.Models;
+
+public class Project
 {
-    public class Project
-    {
-        [Key]
-        public Guid Id { get; set; }
+    [Key] public Guid Id { get; set; }
 
-        public string LogoURL { get; set; }
-        public string PictureURL { get; set; }
-        public string DocURL { get; set; }
+    public string? LogoURL { get; set; }
+    public string? PictureURL { get; set; }
+    [Required, MaxLength(30)] public string Code { get; set; } = null!;
+    [Required] public string EnglishTitle { get; set; } = null!;
+    [Required] public string VietnameseTitle { get; set; } = null!;
+    [MaxLength(100)] public string? Abbreviations { get; set; }
+    public int? Duration { get; set; } = 1;
+    public DateTime? StartDate { get; set; }
+    public DateTime? EndDate { get; set; }
+    public string? Description { get; set; }
+    public string? RequirementNote { get; set; }
+    [Required] public decimal Budget { get; set; } = 0m;// decimal suffix
+    [Required] public decimal Progress { get; set; } = 0m;//100.00
+    [Required] public int MaximumMember { get; set; } = 0;
+    [Required, MaxLength(30)] public string Language { get; set; } = null!;
+    [Required, MaxLength(30)] public string Category { get; set; } = null!;//basic || coop...
+    [Required, MaxLength(30)] public string Type { get; set; } = null!;//normal || proposal || propose
+    [Required] public DateTime CreatedAt { get; set; } = DateTime.Now;
+    public DateTime? UpdatedAt { get; set; }
+    [Required, MaxLength(30)] public string Status { get; set; } = "created";
 
-        [MaxLength(50)]
-        public string Abbreviations { get; set; }
+    // Foreign keys
+    [Required] public Guid CreatorId { get; set; }
 
-        [Required]
-        public string Title { get; set; }
-
-        [Required]
-        public string VietnameseTitle { get; set; }
-
-        public string Description { get; set; }
-        public string RequirementNote { get; set; }
-
-        [Required]
-        public decimal Budget { get; set; } = 0;
-
-        [Required]
-        public int Duration { get; set; } = 1; // Number of months
-
-        [Required]
-        public decimal Progress { get; set; } = 0;
-
-        [Required]
-        public int MaximumMember { get; set; } = 0;
-
-        [Required]
-        [MaxLength(30)]
-        public string Language { get; set; }
-
-        public DateTime? StartDate { get; set; }
-        public DateTime? EndDate { get; set; }
-
-        [Required]
-        [MaxLength(30)]
-        public string Status { get; set; } = "Created";
-
-        // Foreign Key
-        [Required]
-        public Guid HostInstitutionId { get; set; }
-        public Account HostInstitution { get; set; }
-
-        // Navigation Properties
-        public ICollection<Milestone> Milestones { get; set; } = new List<Milestone>();
-        public ICollection<ProjectTag> ProjectTags { get; set; } = new List<ProjectTag>();
-        public ICollection<ProjectTeam> ProjectTeams { get; set; } = new List<ProjectTeam>();
-        public ICollection<ProjectField> ProjectFields { get; set; } = new List<ProjectField>();
-        public ICollection<ProjectMajor> ProjectMajors { get; set; } = new List<ProjectMajor>();
-        public ICollection<Evaluation> Evaluations { get; set; } = new List<Evaluation>();
-        public ICollection<Transaction> Transactions { get; set; } = new List<Transaction>();
-        public ICollection<Notification> Notifications { get; set; } = new List<Notification>();
-    }
+    // Navigation properties
+    public virtual UserRole Creator { get; set; } = null!;
+    public virtual ResearchPaper? ResearchPaper { get; set; } // 1 project only have 1 research paper
+    public virtual ICollection<UserRole>? Members { get; set; }//1 project have many member
+    public virtual ICollection<Milestone>? Milestones { get; set; }
+    public virtual ICollection<Evaluation>? Evaluations { get; set; }
+    public virtual ICollection<IndividualEvaluation>? IndividualEvaluations { get; set; }
+    public virtual ICollection<ProjectMajor>? ProjectMajors { get; set; }
+    public virtual ICollection<ProjectTag>? ProjectTags { get; set; }
+    public virtual ICollection<Document>? Documents { get; set; }
+    public virtual ICollection<Transaction>? Transactions { get; set; }
 }

@@ -1,20 +1,14 @@
-﻿using System;
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 
-namespace SRPM_Repositories.Models
+namespace SRPM_Repositories.Models;
+
+public class ProjectMajor
 {
-    public class ProjectMajor
-    {
-        [Required]
-        public Guid ProjectId { get; set; }
-        public Project Project { get; set; } // Many Projects -> Many Majors
+    // Composite Primary Key
+    [Required] public Guid ProjectId { get; set; }
+    [Required] public Guid MajorId { get; set; }
 
-        [Required]
-        public Guid MajorId { get; set; }
-        public Major Major { get; set; } // Many Majors -> Many Projects
-
-        // Composite Primary Key
-        [Key]
-        public Guid Id { get; set; }
-    }
+    // Navigation properties
+    public Project Project { get; set; } = null!; // Many Projects -> Many Majors
+    public Major Major { get; set; } = null!; // Many Majors -> Many Projects
 }

@@ -1,16 +1,21 @@
-﻿using SRPM_Repositories.Models;
-using System;
-using System.Threading.Tasks;
+﻿namespace SRPM_Repositories.Repositories.Interfaces;
 
-namespace SRPM_Repositories.Repositories.Interfaces
+public interface IUnitOfWork
 {
-    public interface IUnitOfWork : IDisposable
-    {
-        // Expose the generic repository for Account, for example.
-        IGenericRepository<Account> AccountRepository { get; }
+    Task<bool> SaveChangesAsync();
 
-        // Add other repositories as needed.
+    IAccountRepository GetAccountRepository();
+    IAccountNotificationRepository GetAccountNotificationRepository();
+    IDocumentRepository GetDocumentRepository();
+    IEvaluationRepository GetEvaluationRepository();
+    IEvaluationStageRepository GetEvaluationStageRepository();
+    IIndividualEvaluationRepository GetIndividualEvaluationRepository();
+    IMemberTaskRepository GetMemberTaskRepository();
+    INotificationRepository GetNotificationRepository();
+    ISystemConfigurationRepository GetSystemConfigurationRepository();
+    ITaskRepository GetTaskRepository();
+    ITransactionRepository GetTransactionRepository();
+    IUserRoleRepository GetUserRoleRepository();
 
-        Task<bool> SaveChangesAsync();
-    }
+    // Add other repositories...
 }
