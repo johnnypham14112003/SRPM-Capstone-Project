@@ -1,40 +1,27 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
 namespace SRPM_Repositories.Models;
+
 public class FieldContent
 {
-    public Guid Id { get; set; } = Guid.NewGuid();
+    [Key] public Guid Id { get; set; } = Guid.NewGuid();
 
+    [Required] public int IndexInField { get; set; } = 1;
     public string? Title { get; set; }
+    [MaxLength(30)] public string? TitleAlign { get; set; }
+    [MaxLength(50)] public string? TitleStyle { get; set; }
 
-    [MaxLength(30)]
-    public string? TitleAlign { get; set; }
-
-    [MaxLength(50)]
-    public string? TitleStyle { get; set; }
-
-    // Content
     public string? Content { get; set; }
+    [MaxLength(30)] public string? ContentAlign { get; set; }
+    [MaxLength(50)] public string? ContentStyle { get; set; }
 
-    [MaxLength(30)]
-    public string? ContentAlign { get; set; }
+    [Required] public DateTime UpdatedAt { get; set; } = DateTime.Now;
+    [Required] public DateTime CreatedAt { get; set; } = DateTime.Now;
 
-    [MaxLength(50)]
-    public string? ContentStyle { get; set; }
-
-    [Required]
-    public int IndexInField { get; set; } = 1;
-
-    [Required]
-    public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
-
-    [Required]
-    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-
-    [Required]
-    public Guid DocumentFieldId { get; set; }
+    // Foreign keys
+    [Required] public Guid DocumentFieldId { get; set; }
 
     // Navigation properties
-    public virtual DocumentField DocumentField { get; set; } = null!;
-    public virtual ICollection<ContentTable> ContentTables { get; set; } = new List<ContentTable>();
+    [Required] public virtual DocumentField DocumentField { get; set; } = null!;
+    public virtual ICollection<ContentTable>? ContentTables { get; set; }
 }

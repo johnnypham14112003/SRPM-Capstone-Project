@@ -12,7 +12,7 @@ public class AccountNotificationRepository : GenericRepository<AccountNotificati
 
     public async Task<List<Guid>?> ListIdAllAccount()
     {
-        return await _context.Accounts
+        return await _context.Account
             .AsNoTracking()
             .Select(a => a.Id)
             .ToListAsync();
@@ -24,7 +24,7 @@ public class AccountNotificationRepository : GenericRepository<AccountNotificati
     {
         try
         {
-            var query = _context.AccountNotifications
+            var query = _context.AccountNotification
                 .Include(an => an.Notification)
                 .Where(an => an.AccountId == accountId)
                 .AsNoTracking()

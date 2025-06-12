@@ -12,7 +12,7 @@ public class MapsterConfigMethods
             "individualevaluation" => notification.IndividualEvaluationId,
             "evaluationstage" => notification.EvaluationStageId,
             "evaluation" => notification.EvaluationId,
-            "userrole" => notification.GroupUserId,
+            "userrole" => notification.UserRoleId,
             "document" => notification.DocumentId,
             "membertask" => notification.MemberTaskId,
             "task" => notification.TaskId,

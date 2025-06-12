@@ -87,8 +87,8 @@ public class NotificationService : INotificationService
             case "userrole":
                 var existUR = await _userRoleRepository.GetOneAsync(ur => ur.Id == newNotification.ObjecNotificationId, false)
                     ?? throw new NotFoundException("Create Notification Faild: Not found any GroupUser relate to this Id"); ;
-                notificationDTO.GroupUserId = newNotification.ObjecNotificationId;
-                notificationDTO.GroupUser = existUR;
+                notificationDTO.UserRoleId = newNotification.ObjecNotificationId;
+                notificationDTO.UserRole = existUR;
                 break;
             case "document":
                 var existD = await _documentRepository.GetOneAsync(d => d.Id == newNotification.ObjecNotificationId, false)

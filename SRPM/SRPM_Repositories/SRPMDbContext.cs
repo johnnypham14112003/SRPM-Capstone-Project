@@ -1,45 +1,42 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using SRPM_Repositories.Models;
-using Task = SRPM_Repositories.Models.Task;
 
 namespace SRPM_Repositories;
 
 public class SRPMDbContext : DbContext
 {
-    /*Uncomment after migration to use with Dependency Injection*/
-    /* ============================================================================================== */
     //Constructor
     public SRPMDbContext() { }
     public SRPMDbContext(DbContextOptions<SRPMDbContext> options) : base(options) { }
-    /* ============================================================================================== */
 
     //Binding Models
-    public DbSet<Field> Field { get; set; }
-    public DbSet<Major> Major { get; set; }
     public DbSet<Account> Account { get; set; }
-    public DbSet<Role> Role { get; set; }
-    public DbSet<OTPCode> OTPCode { get; set; }
-    public DbSet<SystemConfiguration> SystemConfiguration { get; set; }
-    public DbSet<Project> Project { get; set; }
-    public DbSet<ResearchPaper> ResearchPaper { get; set; }
-    public DbSet<ProjectTag> ProjectTag { get; set; }
-    public DbSet<ProjectMajor> ProjectMajor { get; set; }
-    public DbSet<Milestone> Milestone { get; set; }
-    public DbSet<Task> Task { get; set; }
-    public DbSet<MemberTask> MemberTask { get; set; }
+    public DbSet<AccountNotification> AccountNotification { get; set; }
+    public DbSet<AppraisalCouncil> AppraisalCouncil { get; set; }
+    public DbSet<ContentTable> ContentTable { get; set; }
     public DbSet<Document> Document { get; set; }
     public DbSet<DocumentField> DocumentField { get; set; }
-    public DbSet<FieldContent> FieldContent { get; set; }
-    public DbSet<ContentTable> ContentTable { get; set; }
-    public DbSet<AppraisalCouncil> AppraisalCouncil { get; set; }
-    public DbSet<UserRole> UserRole { get; set; }
     public DbSet<Evaluation> Evaluation { get; set; }
     public DbSet<EvaluationStage> EvaluationStage { get; set; }
+    public DbSet<Field> Field { get; set; }
+    public DbSet<FieldContent> FieldContent { get; set; }
     public DbSet<IndividualEvaluation> IndividualEvaluation { get; set; }
-    public DbSet<Transaction> Transaction { get; set; }
+    public DbSet<Major> Major { get; set; }
+    public DbSet<MemberTask> MemberTask { get; set; }
+    public DbSet<Milestone> Milestone { get; set; }
     public DbSet<Notification> Notification { get; set; }
-    public DbSet<AccountNotification> AccountNotification { get; set; }
+    public DbSet<OTPCode> OTPCode { get; set; }
+    public DbSet<Project> Project { get; set; }
+    public DbSet<ProjectMajor> ProjectMajor { get; set; }
+    public DbSet<ProjectTag> ProjectTag { get; set; }
+    public DbSet<ResearchPaper> ResearchPaper { get; set; }
+    public DbSet<Role> Role { get; set; }
+    public DbSet<Signature> Signature { get; set; }
+    public DbSet<SystemConfiguration> SystemConfiguration { get; set; }
+    public DbSet<Models.Task> Task { get; set; }
+    public DbSet<Transaction> Transaction { get; set; }
+    public DbSet<UserRole> UserRole { get; set; }
 
     private string GetConnectionString()
     {
@@ -52,227 +49,351 @@ public class SRPMDbContext : DbContext
         return configuration["ConnectionStrings:DefaultConnection"]!;
     }
 
-    /**/
-    // Comment Method OnConfiguring(...) after migration to avoid conflic in Dependency Injection
-    /* ============================================================================================== */
-    //protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-    //    => optionsBuilder.UseSqlServer(GetConnectionString());
-    /* ============================================================================================== */
-    /**/
+    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+    {
+        if (!optionsBuilder.IsConfigured) optionsBuilder.UseSqlServer(GetConnectionString());
+    }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
 
-        modelBuilder.Entity<ProjectMajor>()
-            .HasKey(pm => new { pm.ProjectId, pm.MajorId });
-
-        modelBuilder.Entity<Transaction>()
-            .HasIndex(t => t.Code)
-            .IsUnique();
-
-        modelBuilder.Entity<Major>()
-            .HasOne(m => m.Field)
-            .WithMany(f => f.Majors)
-            .HasForeignKey(m => m.FieldId)
-            .OnDelete(DeleteBehavior.Restrict);
-
-        modelBuilder.Entity<Account>()
-            .HasOne(a => a.Major)
+        //Account
+        modelBuilder.Entity<Account>(acc =>
+        {
+            acc.HasOne(a => a.Major)
             .WithMany(m => m.Accounts)
             .HasForeignKey(a => a.MajorId)
-            .OnDelete(DeleteBehavior.SetNull);
+            .OnDelete(DeleteBehavior.SetNull); // when delete Major - setNull in Account
+            //xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+            acc.HasMany(a => a.OTPCodes)
+            .WithOne(o => o.Account)
+            .HasForeignKey(o => o.AccountId)
+            .OnDelete(DeleteBehavior.Cascade); // when delete Account - cascade OTP
 
-        modelBuilder.Entity<Project>()
-            .HasOne(p => p.CreatedByAccount)
-            .WithMany(ur => ur.HadProjects)
-            .HasForeignKey(p => p.CreateById)
-            .OnDelete(DeleteBehavior.Restrict);
+            acc.HasMany(a => a.UserRoles)
+           .WithOne(u => u.Account)
+           .HasForeignKey(u => u.AccountId)
+           .OnDelete(DeleteBehavior.Restrict);//too many reference to cascade
 
-        modelBuilder.Entity<Milestone>()
-            .HasOne(m => m.Project)
-            .WithMany(p => p.Milestones)
-            .HasForeignKey(m => m.ProjectId)
+            acc.HasMany(a => a.AccountNotifications)
+            .WithOne(n => n.Account)
+            .HasForeignKey(n => n.AccountId)
             .OnDelete(DeleteBehavior.Cascade);
+        });
 
-        modelBuilder.Entity<Milestone>()
-            .HasOne(m => m.CreateByAccount)
-            .WithMany(a => a.CreatedMilestones)
-            .HasForeignKey(m => m.CreateBy)
-            .OnDelete(DeleteBehavior.Restrict);
+        //AccountNotification
+        modelBuilder.Entity<AccountNotification>(accNoti =>
+        {
+            //Composite Key
+            accNoti.HasKey(anModel => new { anModel.AccountId, anModel.NotificationId });
 
-        modelBuilder.Entity<Task>()
-            .HasOne(t => t.Milestone)
-            .WithMany(m => m.Tasks)
-            .HasForeignKey(t => t.MilestoneId)
-            .OnDelete(DeleteBehavior.Cascade);
+            accNoti.HasOne(an => an.Account)
+            .WithMany(a => a.AccountNotifications)
+            .HasForeignKey(an => an.AccountId)
+            .OnDelete(DeleteBehavior.Cascade);//when delete account - also delete these account notification
 
-        modelBuilder.Entity<Task>()
-            .HasOne(t => t.CreateByAccount)
-            .WithMany(a => a.CreatedTasks)
-            .HasForeignKey(t => t.CreateBy)
-            .OnDelete(DeleteBehavior.Restrict);
+            accNoti.HasOne(an => an.Notification)
+            .WithMany(n => n.AccountNotifications)
+            .HasForeignKey(an => an.NotificationId)
+            .OnDelete(DeleteBehavior.Cascade);//when delete noti - also delete these account notification
+        });
 
-        modelBuilder.Entity<MemberTask>()
-            .HasOne(mt => mt.Task)
-            .WithMany(t => t.MemberTasks)
-            .HasForeignKey(mt => mt.TaskId)
-            .OnDelete(DeleteBehavior.Cascade);
+        //AppraisalCouncil
+        modelBuilder.Entity<AppraisalCouncil>(appCoun =>
+        {
+            appCoun.HasMany(c => c.Evaluations)
+            .WithOne(e => e.AppraisalCouncil)
+            .HasForeignKey(c => c.AppraisalCouncilId)
+            .OnDelete(DeleteBehavior.Restrict); //when delete AppraisalCouncil - block if not handle CouncilId in Evaluation
 
-        modelBuilder.Entity<MemberTask>()
-            .HasOne(mt => mt.Member)
-            .WithMany(a => a.MemberTasks)
-            .HasForeignKey(mt => mt.MemberId)
-            .OnDelete(DeleteBehavior.Restrict);
+            appCoun.HasMany(c => c.EvaluationStages)
+            .WithOne(e => e.AppraisalCouncil)
+            .HasForeignKey(c => c.AppraisalCouncilId)
+            .OnDelete(DeleteBehavior.Restrict); //when delete AppraisalCouncil - block if not handle CouncilId in EvaluationStage
 
-        modelBuilder.Entity<Document>()
-            .HasOne(d => d.UploaderUser)
-            .WithMany(a => a.UploadedDocuments)
-            .HasForeignKey(d => d.Uploader)
-            .OnDelete(DeleteBehavior.Restrict);
+            appCoun.HasMany(c => c.CouncilMembers)
+            .WithOne(e => e.AppraisalCouncil)
+            .HasForeignKey(c => c.AppraisalCouncilId)
+            .OnDelete(DeleteBehavior.Restrict); //when delete AppraisalCouncil - block if not handle CouncilId in UserRole
+        });
 
-        modelBuilder.Entity<Document>()
-            .HasOne(d => d.Project)
-            .WithMany(p => p.Documents)
-            .HasForeignKey(d => d.ProjectId)
-            .OnDelete(DeleteBehavior.SetNull);
-
-        modelBuilder.Entity<DocumentField>()
-            .HasOne(df => df.Document)
-            .WithMany(d => d.DocumentFields)
-            .HasForeignKey(df => df.DocumentId)
-            .OnDelete(DeleteBehavior.Cascade);
-
-        modelBuilder.Entity<FieldContent>()
-            .HasOne(fc => fc.DocumentField)
-            .WithMany(df => df.FieldContents)
-            .HasForeignKey(fc => fc.DocumentFieldId)
-            .OnDelete(DeleteBehavior.Cascade);
-
-        modelBuilder.Entity<ContentTable>()
-            .HasOne(ct => ct.FieldContent)
+        //ContentTable
+        modelBuilder.Entity<ContentTable>(conTab =>
+        {
+            conTab.HasOne(ct => ct.FieldContent)
             .WithMany(fc => fc.ContentTables)
             .HasForeignKey(ct => ct.FieldContentId)
-            .OnDelete(DeleteBehavior.Cascade);
-
-        modelBuilder.Entity<UserRole>(userRole =>
-        {
-            userRole.HasOne(ur => ur.Account)
-            .WithMany(a => a.UserRoles)
-            .HasForeignKey(ur => ur.AccountId)
-            .OnDelete(DeleteBehavior.Restrict);
-
-            userRole.HasOne(ur => ur.Role)
-            .WithMany(r => r.UserRoles)
-            .HasForeignKey(ur => ur.RoleId)
-            .OnDelete(DeleteBehavior.Restrict);
-
-            userRole.HasOne(ur => ur.Project)
-            .WithMany(p => p.Members)
-            .HasForeignKey(ur => ur.ProjectId)
-            .OnDelete(DeleteBehavior.SetNull);
-
-
-            userRole.HasOne(ur => ur.Council)
-            .WithMany(c => c.UserRoles)
-            .HasForeignKey(ur => ur.CouncilId)
-            .OnDelete(DeleteBehavior.SetNull);
+            .OnDelete(DeleteBehavior.Cascade); // when delete FieldContent - cascade ContentTable
         });
 
+        //Document
+        modelBuilder.Entity<Document>(doc =>
+        {
+            doc.HasOne(d => d.Uploader)
+            .WithMany(ur => ur.UploadedDocuments)
+            .HasForeignKey(d => d.UploaderId)
+            .OnDelete(DeleteBehavior.Restrict); //when delete Uploader - block if not handle UploaderId in Doc
 
+            doc.HasOne(d => d.Project)
+            .WithMany(p => p.Documents)
+            .HasForeignKey(d => d.ProjectId)
+            .OnDelete(DeleteBehavior.Restrict); //when delete Project - block if not handle Documents of Project
+
+            doc.HasOne(d => d.Evaluation)
+            .WithMany(e => e.Documents)
+            .HasForeignKey(d => d.EvaluationId)
+            .OnDelete(DeleteBehavior.Restrict); //when delete Evaluation - block if not handle Documents of Evaluation
+
+            doc.HasOne(d => d.IndividualEvaluation)
+            .WithMany(ie => ie.Documents)
+            .HasForeignKey(d => d.IndividualEvaluationId)
+            .OnDelete(DeleteBehavior.Restrict); //when delete IndividualEvaluation - block if not handle Documents of IndividualEvaluation
+
+            doc.HasOne(d => d.Transaction)
+            .WithMany(tr => tr.Documents)
+            .HasForeignKey(d => d.TransactionId)
+            .OnDelete(DeleteBehavior.Restrict); //when delete Transaction - block if not handle Documents of Transaction
+            //xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+            doc.HasMany(d => d.DocumentFields)
+            .WithOne(df => df.Document)
+            .HasForeignKey(df => df.DocumentId)
+            .OnDelete(DeleteBehavior.Restrict); //when delete Document - block if not handle DocumentFields
+
+            doc.HasMany(d => d.Signatures)
+            .WithOne(s => s.Document)
+            .HasForeignKey(s => s.DocumentId)
+            .OnDelete(DeleteBehavior.Cascade); //when delete Document - cascade Signatures
+
+            doc.HasMany(d => d.Notifications)
+            .WithOne(n => n.Document)
+            .HasForeignKey(n => n.DocumentId)
+            .OnDelete(DeleteBehavior.Restrict);//when delete Document - block if not handle Notifications
+        });
+
+        //DocumentField
+        modelBuilder.Entity<DocumentField>(docFi =>
+        {
+            docFi.HasOne(df => df.Document)
+            .WithMany(d => d.DocumentFields)
+            .HasForeignKey(df => df.DocumentId)
+            .OnDelete(DeleteBehavior.Restrict); //when delete Document - block if not handle DocumentFields
+            //xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+            docFi.HasMany(df => df.FieldContents)
+            .WithOne(fc => fc.DocumentField)
+            .HasForeignKey(fc => fc.DocumentFieldId)
+            .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        //Evaluation
         modelBuilder.Entity<Evaluation>(eva =>
         {
-            eva.HasOne(e => e.Council)
-            .WithMany(c => c.Evaluations)
-            .HasForeignKey(e => e.CouncilId)
+            eva.HasOne(e => e.Project)
+            .WithMany(pro => pro.Evaluations)
+            .HasForeignKey(e => e.ProjectId)
             .OnDelete(DeleteBehavior.Restrict);
 
-            eva.HasOne(e => e.Project)
-            .WithMany(p => p.Evaluations)
-            .HasForeignKey(e => e.ProjectId)
-            .OnDelete(DeleteBehavior.NoAction);
-
             eva.HasOne(e => e.Milestone)
-            .WithMany(m => m.Evaluations)
+            .WithMany(ms => ms.Evaluations)
             .HasForeignKey(e => e.MilestoneId)
-            .OnDelete(DeleteBehavior.SetNull);
+            .OnDelete(DeleteBehavior.Restrict);
 
-            eva.HasOne(e => e.FinalDoc)
-            .WithMany()
-            .HasForeignKey(e => e.FinalDocId)
-            .OnDelete(DeleteBehavior.SetNull);
+            eva.HasOne(e => e.AppraisalCouncil)
+            .WithMany(ac => ac.Evaluations)
+            .HasForeignKey(e => e.AppraisalCouncilId)
+            .OnDelete(DeleteBehavior.Restrict);
+            //xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+            eva.HasMany(e => e.Documents)
+            .WithOne(d => d.Evaluation)
+            .HasForeignKey(d => d.EvaluationId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+            eva.HasMany(e => e.EvaluationStages)
+            .WithOne(es => es.Evaluation)
+            .HasForeignKey(es => es.EvaluationId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+            eva.HasMany(df => df.Notifications)
+            .WithOne(n => n.Evaluation)
+            .HasForeignKey(n => n.EvaluationId)
+            .OnDelete(DeleteBehavior.Restrict);
         });
 
-        modelBuilder.Entity<EvaluationStage>()
-            .HasOne(es => es.Evaluation)
+        //EvaluationStage
+        modelBuilder.Entity<EvaluationStage>(evas =>
+        {
+            evas.HasOne(es => es.Evaluation)
             .WithMany(e => e.EvaluationStages)
             .HasForeignKey(es => es.EvaluationId)
-            .OnDelete(DeleteBehavior.Cascade);
+            .OnDelete(DeleteBehavior.Restrict);
 
-        modelBuilder.Entity<IndividualEvaluation>(inEva =>
+            evas.HasOne(es => es.AppraisalCouncil)
+            .WithMany(ac => ac.EvaluationStages)
+            .HasForeignKey(ac => ac.AppraisalCouncilId)
+            .OnDelete(DeleteBehavior.Restrict);
+            //xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+            evas.HasMany(es => es.Transactions)
+            .WithOne(tr => tr.EvaluationStage)
+            .HasForeignKey(tr => tr.EvaluationStageId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+            evas.HasMany(es => es.IndividualEvaluations)
+            .WithOne(ie => ie.EvaluationStage)
+            .HasForeignKey(ie => ie.EvaluationStageId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+            evas.HasMany(es => es.Notifications)
+            .WithOne(n => n.EvaluationStage)
+            .HasForeignKey(n => n.EvaluationStageId)
+            .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        //Field
+        modelBuilder.Entity<Field>(fie =>
         {
-            inEva.HasOne(ie => ie.EvaluationStage)
+            fie.HasMany(f => f.Majors)
+            .WithOne(m => m.Field)
+            .HasForeignKey(m => m.FieldId)
+            .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        //FieldContent
+        modelBuilder.Entity<FieldContent>(fieCon =>
+        {
+            fieCon.HasOne(fc => fc.DocumentField)
+            .WithMany(df => df.FieldContents)
+            .HasForeignKey(fc => fc.DocumentFieldId)
+            .OnDelete(DeleteBehavior.Restrict);
+            //xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+            fieCon.HasMany(fc => fc.ContentTables)
+            .WithOne(ct => ct.FieldContent)
+            .HasForeignKey(ct => ct.FieldContentId)
+            .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        //IndividualEvaluation
+        modelBuilder.Entity<IndividualEvaluation>(inev =>
+        {
+            inev.HasOne(ie => ie.EvaluationStage)
             .WithMany(es => es.IndividualEvaluations)
             .HasForeignKey(ie => ie.EvaluationStageId)
             .OnDelete(DeleteBehavior.Restrict);
 
-
-            inEva.HasOne(ie => ie.Reviewer)
-            .WithMany()
+            inev.HasOne(ie => ie.Reviewer)
+            .WithMany(ur => ur.IndividualEvaluations)
             .HasForeignKey(ie => ie.ReviewerId)
             .OnDelete(DeleteBehavior.Restrict);
 
-            inEva.HasOne(ie => ie.Project)
-            .WithMany()
+            inev.HasOne(ie => ie.Project)
+            .WithMany(pro => pro.IndividualEvaluations)
             .HasForeignKey(ie => ie.ProjectId)
-            .OnDelete(DeleteBehavior.NoAction);
-
-            inEva.HasOne(ie => ie.Milestone)
-            .WithMany()
-            .HasForeignKey(ie => ie.MilestoneId)
-            .OnDelete(DeleteBehavior.NoAction);
-        });
-
-        // Transaction relationships
-        modelBuilder.Entity<Transaction>(transac =>
-        {
-            transac.HasOne(t => t.RequestPerson)
-                .WithMany()
-                .HasForeignKey(t => t.RequestPersonId)
-                .OnDelete(DeleteBehavior.Restrict);
-
-            transac.HasOne(t => t.HandlePerson)
-                .WithMany()
-                .HasForeignKey(t => t.HandlePersonId)
-                .OnDelete(DeleteBehavior.Restrict);
-
-            transac.HasOne(t => t.Project)
-                .WithMany()
-                .HasForeignKey(t => t.ProjectId)
-                .OnDelete(DeleteBehavior.SetNull);
-
-            transac.HasOne(t => t.EvaluationStage)
-                .WithMany(es => es.Transactions)
-                .HasForeignKey(t => t.EvaluationStageId)
-                .OnDelete(DeleteBehavior.SetNull);
-
-            transac.HasOne(t => t.FundRequestDoc)
-                .WithMany()
-                .HasForeignKey(t => t.FundRequestDocId)
-                .OnDelete(DeleteBehavior.SetNull);
-        });
-
-        // Notification relationships
-        modelBuilder.Entity<Notification>(noti =>
-        {
-            noti.HasOne(n => n.Transaction)
-            .WithMany(t => t.Notifications)
-            .HasForeignKey(n => n.TransactionId)
             .OnDelete(DeleteBehavior.Restrict);
 
-            noti.HasOne(n => n.IndividualEvaluation)
-            .WithMany(ie => ie.Notifications)
+            inev.HasOne(ie => ie.Milestone)
+            .WithMany(ms => ms.IndividualEvaluations)
+            .HasForeignKey(ie => ie.MilestoneId)
+            .OnDelete(DeleteBehavior.Restrict);
+            //xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+            inev.HasMany(ie => ie.Documents)
+            .WithOne(d => d.IndividualEvaluation)
+            .HasForeignKey(d => d.IndividualEvaluationId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+            inev.HasMany(ie => ie.Notifications)
+            .WithOne(n => n.IndividualEvaluation)
             .HasForeignKey(n => n.IndividualEvaluationId)
+            .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        //Major
+        modelBuilder.Entity<Major>(maj =>
+        {
+            maj.HasOne(m => m.Field)
+            .WithMany(f => f.Majors)
+            .HasForeignKey(m => m.FieldId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+            maj.HasMany(m => m.Accounts)
+            .WithOne(a => a.Major)
+            .HasForeignKey(a => a.MajorId)
+            .OnDelete(DeleteBehavior.SetNull); // when delete Major - setNull in Account
+            //xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+            maj.HasMany(m => m.ProjectMajors)
+            .WithOne(pm => pm.Major)
+            .HasForeignKey(pm => pm.MajorId)
+            .OnDelete(DeleteBehavior.Cascade);// when delete Major - cascade in ProjectMajor
+        });
+
+        //MemberTask
+        modelBuilder.Entity<MemberTask>(memta =>
+        {
+            //Config Specific ColumnType
+            memta.Property(mt => mt.Progress).HasColumnType("DECIMAL(5,2)");
+
+            memta.HasOne(mt => mt.Member)
+            .WithMany(ur => ur.MemberTasks)
+            .HasForeignKey(mt => mt.MemberId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+            memta.HasOne(mt => mt.Task)
+            .WithMany(t => t.MemberTasks)
+            .HasForeignKey(mt => mt.TaskId)
+            .OnDelete(DeleteBehavior.Restrict);
+            //xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+            memta.HasMany(mt => mt.Notifications)
+            .WithOne(n => n.MemberTask)
+            .HasForeignKey(n => n.MemberTaskId)
+            .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        //Milestone
+        modelBuilder.Entity<Milestone>(miles =>
+        {
+            //Config Specific ColumnType
+            miles.Property(ms => ms.Cost).HasColumnType("MONEY");
+
+            miles.HasOne(ms => ms.Project)
+            .WithMany(pro => pro.Milestones)
+            .HasForeignKey(ms => ms.ProjectId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+            miles.HasOne(ms => ms.Creator)
+            .WithMany(ur => ur.CreatedMilestones)
+            .HasForeignKey(ms => ms.CreatorId)
+            .OnDelete(DeleteBehavior.Restrict);
+            //xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+            miles.HasMany(ms => ms.Evaluations)
+            .WithOne(e => e.Milestone)
+            .HasForeignKey(e => e.MilestoneId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+            miles.HasMany(ms => ms.IndividualEvaluations)
+            .WithOne(e => e.Milestone)
+            .HasForeignKey(e => e.MilestoneId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+            miles.HasMany(ms => ms.Tasks)
+            .WithOne(e => e.Milestone)
+            .HasForeignKey(e => e.MilestoneId)
+            .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        // Notification
+        modelBuilder.Entity<Notification>(noti =>
+        {
+            noti.HasMany(n => n.AccountNotifications)
+            .WithOne(an => an.Notification)
+            .HasForeignKey(an => an.NotificationId)
+            .OnDelete(DeleteBehavior.Cascade);  // when delete Notification - cascade AccountNotifications
+            //xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+            noti.HasOne(n => n.Document)
+            .WithMany(d => d.Notifications)
+            .HasForeignKey(n => n.DocumentId)
+            .OnDelete(DeleteBehavior.Restrict); // when delete Document - block if not handle Notifications of Document
+
+            noti.HasOne(n => n.Evaluation)
+            .WithMany(e => e.Notifications)
+            .HasForeignKey(n => n.EvaluationId)
             .OnDelete(DeleteBehavior.Restrict);
 
             noti.HasOne(n => n.EvaluationStage)
@@ -280,19 +401,9 @@ public class SRPMDbContext : DbContext
             .HasForeignKey(n => n.EvaluationStageId)
             .OnDelete(DeleteBehavior.Restrict);
 
-            noti.HasOne(n => n.Evaluation)
-            .WithMany(e => e.Notifications)
-            .HasForeignKey(n => n.EvaluationId)
-            .OnDelete(DeleteBehavior.Restrict);
-
-            noti.HasOne(n => n.User)
-            .WithMany(ur => ur.Notifications)
-            .HasForeignKey(n => n.UserId)
-            .OnDelete(DeleteBehavior.Restrict);
-
-            noti.HasOne(n => n.Document)
-            .WithMany(d => d.Notifications)
-            .HasForeignKey(n => n.DocumentId)
+            noti.HasOne(n => n.IndividualEvaluation)
+            .WithMany(ie => ie.Notifications)
+            .HasForeignKey(n => n.IndividualEvaluationId)
             .OnDelete(DeleteBehavior.Restrict);
 
             noti.HasOne(n => n.MemberTask)
@@ -300,55 +411,318 @@ public class SRPMDbContext : DbContext
             .HasForeignKey(n => n.MemberTaskId)
             .OnDelete(DeleteBehavior.Restrict);
 
+            noti.HasOne(n => n.Signature)
+            .WithMany(s => s.Notifications)
+            .HasForeignKey(n => n.SignatureId)
+            .OnDelete(DeleteBehavior.Restrict);
+
             noti.HasOne(n => n.Task)
             .WithMany(t => t.Notifications)
             .HasForeignKey(n => n.TaskId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+            noti.HasOne(n => n.Transaction)
+            .WithMany(tr => tr.Notifications)
+            .HasForeignKey(n => n.TransactionId)
             .OnDelete(DeleteBehavior.Restrict);
 
             noti.HasOne(n => n.SystemConfiguration)
             .WithMany(sc => sc.Notifications)
             .HasForeignKey(n => n.SystemConfigurationId)
             .OnDelete(DeleteBehavior.Restrict);
+
+            noti.HasOne(n => n.UserRole)
+            .WithMany(ur => ur.Notifications)
+            .HasForeignKey(n => n.UserRoleId)
+            .OnDelete(DeleteBehavior.Restrict);
         });
 
-        modelBuilder.Entity<AccountNotification>(userNoti =>
+        //OTPCode
+        modelBuilder.Entity<OTPCode>(opCo =>
         {
-            userNoti.HasKey(an => new { an.AccountId, an.NotificationId });
-
-            userNoti.HasOne(an => an.Account)
-            .WithMany(acc => acc.AccountNotifications)
-            .HasForeignKey(acc => acc.AccountId)
-            .OnDelete(DeleteBehavior.Cascade);
-
-            userNoti.HasOne(an => an.Notification)
-            .WithMany(noti => noti.AccountNotifications)
-            .HasForeignKey(noti => noti.NotificationId)
+            opCo.HasOne(oc => oc.Account)
+            .WithMany(a => a.OTPCodes)
+            .HasForeignKey(oc => oc.AccountId)
             .OnDelete(DeleteBehavior.Cascade);
         });
 
-        // Config Column Type
-        modelBuilder.Entity<Project>()
-            .Property(p => p.Progress)
-            .HasColumnType("decimal(5,2)");
+        //Project
+        modelBuilder.Entity<Project>(proj =>
+        {
+            //Config Specific ColumnType
+            proj.Property(p => p.Budget).HasColumnType("MONEY");
+            proj.Property(p => p.Progress).HasColumnType("DECIMAL(5,2)");
 
-        modelBuilder.Entity<Project>()
-            .Property(p => p.Budget)
-            .HasColumnType("money");
+            proj.HasOne(p => p.Creator)
+            .WithMany(ur => ur.CreatedProjects)
+            .HasForeignKey(p => p.CreatorId)
+            .OnDelete(DeleteBehavior.Restrict);
 
-        modelBuilder.Entity<Task>()
-            .Property(t => t.Progress)
-            .HasColumnType("decimal(5,2)");
+            proj.HasOne(p => p.ResearchPaper)   // 1:1 Relationship
+            .WithOne(rp => rp.Project)
+            .HasForeignKey<ResearchPaper>(rp => rp.ProjectId)
+            .OnDelete(DeleteBehavior.Cascade);  //When delete Project - cascade ResearchPaper
+            //xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+            proj.HasMany(p => p.Members)
+            .WithOne(ur => ur.Project)
+            .HasForeignKey(ur => ur.ProjectId)
+            .OnDelete(DeleteBehavior.Restrict);
 
-        modelBuilder.Entity<Milestone>()
-            .Property(m => m.Cost)
-            .HasColumnType("money");
+            proj.HasMany(p => p.Milestones)
+            .WithOne(ms => ms.Project)
+            .HasForeignKey(ms => ms.ProjectId)
+            .OnDelete(DeleteBehavior.Restrict);
 
-        modelBuilder.Entity<Transaction>()
-            .Property(t => t.FeeCost)
-            .HasColumnType("money");
+            proj.HasMany(p => p.Evaluations)
+            .WithOne(e => e.Project)
+            .HasForeignKey(e => e.ProjectId)
+            .OnDelete(DeleteBehavior.Restrict);
 
-        modelBuilder.Entity<Transaction>()
-            .Property(t => t.TotalMoney)
-            .HasColumnType("money");
+            proj.HasMany(p => p.IndividualEvaluations)
+            .WithOne(ie => ie.Project)
+            .HasForeignKey(ie => ie.ProjectId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+            proj.HasMany(p => p.ProjectMajors)
+            .WithOne(pm => pm.Project)
+            .HasForeignKey(pm => pm.ProjectId)
+            .OnDelete(DeleteBehavior.Cascade); // When delete project - cascade ProjectMajors
+
+            proj.HasMany(p => p.ProjectTags)
+            .WithOne(pt => pt.Project)
+            .HasForeignKey(pt => pt.ProjectId)
+            .OnDelete(DeleteBehavior.Cascade);// When delete project - cascade ProjectTags
+
+            proj.HasMany(p => p.Documents)
+            .WithOne(d => d.Project)
+            .HasForeignKey(d => d.ProjectId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+            proj.HasMany(p => p.Transactions)
+            .WithOne(tra => tra.Project)
+            .HasForeignKey(tra => tra.ProjectId)
+            .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        //ProjectMajor
+        modelBuilder.Entity<ProjectMajor>(projMaj =>
+        {
+            //Compsite key
+            projMaj.HasKey(pm => new { pm.ProjectId, pm.MajorId });
+
+            projMaj.HasOne(pm => pm.Project)
+            .WithMany(p => p.ProjectMajors)
+            .HasForeignKey(pm => pm.ProjectId)
+            .OnDelete(DeleteBehavior.Cascade);// When delete project - cascade ProjectMajors
+
+            projMaj.HasOne(pm => pm.Major)
+            .WithMany(m => m.ProjectMajors)
+            .HasForeignKey(pm => pm.MajorId)
+            .OnDelete(DeleteBehavior.Cascade);// when delete Major - cascade in ProjectMajor
+        });
+
+        //ProjectTag
+        modelBuilder.Entity<ProjectTag>(projtag =>
+        {
+            projtag.HasOne(pt => pt.Project)
+            .WithMany(p => p.ProjectTags)
+            .HasForeignKey(pt => pt.ProjectId)
+            .OnDelete(DeleteBehavior.Cascade);// When delete project - cascade ProjectTags
+        });
+
+        //ResearchPaper
+        modelBuilder.Entity<ResearchPaper>(repa =>
+        {
+            repa.HasOne(rp => rp.Project)   // 1:1 Relationship
+            .WithOne(p => p.ResearchPaper)
+            .HasForeignKey<ResearchPaper>(rp => rp.ProjectId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+            repa.HasOne(rp => rp.PrincipalInvestigator)
+            .WithMany(ur => ur.ResearchPapers)
+            .HasForeignKey(mt => mt.PrincipalInvestigatorId)
+            .OnDelete(DeleteBehavior.Cascade); //When delete PrincipalInvestigator - cascade ResearchPapers
+        });
+
+        //Role
+        modelBuilder.Entity<Role>(rol =>
+        {
+            rol.HasMany(r => r.UserRoles)
+            .WithOne(ur => ur.Role)
+            .HasForeignKey(ur => ur.RoleId)
+            .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        //Signature
+        modelBuilder.Entity<Signature>(sign =>
+        {
+            sign.HasOne(s => s.Signer)
+            .WithMany(ur => ur.Signatures)
+            .HasForeignKey(s => s.SignerId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+            sign.HasOne(s => s.Document)
+            .WithMany(d => d.Signatures)
+            .HasForeignKey(s => s.DocumentId)
+            .OnDelete(DeleteBehavior.Restrict);
+            //xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+            sign.HasMany(s => s.Notifications)
+            .WithOne(n => n.Signature)
+            .HasForeignKey(n => n.SignatureId)
+            .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        //SystemConfiguration
+        modelBuilder.Entity<SystemConfiguration>(syscf =>
+        {
+            syscf.HasMany(sc => sc.Notifications)
+            .WithOne(n => n.SystemConfiguration)
+            .HasForeignKey(n => n.SystemConfigurationId)
+            .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        //Task
+        modelBuilder.Entity<Models.Task>(tas =>
+        {
+            //Config Specific ColumnType
+            tas.Property(t => t.Progress).HasColumnType("DECIMAL(5,2)");
+
+            tas.HasOne(t => t.Milestone)
+            .WithMany(m => m.Tasks)
+            .HasForeignKey(t => t.MilestoneId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+            tas.HasOne(t => t.Creator)
+            .WithMany(ur => ur.CreatedTasks)
+            .HasForeignKey(t => t.CreatorId)
+            .OnDelete(DeleteBehavior.Restrict);
+            //xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+            tas.HasMany(t => t.MemberTasks)
+            .WithOne(mt => mt.Task)
+            .HasForeignKey(mt => mt.TaskId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+            tas.HasMany(t => t.Notifications)
+            .WithOne(n => n.Task)
+            .HasForeignKey(n => n.TaskId)
+            .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        //Transaction
+        modelBuilder.Entity<Transaction>(tran =>
+        {
+            //Config Specific ColumnType
+            tran.Property(tr => tr.FeeCost).HasColumnType("MONEY");
+            tran.Property(tr => tr.TotalMoney).HasColumnType("MONEY");
+
+            tran.HasOne(htr => htr.HandlePerson)
+            .WithMany(ur => ur.HandleTransactions)
+            .HasForeignKey(htr => htr.HandlePersonId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+            tran.HasOne(rtr => rtr.RequestPerson)
+            .WithMany(ur => ur.RequestTransactions)
+            .HasForeignKey(rtr => rtr.RequestPersonId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+            tran.HasOne(tr => tr.Project)
+            .WithMany(ur => ur.Transactions)
+            .HasForeignKey(tr => tr.ProjectId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+            tran.HasOne(tr => tr.EvaluationStage)
+            .WithMany(ur => ur.Transactions)
+            .HasForeignKey(tr => tr.EvaluationStageId)
+            .OnDelete(DeleteBehavior.Restrict);
+            //xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+            tran.HasMany(tr => tr.Documents)
+            .WithOne(d => d.Transaction)
+            .HasForeignKey(d => d.TransactionId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+            tran.HasMany(tr => tr.Notifications)
+            .WithOne(n => n.Transaction)
+            .HasForeignKey(n => n.TransactionId)
+            .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        // UserRole
+        modelBuilder.Entity<UserRole>(user =>
+        {
+            user.HasOne(ur => ur.Account)
+            .WithMany(a => a.UserRoles)
+            .HasForeignKey(ur => ur.AccountId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+            user.HasOne(ur => ur.Role)
+            .WithMany(r => r.UserRoles)
+            .HasForeignKey(ur => ur.RoleId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+            user.HasOne(ur => ur.Project)
+            .WithMany(p => p.Members)
+            .HasForeignKey(ur => ur.ProjectId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+            user.HasOne(ur => ur.AppraisalCouncil)
+            .WithMany(apc => apc.CouncilMembers)
+            .HasForeignKey(ur => ur.AppraisalCouncilId)
+            .OnDelete(DeleteBehavior.Restrict);
+            //xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+            user.HasMany(ur => ur.UploadedDocuments)
+            .WithOne(d => d.Uploader)
+            .HasForeignKey(d => d.UploaderId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+            user.HasMany(ur => ur.Signatures)
+            .WithOne(s => s.Signer)
+            .HasForeignKey(s => s.SignerId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+            user.HasMany(ur => ur.ResearchPapers)
+            .WithOne(rsp => rsp.PrincipalInvestigator)
+            .HasForeignKey(rsp => rsp.PrincipalInvestigatorId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+            user.HasMany(ur => ur.IndividualEvaluations)
+            .WithOne(n => n.Reviewer)
+            .HasForeignKey(n => n.ReviewerId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+            user.HasMany(ur => ur.CreatedProjects)
+            .WithOne(p => p.Creator)
+            .HasForeignKey(p => p.CreatorId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+            user.HasMany(ur => ur.CreatedMilestones)
+            .WithOne(ms => ms.Creator)
+            .HasForeignKey(ms => ms.CreatorId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+            user.HasMany(ur => ur.CreatedTasks)
+            .WithOne(t => t.Creator)
+            .HasForeignKey(t => t.CreatorId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+            user.HasMany(ur => ur.MemberTasks)
+            .WithOne(n => n.Member)
+            .HasForeignKey(n => n.MemberId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+            user.HasMany(ur => ur.RequestTransactions)
+            .WithOne(n => n.RequestPerson)
+            .HasForeignKey(n => n.RequestPersonId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+            user.HasMany(ur => ur.HandleTransactions)
+            .WithOne(n => n.HandlePerson)
+            .HasForeignKey(n => n.HandlePersonId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+            user.HasMany(ur => ur.Notifications)
+            .WithOne(n => n.UserRole)
+            .HasForeignKey(n => n.UserRoleId)
+            .OnDelete(DeleteBehavior.Restrict);
+        });
     }
 }
