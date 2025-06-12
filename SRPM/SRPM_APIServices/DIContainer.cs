@@ -54,6 +54,7 @@ public static class DIContainer
 
     private static IServiceCollection InjectRepository(this IServiceCollection services)
     {
+        services.AddScoped<IUnitOfWork, UnitOfWork>();
         services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
         //---------------------------------------------------------------------------
         services.AddScoped<IAccountRepository, AccountRepository>();
