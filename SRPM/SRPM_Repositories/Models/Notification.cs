@@ -1,63 +1,39 @@
 ﻿using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
 
 namespace SRPM_Repositories.Models;
+
 public class Notification
 {
-    [Key]
-    public Guid Id { get; set; } = Guid.NewGuid();
+    [Key] public Guid Id { get; set; } = Guid.NewGuid();
 
-    [Required, MaxLength(255)]
-    public string Title { get; set; }= null!;
+    [Required, MaxLength(255)] public string Title { get; set; } = null!;
+    [Required, MaxLength(30)] public string Type { get; set; } = null!;
+    [Required] public bool IsGlobalSend { get; set; } = false;
+    [Required] public DateTime CreateDate { get; set; } = DateTime.Now;
+    [Required, MaxLength(30)] public string Status { get; set; } = "created";
 
-    [Required, MaxLength(30)]
-    public string Type { get; set; } = null!;
+    // Foreign keys
+    public virtual Guid? DocumentId { get; set; }
+    public virtual Guid? EvaluationId { get; set; }
+    public virtual Guid? EvaluationStageId { get; set; }
+    public virtual Guid? IndividualEvaluationId { get; set; }
+    public virtual Guid? MemberTaskId { get; set; }
+    public virtual Guid? SignatureId { get; set; }
+    public virtual Guid? TaskId { get; set; }
+    public virtual Guid? TransactionId { get; set; }
+    public virtual Guid? SystemConfigurationId { get; set; }
+    public virtual Guid? UserRoleId { get; set; }
 
-    [Required]
-    public bool IsGlobalSend { get; set; } = false;
-
-    [Required]
-    public DateTime CreateDate { get; set; } = DateTime.Now;
-
-    [Required, MaxLength(30)]
-    public string Status { get; set; } = "created";
-
-    // ========================[ Navigation properties ]========================
+    // Navigation properties
     public virtual ICollection<AccountNotification>? AccountNotifications { get; set; }
-    public Guid? TransactionId { get; set; }
-    [ForeignKey(nameof(TransactionId))]
-    public virtual Transaction? Transaction { get; set; }
-
-    public Guid? IndividualEvaluationId { get; set; }
-    [ForeignKey(nameof(IndividualEvaluationId))]
-    public virtual IndividualEvaluation? IndividualEvaluation { get; set; }
-
-    public Guid? EvaluationStageId { get; set; }
-
-    [ForeignKey(nameof(EvaluationStageId))]
-    public virtual EvaluationStage? EvaluationStage { get; set; }
-
-    public Guid? EvaluationId { get; set; }
-    [ForeignKey(nameof(EvaluationId))]
-    public virtual Evaluation? Evaluation { get; set; }
-
-    public Guid? UserId { get; set; }
-    [ForeignKey(nameof(UserId))]
-    public virtual UserRole? User { get; set; }
-
-    public Guid? DocumentId { get; set; }
-    [ForeignKey(nameof(DocumentId))]
     public virtual Document? Document { get; set; }
-
-    public Guid? MemberTaskId { get; set; }
-    [ForeignKey(nameof(MemberTaskId))]
+    public virtual Evaluation? Evaluation { get; set; }
+    public virtual EvaluationStage? EvaluationStage { get; set; }
+    public virtual IndividualEvaluation? IndividualEvaluation { get; set; }
     public virtual MemberTask? MemberTask { get; set; }
-
-    public Guid? TaskId { get; set; }
-    [ForeignKey(nameof(TaskId))]
+    public virtual Signature? Signature { get; set; }
     public virtual Task? Task { get; set; }
-
-    public Guid? SystemConfigurationId { get; set; }
-    [ForeignKey(nameof(SystemConfigurationId))]
+    public virtual Transaction? Transaction { get; set; }
     public virtual SystemConfiguration? SystemConfiguration { get; set; }
+    public virtual UserRole? UserRole { get; set; }//For group notification
 }

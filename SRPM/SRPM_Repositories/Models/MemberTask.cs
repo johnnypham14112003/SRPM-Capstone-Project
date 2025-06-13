@@ -1,33 +1,21 @@
 ﻿using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
 
 namespace SRPM_Repositories.Models;
+
 public class MemberTask
 {
-    public Guid Id { get; set; } = Guid.NewGuid();
+    [Key] public Guid Id { get; set; } = Guid.NewGuid();
 
-    [Required]
-    public Guid MemberId { get; set; }
-
-    [Required]
-    public Guid TaskId { get; set; }
-
-    [Required]
-    public DateTime JoinedAt { get; set; } = DateTime.UtcNow;
-
-    public DateTime? DeliveryDate { get; set; }
-
-    [Required]
-    [Column(TypeName = "decimal(5,2)")]
-    public decimal Progress { get; set; } = 0;
-
-    public int? Overdue { get; set; } = 0;
-
+    [Required] public decimal Progress { get; set; } = 0m;//100.00
+    [Required] public int Overdue { get; set; } = 0;
     public string? Note { get; set; }
+    public DateTime? DeliveryDate { get; set; }
+    [Required] public DateTime JoinedAt { get; set; } = DateTime.Now;
+    [Required, MaxLength(30)] public string Status { get; set; } = "created";
 
-    [Required]
-    [MaxLength(30)]
-    public string Status { get; set; } = "draft";
+    // Foreign keys
+    [Required] public Guid MemberId { get; set; }
+    [Required] public Guid TaskId { get; set; }
 
     // Navigation properties
     public virtual UserRole Member { get; set; } = null!;

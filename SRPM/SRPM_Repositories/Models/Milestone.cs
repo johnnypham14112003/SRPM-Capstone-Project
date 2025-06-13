@@ -1,38 +1,30 @@
 ﻿using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
 
 namespace SRPM_Repositories.Models;
+
 public class Milestone
 {
-    [Key]
-    public Guid Id { get; set; }
+    [Key] public Guid Id { get; set; }
 
-    [MaxLength(30)]
-    public string Code { get; set; } = null!;
-
-    [MaxLength(255)]
-    public string Name { get; set; } = null!;
-
+    [MaxLength(30)] public string Code { get; set; } = null!;
+    [MaxLength(255)] public string Title { get; set; } = null!;
     public string? Description { get; set; }
     public string? Objective { get; set; }
-    public decimal Cost { get; set; } = 0;
+    [Required] public decimal Cost { get; set; } = 0m; //suffix of specific assign data type
     public DateTime? StartDate { get; set; }
     public DateTime? EndDate { get; set; }
+    [Required] public string Type { get; set; } = "normal";// meeting
+    [Required] public DateTime CreatedAt { get; set; } = DateTime.Now;
+    [Required, MaxLength(30)] public string Status { get; set; } = "created";
 
-    public DateTime CreatedAt { get; set; }
+    // Foreign keys
+    [Required] public Guid ProjectId { get; set; }
+    [Required] public Guid CreatorId { get; set; }
 
-    [Required, MaxLength(30)]
-    public string Status { get; set; } = "draft";
-
-    [Required]
-    public Guid ProjectId { get; set; }
+    // Navigation properties
     public Project Project { get; set; } = null!;
-
-    [Required]
-    public Guid CreateBy { get; set; }
-    [ForeignKey("CreateBy")]
-    public UserRole CreateByAccount { get; set; } = null!;
-
-    public ICollection<Task>? Tasks { get; set; }
+    public UserRole Creator { get; set; } = null!;
     public ICollection<Evaluation>? Evaluations { get; set; }
+    public ICollection<IndividualEvaluation>? IndividualEvaluations { get; set; }
+    public ICollection<Task>? Tasks { get; set; }
 }
