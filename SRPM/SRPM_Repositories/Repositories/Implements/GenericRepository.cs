@@ -2,7 +2,7 @@
 using SRPM_Repositories.Repositories.Interfaces;
 using System.Linq.Expressions;
 
-namespace SRPM_Repositories.Repositories.Repositories;
+namespace SRPM_Repositories.Repositories.Implements;
 
 public class GenericRepository<T> : IGenericRepository<T> where T : class
 {

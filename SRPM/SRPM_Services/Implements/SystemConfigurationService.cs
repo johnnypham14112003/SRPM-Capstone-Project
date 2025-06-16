@@ -6,7 +6,7 @@ using SRPM_Services.BusinessModels.ResponseModels;
 using SRPM_Services.Extensions.Exceptions;
 using SRPM_Services.Interfaces;
 
-namespace SRPM_Services.Repositories;
+namespace SRPM_Services.Implements;
 public class SystemConfigurationService : ISystemConfigurationService
 {
     private readonly ISystemConfigurationRepository _systemConfigurationRepository;
@@ -40,7 +40,7 @@ public class SystemConfigurationService : ISystemConfigurationService
         var resultSys = await _systemConfigurationRepository.SaveChangeAsync();
 
         //Create Notification After Add SystemConfig
-        var (resultNoti, notiId) =await _notificationService.CreateNew(new RQ_Notification
+        var (resultNoti, notiId) = await _notificationService.CreateNew(new RQ_Notification
         {
             Title = "New System Configuration just added!",
             IsGlobalSend = true,

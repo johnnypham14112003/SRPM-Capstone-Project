@@ -1,4 +1,4 @@
-﻿using Mapster;
+using Mapster;
 using SRPM_Repositories.Models;
 using SRPM_Repositories.Repositories.Interfaces;
 using SRPM_Services.BusinessModels;
@@ -7,7 +7,7 @@ using SRPM_Services.BusinessModels.ResponseModels;
 using SRPM_Services.Extensions.Exceptions;
 using SRPM_Services.Interfaces;
 
-namespace SRPM_Services.Repositories;
+namespace SRPM_Services.Implements;
 public class NotificationService : INotificationService
 {
     private readonly INotificationRepository _notificationRepository;

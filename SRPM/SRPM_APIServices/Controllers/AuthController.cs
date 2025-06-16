@@ -6,6 +6,8 @@ using SRPM_Repositories.DTOs;
 using SRPM_Services.Interfaces;
 using System;
 using System.Threading.Tasks;
+using System.Security.Claims;
+using SRPM_Services.Implements;
 
 namespace SRPM_APIServices.Controllers
 {
@@ -14,10 +16,12 @@ namespace SRPM_APIServices.Controllers
     public class AuthController : ControllerBase
     {
         private readonly IAccountService _accountService;
+        private readonly ITokenService _tokenService;
 
-        public AuthController(IAccountService accountService)
+        public AuthController(IAccountService accountService, ITokenService tokenService)
         {
             _accountService = accountService;
+            _tokenService = tokenService;
         }
 
     //    [HttpPost("google-login")]
@@ -47,29 +51,52 @@ namespace SRPM_APIServices.Controllers
         return Challenge(properties, GoogleDefaults.AuthenticationScheme);
     }
 
-    // Callback endpoint once authentication is complete.
-    [HttpGet("google-response")]
-    public async Task<IActionResult> GoogleResponse(string returnUrl = "/")
-    {
-        // Perform the authentication (this triggers the OnCreatingTicket event configured in Program.cs)
-        var authenticateResult = await HttpContext.AuthenticateAsync(CookieAuthenticationDefaults.AuthenticationScheme);
-        if (!authenticateResult.Succeeded)
+        [HttpGet("google-response")]
+        public async Task<IActionResult> GoogleResponse(string returnUrl = "/")
         {
-            return Unauthorized("Google authentication failed.");
+            var user = HttpContext.User;
+
+            var email = user.FindFirst(ClaimTypes.Email)?.Value;
+            var name = user.FindFirst(ClaimTypes.Name)?.Value;
+            var avatarUrl = user.FindFirst("AvatarUrl")?.Value;
+
+            if (string.IsNullOrEmpty(email) || string.IsNullOrEmpty(name))
+            {
+                return BadRequest("Missing required information from Google account.");
+            }
+
+            var loginRequest = new GoogleLoginRQ
+            {
+                Email = email,
+                Name = name,
+                AvatarUrl = avatarUrl
+            };
+
+            var account = await _accountService.LoginWithGoogleAsync(loginRequest);
+
+            // Build minimal claims (expand if needed)
+            var claims = new List<Claim>
+    {
+        new Claim(ClaimTypes.NameIdentifier, account.Id.ToString()),
+        new Claim("Id", account.Id.ToString()),
+        new Claim("FullName", account.FullName ?? string.Empty),
+        new Claim("AvatarUrl", account.AvatarURL ?? string.Empty),
+        new Claim("Email", account.Email ?? string.Empty)
+    };
+
+            var token = _tokenService.GenerateJwtToken(claims);
+
+            return Ok(new
+            {
+                Token = token,
+                FullName = account.FullName,
+                AvatarUrl = account.AvatarURL,
+                Email = account.Email,
+                ReturnUrl = returnUrl
+            });
         }
 
-        // At this point the user is authenticated and the allowed email domain has been checked.
-        // You can access user claims via authenticateResult.Principal.
-        var email = authenticateResult.Principal.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value;
-        var name = authenticateResult.Principal.FindFirst(System.Security.Claims.ClaimTypes.Name)?.Value;
 
-        // Here you would call your AccountService (via DI) to create or update the account in your database.
-        // For example:
-        // var account = await _accountService.LoginWithGoogleAsync(new GoogleLoginRQ { Email = email, Name = name });
-        //
-        // For simplicity, we just return a success message with claims.
 
-        return Ok(new { Email = email, Name = name, ReturnUrl = returnUrl });
     }
-}
 }

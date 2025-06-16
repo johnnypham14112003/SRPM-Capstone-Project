@@ -1,34 +1,58 @@
+﻿using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.Google;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
+using Microsoft.IdentityModel.Tokens;
 using SRPM_APIServices;
 using SRPM_Repositories;
 using SRPM_Repositories.Repositories.Interfaces;
-using SRPM_Repositories.Repositories.Repositories;
+using SRPM_Repositories.Repositories.Implements;
+using System.Security.Claims;
+using System.Text;
+using SRPM_Services.Interfaces;
+using SRPM_Services.Implements;
 
 var builder = WebApplication.CreateBuilder(args);
+var config = builder.Configuration;
 
 // Add services to the container.
-builder.Services.RegisterServices(builder.Configuration);
+builder.Services.RegisterServices(config);
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 builder.Services.AddAuthentication(options =>
 {
-    options.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme; // for persistence
-    options.DefaultChallengeScheme = GoogleDefaults.AuthenticationScheme; // for external login
+    options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultAuthenticateScheme = CookieAuthenticationDefaults.AuthenticationScheme; ;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultSignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
 })
-.AddCookie()
-.AddGoogle(googleOptions =>
+.AddJwtBearer(options =>
 {
-    // These values should be stored in configuration (appsettings.json or secrets)
+    options.TokenValidationParameters = new TokenValidationParameters
+    {
+        ValidateIssuer = true,
+        ValidIssuer = config["Jwt:Issuer"],
+        ValidateAudience = true,
+        ValidAudience = config["Jwt:Audience"],
+        ValidateLifetime = true,
+        IssuerSigningKey = new SymmetricSecurityKey(
+            Encoding.UTF8.GetBytes(config["Jwt:Key"]))
+    };
+})
+.AddCookie("Cookies")
+.AddGoogle(GoogleDefaults.AuthenticationScheme, googleOptions =>
+{
     googleOptions.ClientId = builder.Configuration["Authentication:Google:ClientId"];
     googleOptions.ClientSecret = builder.Configuration["Authentication:Google:ClientSecret"];
+    googleOptions.Scope.Add("profile");
+    googleOptions.Scope.Add("email");
+    googleOptions.ClaimActions.MapJsonKey("AvatarUrl", "picture");
 
-    // Event to check allowed email domain
-    googleOptions.Events.OnCreatingTicket = context =>
+    googleOptions.Events.OnCreatingTicket = async context =>
     {
         var emailClaim = context.Identity.FindFirst(System.Security.Claims.ClaimTypes.Email);
         if (emailClaim is null)
@@ -45,10 +69,23 @@ builder.Services.AddAuthentication(options =>
             throw new UnauthorizedAccessException($"Email must end with {expectedDomain}.");
         }
 
-        // Optionally, you can also capture additional claims and add them to the principal here.
-        return Task.CompletedTask;
+        // **Extract additional claims (avatar, name, etc.)**
+        var pictureClaim = context.Identity.FindFirst("picture")?.Value;
+        var nameClaim = context.Identity.FindFirst(System.Security.Claims.ClaimTypes.Name)?.Value;
+
+        if (pictureClaim != null)
+        {
+            context.Identity.AddClaim(new System.Security.Claims.Claim("AvatarUrl", pictureClaim));
+        }
+        if (nameClaim != null)
+        {
+            context.Identity.AddClaim(new System.Security.Claims.Claim("FullName", nameClaim));
+        }
+
     };
 });
+
+
 
 var app = builder.Build();
 

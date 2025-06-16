@@ -2,10 +2,11 @@
 using SRPM_Repositories.Repositories.Interfaces;
 
 namespace SRPM_Repositories.Repositories.Implements;
-public class EvaluationStageRepository : GenericRepository<EvaluationStage>, IEvaluationStageRepository
+
+public class ProjectMajorRepository : GenericRepository<ProjectMajor>, IProjectMajorRepository
 {
     private readonly SRPMDbContext _context;
-    public EvaluationStageRepository(SRPMDbContext context) : base(context)
+    public ProjectMajorRepository(SRPMDbContext context) : base(context)
     {
         _context = context;
     }

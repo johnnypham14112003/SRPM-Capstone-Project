@@ -49,10 +49,13 @@ public class SRPMDbContext : DbContext
         return configuration["ConnectionStrings:DefaultConnection"]!;
     }
 
+    /**/
+    // Comment Method OnConfiguring(...) after migration to avoid conflic in Dependency Injection
+    /* ============================================================================================== */
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-    {
-        if (!optionsBuilder.IsConfigured) optionsBuilder.UseSqlServer(GetConnectionString());
-    }
+        => optionsBuilder.UseSqlServer(GetConnectionString());
+    /* ============================================================================================== */
+    /**/
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

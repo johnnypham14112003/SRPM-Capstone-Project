@@ -1,5 +1,5 @@
 ﻿using SRPM_Repositories.Models;
-using SRPM_Repositories.Repositories.Repositories;
+using SRPM_Repositories.Repositories.Implements;
 
 namespace SRPM_Repositories.Repositories.Interfaces;
 public interface IAccountNotificationRepository : IGenericRepository<AccountNotification>

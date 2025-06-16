@@ -5,12 +5,15 @@ using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json.Serialization;
 using SRPM_Repositories;
 using SRPM_Repositories.Repositories.Interfaces;
-using SRPM_Repositories.Repositories.Repositories;
 using SRPM_Services.BusinessModels.ResponseModels;
 using SRPM_Services.Extensions;
 using SRPM_Services.Interfaces;
-using SRPM_Services.Repositories;
 using SRPM_Services.Extensions.Mapster;
+using SRPM_Services.Implements;
+using SRPM_Repositories.Repositories.Implements;
+using Microsoft.OpenApi.Models;
+using SRPM_Repositories.Models;
+using SRPM_Services.BusinessModels.RequestModels;
 
 namespace SRPM_APIServices;
 
@@ -26,6 +29,7 @@ public static class DIContainer
         services.ConfigKebabCase();
         services.ConfigMapster();
         services.ConfigJsonLoopDeserielize();
+        services.InjectSwagger();
 
 
         //Third Party Services
@@ -48,6 +52,11 @@ public static class DIContainer
         services.AddScoped<IAccountService, AccountService>();
         services.AddScoped<ISystemConfigurationService, SystemConfigurationService>();
         services.AddScoped<INotificationService, NotificationService>();
+        services.AddScoped<ITokenService, TokenService>();
+        services.AddScoped<IEvaluationService, EvaluationService>();
+        services.AddScoped<IEvaluationStageService, EvaluationStageService>();
+        services.AddScoped<IIndividualEvaluationService, IndividualEvaluationService>();
+
         //Add other BusinessServices here...
 
         return services;
@@ -70,6 +79,16 @@ public static class DIContainer
         services.AddScoped<ITaskRepository, TaskRepository>();
         services.AddScoped<ITransactionRepository, TransactionRepository>();
         services.AddScoped<IUserRoleRepository, UserRoleRepository>();
+        services.AddScoped<IMajorRepository, MajorRepository>();
+        services.AddScoped<IMilestoneRepository, MilestoneRepository>();
+        services.AddScoped<IOTPCodeRepository, OTPCodeRepository>();
+        services.AddScoped<IProjectRepository, ProjectRepository>();
+        services.AddScoped<IProjectMajorRepository, ProjectMajorRepository>();
+        services.AddScoped<IProjectTagRepository, ProjectTagRepository>();
+        services.AddScoped<IResearchPaperRepository, ResearchPaperRepository>();
+        services.AddScoped<IRoleRepository, RoleRepository>();
+        services.AddScoped<ISignatureRepository, SignatureRepository>();
+
         //Add other repository here...
 
         return services;
@@ -165,6 +184,42 @@ public static class DIContainer
             .Map(dest => dest.AccountId, src => src.AccountId)
             .Map(dest => dest.TypeObjectId, src => MapsterConfigMethods.GetTypeObjectIdByType(src.Notification));
 
+        TypeAdapterConfig<RQ_Evaluation, Evaluation>.NewConfig()
+            .Ignore(dest => dest.Id)
+            .Ignore(dest => dest.Code)
+            .Ignore(dest => dest.CreateDate)
+            .Ignore(dest => dest.Status)
+            .Ignore(dest => dest.Documents)
+            .Ignore(dest => dest.EvaluationStages)
+            .Ignore(dest => dest.Notifications)
+            .IgnoreNullValues(true);
+        TypeAdapterConfig<Evaluation, RS_Evaluation>.NewConfig();
+
+        TypeAdapterConfig<RQ_EvaluationStage, EvaluationStage>.NewConfig()
+            .Ignore(dest => dest.Id)
+            .Ignore(dest => dest.Transactions)
+            .Ignore(dest => dest.IndividualEvaluations)
+            .Ignore(dest => dest.Notifications)
+            .Ignore(dest => dest.AppraisalCouncil)
+            .Ignore(dest => dest.Evaluation)
+            .IgnoreNullValues(true);
+
+        
+        TypeAdapterConfig<EvaluationStage, RS_EvaluationStage>.NewConfig();
+
+        TypeAdapterConfig<RQ_IndividualEvaluation, IndividualEvaluation>.NewConfig()
+            .Ignore(dest => dest.Id)
+            .Ignore(dest => dest.SubmittedAt)
+            .Ignore(dest => dest.Notifications)
+            .Ignore(dest => dest.Documents)
+            .Ignore(dest => dest.Project)
+            .Ignore(dest => dest.Milestone)
+            .Ignore(dest => dest.Reviewer)
+            .Ignore(dest => dest.EvaluationStage)
+            .IgnoreNullValues(true); // supports partial updates
+
+        TypeAdapterConfig<IndividualEvaluation, RS_IndividualEvaluation>.NewConfig();
+
         return services;
     }
     
@@ -181,6 +236,46 @@ public static class DIContainer
     private static IServiceCollection ConfigCORS(this IServiceCollection services)
     {
         services.AddCors(options => options.AddPolicy("AllowAll", b => b.AllowAnyHeader().AllowAnyOrigin().AllowAnyMethod()));
+        return services;
+    }
+    public static IServiceCollection InjectSwagger(this IServiceCollection services)
+    {
+        services.AddSwaggerGen(c =>
+        {
+            c.SwaggerDoc("v1", new OpenApiInfo
+            {
+                Version = "v1",
+                Title = "API"
+            });
+
+            c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+            {
+                In = ParameterLocation.Header,
+                Description = "JWT Authorization header sử dụng scheme Bearer.",
+                Name = "Authorization",
+                Type = SecuritySchemeType.Http,
+                Scheme = "bearer"
+            });
+
+            c.AddSecurityRequirement(new OpenApiSecurityRequirement
+            {
+                {
+                    new OpenApiSecurityScheme
+                    {
+                        Reference = new OpenApiReference
+                        {
+                            Type = ReferenceType.SecurityScheme,
+                            Id = "Bearer"
+                        },
+                        Scheme = "oauth2",
+                        Name = "Bearer",
+                        In = ParameterLocation.Header
+                    },
+                    new List<string>()
+                }
+            });
+        });
+
         return services;
     }
 }

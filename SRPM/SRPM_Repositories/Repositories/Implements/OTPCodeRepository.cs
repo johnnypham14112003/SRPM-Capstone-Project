@@ -2,10 +2,11 @@
 using SRPM_Repositories.Repositories.Interfaces;
 
 namespace SRPM_Repositories.Repositories.Implements;
-public class EvaluationStageRepository : GenericRepository<EvaluationStage>, IEvaluationStageRepository
+
+public class OTPCodeRepository : GenericRepository<OTPCode>, IOTPCodeRepository
 {
     private readonly SRPMDbContext _context;
-    public EvaluationStageRepository(SRPMDbContext context) : base(context)
+    public OTPCodeRepository(SRPMDbContext context) : base(context)
     {
         _context = context;
     }

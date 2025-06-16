@@ -1,6 +1,6 @@
 ﻿using SRPM_Repositories.Repositories.Interfaces;
 
-namespace SRPM_Repositories.Repositories.Repositories;
+namespace SRPM_Repositories.Repositories.Implements;
 public class TaskRepository : GenericRepository<Models.Task>, ITaskRepository
 {
     private readonly SRPMDbContext _context;

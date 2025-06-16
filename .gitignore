@@ -799,3 +799,4 @@ FodyWeavers.xsd
 
 # Custom Ignore
 /SRPM/SRPM_Repositories/Migrations/
+SRPM/SRPM_APIServices/appsettings.json

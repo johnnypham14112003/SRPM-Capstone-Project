@@ -1,6 +1,7 @@
 ﻿using SRPM_Repositories.Repositories.Interfaces;
+using SRPM_Repositories.Repositories.Implements;
 
-namespace SRPM_Repositories.Repositories.Repositories;
+namespace SRPM_Repositories.Repositories.Implements;
 
 public class UnitOfWork : IUnitOfWork
 {
@@ -18,6 +19,16 @@ public class UnitOfWork : IUnitOfWork
     private readonly Lazy<ITaskRepository> _taskRepository;
     private readonly Lazy<ITransactionRepository> _transactionRepository;
     private readonly Lazy<IUserRoleRepository> _userRoleRepository;
+    private readonly Lazy<IMajorRepository> _majorRepository;
+    private readonly Lazy<IMilestoneRepository> _milestoneRepository;
+    private readonly Lazy<IOTPCodeRepository> _otpCodeRepository;
+    private readonly Lazy<IProjectRepository> _projectRepository;
+    private readonly Lazy<IProjectMajorRepository> _projectMajorRepository;
+    private readonly Lazy<IProjectTagRepository> _projectTagRepository;
+    private readonly Lazy<IResearchPaperRepository> _researchPaperRepository;
+    private readonly Lazy<IRoleRepository> _roleRepository;
+    private readonly Lazy<ISignatureRepository> _signatureRepository;
+
 
     //======================================================================================
     //Constructor
@@ -59,6 +70,34 @@ public class UnitOfWork : IUnitOfWork
 
         _userRoleRepository = new Lazy<IUserRoleRepository>
             (() => new UserRoleRepository(context));
+
+        _majorRepository = new Lazy<IMajorRepository>
+            (() => new MajorRepository(context));
+
+        _milestoneRepository = new Lazy<IMilestoneRepository>
+            (() => new MilestoneRepository(context));
+
+        _otpCodeRepository = new Lazy<IOTPCodeRepository>
+            (() => new OTPCodeRepository(context));
+
+        _projectRepository = new Lazy<IProjectRepository>
+            (() => new ProjectRepository(context));
+
+        _projectMajorRepository = new Lazy<IProjectMajorRepository>
+            (() => new ProjectMajorRepository(context));
+
+        _projectTagRepository = new Lazy<IProjectTagRepository>
+            (() => new ProjectTagRepository(context));
+
+        _researchPaperRepository = new Lazy<IResearchPaperRepository>
+            (() => new ResearchPaperRepository(context));
+
+        _roleRepository = new Lazy<IRoleRepository>
+            (() => new RoleRepository(context));
+
+        _signatureRepository = new Lazy<ISignatureRepository>
+            (() => new SignatureRepository(context));
+
     }
 
     //======================================================================================
@@ -90,4 +129,23 @@ public class UnitOfWork : IUnitOfWork
         => _transactionRepository.Value;
     public IUserRoleRepository GetUserRoleRepository()
         => _userRoleRepository.Value;
+    public IMajorRepository GetMajorRepository()
+    => _majorRepository.Value;
+    public IMilestoneRepository GetMilestoneRepository()
+        => _milestoneRepository.Value;
+    public IOTPCodeRepository GetOTPCodeRepository()
+        => _otpCodeRepository.Value;
+    public IProjectRepository GetProjectRepository()
+        => _projectRepository.Value;
+    public IProjectMajorRepository GetProjectMajorRepository()
+        => _projectMajorRepository.Value;
+    public IProjectTagRepository GetProjectTagRepository()
+        => _projectTagRepository.Value;
+    public IResearchPaperRepository GetResearchPaperRepository()
+        => _researchPaperRepository.Value;
+    public IRoleRepository GetRoleRepository()
+        => _roleRepository.Value;
+    public ISignatureRepository GetSignatureRepository()
+        => _signatureRepository.Value;
+
 }
