@@ -7,11 +7,16 @@ public class UnitOfWork : IUnitOfWork
 {
     //Declare DI
     private readonly SRPMDbContext _context;
-    private readonly Lazy<IAccountRepository> _accountRepository;//Lazy (initial when needed)
+    //Lazy (initial when needed)
     private readonly Lazy<IAccountNotificationRepository> _accountNotificationRepository;
+    private readonly Lazy<IAccountRepository> _accountRepository;
+    private readonly Lazy<IAppraisalCouncilRepository> _appraisalCouncilRepository;
+    private readonly Lazy<IContentTableRepository> _contentTableRepository;
+    private readonly Lazy<IDocumentFieldRepository> _documentFieldRepository;
     private readonly Lazy<IDocumentRepository> _documentRepository;
     private readonly Lazy<IEvaluationRepository> _evaluationRepository;
     private readonly Lazy<IEvaluationStageRepository> _evaluationStageRepository;
+    private readonly Lazy<IFieldContentRepository> _fieldContentRepository;
     private readonly Lazy<IIndividualEvaluationRepository> _individualEvaluationRepository;
     private readonly Lazy<IMemberTaskRepository> _memberTaskRepository;
     private readonly Lazy<INotificationRepository> _notificationRepository;
@@ -41,6 +46,15 @@ public class UnitOfWork : IUnitOfWork
         _accountRepository = new Lazy<IAccountRepository>
             (() => new AccountRepository(context));
 
+        _appraisalCouncilRepository = new Lazy<IAppraisalCouncilRepository>
+            (() => new AppraisalCouncilRepository(context));
+
+        _contentTableRepository = new Lazy<IContentTableRepository>
+            (() => new ContentTableRepository(context));
+
+        _documentFieldRepository = new Lazy<IDocumentFieldRepository>
+            (() => new DocumentFieldRepository(context));
+
         _documentRepository = new Lazy<IDocumentRepository>
             (() => new DocumentRepository(context));
 
@@ -49,6 +63,9 @@ public class UnitOfWork : IUnitOfWork
 
         _evaluationStageRepository = new Lazy<IEvaluationStageRepository>
             (() => new EvaluationStageRepository(context));
+
+        _fieldContentRepository = new Lazy<IFieldContentRepository>
+            (() => new FieldContentRepository(context));
 
         _individualEvaluationRepository = new Lazy<IIndividualEvaluationRepository>
             (() => new IndividualEvaluationRepository(context));
@@ -109,12 +126,20 @@ public class UnitOfWork : IUnitOfWork
         => _accountNotificationRepository.Value;
     public IAccountRepository GetAccountRepository()
         => _accountRepository.Value;
+    public IAppraisalCouncilRepository GetAppraisalCouncilRepository()
+        => _appraisalCouncilRepository.Value;
+    public IContentTableRepository GetContentTableRepository()
+        => _contentTableRepository.Value;
+    public IDocumentFieldRepository GetDocumentFieldRepository()
+        => _documentFieldRepository.Value;
     public IDocumentRepository GetDocumentRepository()
         => _documentRepository.Value;
     public IEvaluationRepository GetEvaluationRepository()
         => _evaluationRepository.Value;
     public IEvaluationStageRepository GetEvaluationStageRepository()
         => _evaluationStageRepository.Value;
+    public IFieldContentRepository GetFieldContentRepository()
+        => _fieldContentRepository.Value;
     public IIndividualEvaluationRepository GetIndividualEvaluationRepository()
         => _individualEvaluationRepository.Value;
     public IMemberTaskRepository GetMemberTaskRepository()

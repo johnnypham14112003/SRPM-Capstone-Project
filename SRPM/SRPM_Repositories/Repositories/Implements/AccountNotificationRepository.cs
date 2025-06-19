@@ -18,66 +18,59 @@ public class AccountNotificationRepository : GenericRepository<AccountNotificati
             .ToListAsync();
     }
 
-    public async Task<(List<NotificationWithReadStatus>? listNotificationWithStatus, int totalCount, bool isError)> ListAccountNotification
+    public async Task<(List<NotificationWithReadStatus>? listNotificationWithStatus, int totalCount)> ListAccountNotification
         (Guid accountId, string? keyWord, DateTime? fromDate, DateTime? toDate,
         bool isRead, string? type, string? status, int pageIndex, int pageSize)
     {
-        try
-        {
-            var query = _context.AccountNotification
-                .Include(an => an.Notification)
-                .Where(an => an.AccountId == accountId)
-                .AsNoTracking()
-                .AsQueryable();
+        var query = _context.AccountNotification
+            .Include(an => an.Notification)
+            .Where(an => an.AccountId == accountId)
+            .AsNoTracking()
+            .AsQueryable();
 
-            // ===========================[ Apply Search ]===========================
-            //Title Filter
-            if (!string.IsNullOrWhiteSpace(keyWord))
-                query = query.Where(an => an.Notification.Title.ToLower().Contains(keyWord.ToLower()));
+        // ===========================[ Apply Search ]===========================
+        //Title Filter
+        if (!string.IsNullOrWhiteSpace(keyWord))
+            query = query.Where(an => an.Notification.Title.ToLower().Contains(keyWord.ToLower()));
 
-            // IsRead Filter
-            //* If only show all unread then isRead == false / else will show combine
-            if (isRead == false) query = query.Where(an => an.IsRead == false);
+        // IsRead Filter
+        //* If only show all unread then isRead == false / else will show combine
+        if (isRead == false) query = query.Where(an => an.IsRead == false);
 
-            // Type Filter
-            // If not null => Show only notification of a type / else show all
-            if (!string.IsNullOrWhiteSpace(type))
-                query = query.Where(an => an.Notification.Type.ToLower().Equals(type.ToLower()));
+        // Type Filter
+        // If not null => Show only notification of a type / else show all
+        if (!string.IsNullOrWhiteSpace(type))
+            query = query.Where(an => an.Notification.Type.ToLower().Equals(type.ToLower()));
 
-            //Status Filter
-            if (!string.IsNullOrWhiteSpace(status))
-                query = query.Where(an => an.Notification.Status.ToLower().Equals(status.ToLower()));
+        //Status Filter
+        if (!string.IsNullOrWhiteSpace(status))
+            query = query.Where(an => an.Notification.Status.ToLower().Equals(status.ToLower()));
 
-            //Date Filter
-            if (fromDate.HasValue)
-                query = query.Where(an => an.Notification.CreateDate >= fromDate.Value);
-            if (toDate.HasValue)
-                query = query.Where(an => an.Notification.CreateDate <= toDate.Value);
+        //Date Filter
+        if (fromDate.HasValue)
+            query = query.Where(an => an.Notification.CreateDate >= fromDate.Value);
+        if (toDate.HasValue)
+            query = query.Where(an => an.Notification.CreateDate <= toDate.Value);
 
-            // Sort by Date (Newer come first)
-            query = query.OrderByDescending(an => an.Notification.CreateDate);
+        // Sort by Date (Newer come first)
+        query = query.OrderByDescending(an => an.Notification.CreateDate);
 
-            // Sum notification of a user
-            int sumAccNoti = await query.CountAsync();
+        // Sum notification of a user
+        int sumAccNoti = await query.CountAsync();
 
-            // ===========================[ Apply paging ]===========================
-            var pagedList = await query
-                .Skip((pageIndex - 1) * pageSize)
-                .Take(pageSize)
-                .Select(an => new NotificationWithReadStatus
-                {
-                    Notification = an.Notification,
-                    AccountId = accountId,
-                    IsRead = an.IsRead
-                })
-                .ToListAsync();
+        // ===========================[ Apply paging ]===========================
+        var pagedList = await query
+            .Skip((pageIndex - 1) * pageSize)
+            .Take(pageSize)
+            .Select(an => new NotificationWithReadStatus
+            {
+                Notification = an.Notification,
+                AccountId = accountId,
+                IsRead = an.IsRead
+            })
+            .ToListAsync();
 
-            return (pagedList, sumAccNoti, false);
-        }
-        catch (Exception)
-        {
-            return (null, 0, true);
-        }
+        return (pagedList, sumAccNoti);
     }
 }
 

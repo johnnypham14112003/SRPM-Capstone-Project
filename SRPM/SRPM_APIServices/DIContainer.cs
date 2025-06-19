@@ -1,19 +1,21 @@
 ﻿using Mapster;
 using Microsoft.AspNetCore.Mvc.ApplicationModels;
+using Microsoft.AspNetCore.Mvc.Razor.RuntimeCompilation;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.FileProviders;
 using Newtonsoft.Json.Serialization;
 using SRPM_Repositories;
+using SRPM_Repositories.Models;
 using SRPM_Repositories.Repositories.Interfaces;
+using SRPM_Services.BusinessModels.RequestModels;
 using SRPM_Services.BusinessModels.ResponseModels;
 using SRPM_Services.Extensions;
-using SRPM_Services.Interfaces;
+using SRPM_Services.Extensions.FluentEmail;
 using SRPM_Services.Extensions.Mapster;
+using SRPM_Services.Interfaces;
 using SRPM_Services.Implements;
 using SRPM_Repositories.Repositories.Implements;
 using Microsoft.OpenApi.Models;
-using SRPM_Repositories.Models;
-using SRPM_Services.BusinessModels.RequestModels;
 
 namespace SRPM_APIServices;
 
@@ -33,6 +35,8 @@ public static class DIContainer
 
 
         //Third Party Services
+        services.ConfigFluentEmail(configuration);
+        services.ConfigRazorTemplate(configuration);
         //...
 
         return services;
@@ -56,7 +60,11 @@ public static class DIContainer
         services.AddScoped<IEvaluationService, EvaluationService>();
         services.AddScoped<IEvaluationStageService, EvaluationStageService>();
         services.AddScoped<IIndividualEvaluationService, IndividualEvaluationService>();
+        services.AddScoped<IAppraisalCouncilService, AppraisalCouncilService>();
+        services.AddScoped<ITransactionService, TransactionService>();
+        services.AddScoped<IDocumentService, DocumentService>();
 
+        services.AddScoped<IEmailService, EmailService>();
         //Add other BusinessServices here...
 
         return services;
@@ -172,6 +180,10 @@ public static class DIContainer
             .Map(dest => dest.Freelancer, src => new Account { Id = src.FreeLancerId });
         */
 
+        //Skip null data (suitable for Patch API)
+        TypeAdapterConfig<RQ_AppraisalCouncil, AppraisalCouncil>.NewConfig().IgnoreNullValues(true);
+        TypeAdapterConfig<RQ_SystemConfiguration, SystemConfiguration>.NewConfig().IgnoreNullValues(true);
+
         // Config NotificationWithReadStatus -> RS_AccountNotification
         TypeAdapterConfig<NotificationWithReadStatus, RS_AccountNotification>.NewConfig()
             .Map(dest => dest.Id, src => src.Notification.Id)
@@ -222,7 +234,6 @@ public static class DIContainer
 
         return services;
     }
-    
 
     private static IServiceCollection ConfigJsonLoopDeserielize(this IServiceCollection services)
     {
@@ -275,7 +286,33 @@ public static class DIContainer
                 }
             });
         });
+        return services;
+    }
 
+
+    private static IServiceCollection ConfigFluentEmail(this IServiceCollection services, IConfiguration configuration)
+    {
+        string defaultFromEmail = configuration["FluentEmail:Address"]!;
+
+        string host = configuration["FluentEmail:Host"]!;
+        int port = int.Parse(configuration["FluentEmail:Port"]!);
+        string username = configuration["FluentEmail:Address"]!;
+        string password = configuration["FluentEmail:AppPassword"]!;
+        services.AddFluentEmail(defaultFromEmail).AddSmtpSender(host, port, username, password);
+        return services;
+    }
+    private static IServiceCollection ConfigRazorTemplate(this IServiceCollection services, IConfiguration configuration)
+    {
+        services.AddMvcCore().AddRazorRuntimeCompilation();
+        services.Configure<MvcRazorRuntimeCompilationOptions>(opts =>
+        {
+            opts.FileProviders.Add(
+                new PhysicalFileProvider(
+                    Path.Combine(AppContext.BaseDirectory, "Extensions", "FluentEmail", "UIEmail")
+                )
+            );
+        });
+        services.AddRazorTemplating();
         return services;
     }
 }

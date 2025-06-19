@@ -2,6 +2,7 @@
 using SRPM_Repositories.Repositories.Interfaces;
 
 namespace SRPM_Repositories.Repositories.Implements;
+
 public class EvaluationStageRepository : GenericRepository<EvaluationStage>, IEvaluationStageRepository
 {
     private readonly SRPMDbContext _context;
