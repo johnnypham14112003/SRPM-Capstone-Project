@@ -1,6 +1,6 @@
 ﻿using System.Security.Claims;
 
-namespace SRPM_Services.Implements
+namespace SRPM_Services.Interfaces
 {
     public interface ITokenService
     {

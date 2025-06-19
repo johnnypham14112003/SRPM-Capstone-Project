@@ -1,11 +1,11 @@
 ﻿using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
-using SRPM_Services.Implements;
+using SRPM_Services.Interfaces;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 
-namespace SRPM_Services.Interfaces
+namespace SRPM_Services.Implements
 {
     public class TokenService : ITokenService
     {
