@@ -216,9 +216,40 @@ public static class DIContainer
             .Ignore(dest => dest.Milestone)
             .Ignore(dest => dest.Reviewer)
             .Ignore(dest => dest.EvaluationStage)
-            .IgnoreNullValues(true); // supports partial updates
+            .IgnoreNullValues(true); 
 
         TypeAdapterConfig<IndividualEvaluation, RS_IndividualEvaluation>.NewConfig();
+        
+        TypeAdapterConfig<RQ_Project, Project>.NewConfig()
+            .Ignore(dest => dest.Id)
+            .Ignore(dest => dest.CreatedAt)
+            .Ignore(dest => dest.UpdatedAt)
+            .Ignore(dest => dest.Creator)
+            .Ignore(dest => dest.ResearchPaper)
+            .Ignore(dest => dest.Members)
+            .Ignore(dest => dest.Milestones)
+            .Ignore(dest => dest.Evaluations)
+            .Ignore(dest => dest.IndividualEvaluations)
+            .Ignore(dest => dest.Documents)
+            .Ignore(dest => dest.ProjectMajors)
+            .Ignore(dest => dest.ProjectTags)
+            .Ignore(dest => dest.Transactions)
+            .IgnoreNullValues(true);
+
+        TypeAdapterConfig<Project, RS_Project>.NewConfig();
+        TypeAdapterConfig<RQ_ProjectMajor, ProjectMajor>.NewConfig()
+            .Ignore(dest => dest.Project)
+            .Ignore(dest => dest.Major);
+
+        TypeAdapterConfig<ProjectMajor, RS_ProjectMajor>.NewConfig();
+        TypeAdapterConfig<RQ_Major, Major>.NewConfig()
+            .Ignore(dest => dest.Id)
+            .Ignore(dest => dest.Field)
+            .Ignore(dest => dest.Accounts)
+            .Ignore(dest => dest.ProjectMajors)
+            .IgnoreNullValues(true);
+
+        TypeAdapterConfig<Major, RS_Major>.NewConfig();
 
         return services;
     }

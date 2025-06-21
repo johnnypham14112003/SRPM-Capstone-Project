@@ -1,0 +1,72 @@
+﻿using Mapster;
+using SRPM_Repositories.Models;
+using SRPM_Repositories.Repositories.Interfaces;
+using SRPM_Services.BusinessModels.RequestModels;
+using SRPM_Services.BusinessModels.ResponseModels;
+using SRPM_Services.Interfaces;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace SRPM_Services.Implements
+{
+    public class ProjectMajorService : IProjectMajorService
+    {
+        private readonly IUnitOfWork _unitOfWork;
+
+        public ProjectMajorService(IUnitOfWork unitOfWork)
+        {
+            _unitOfWork = unitOfWork;
+        }
+
+        public async Task<List<RS_ProjectMajor>> GetMajorsByProjectIdAsync(Guid projectId)
+        {
+            var list = await _unitOfWork.GetProjectMajorRepository()
+                .GetListAsync(pm => pm.ProjectId == projectId, hasTrackings: false);
+
+            return list.Adapt<List<RS_ProjectMajor>>();
+        }
+
+        public async Task<RS_ProjectMajor> CreateAsync(RQ_ProjectMajor request)
+        {
+            var entity = request.Adapt<ProjectMajor>();
+
+            await _unitOfWork.GetProjectMajorRepository().AddAsync(entity);
+            await _unitOfWork.SaveChangesAsync();
+
+            return entity.Adapt<RS_ProjectMajor>();
+        }
+
+        public async Task<RS_ProjectMajor?> UpdateAsync(Guid projectId, Guid majorId, RQ_ProjectMajor request)
+        {
+            var repo = _unitOfWork.GetProjectMajorRepository();
+            var entity = await repo.GetOneAsync(pm =>
+                pm.ProjectId == projectId && pm.MajorId == majorId);
+
+            if (entity == null) return null;
+
+            request.Adapt(entity);
+            await repo.UpdateAsync(entity);
+            await _unitOfWork.SaveChangesAsync();
+
+            return entity.Adapt<RS_ProjectMajor>();
+        }
+
+        public async Task<bool> DeleteAsync(Guid projectId, Guid majorId)
+        {
+            var repo = _unitOfWork.GetProjectMajorRepository();
+            var entity = await repo.GetOneAsync(pm =>
+                pm.ProjectId == projectId && pm.MajorId == majorId);
+
+            if (entity == null) return false;
+
+            await repo.DeleteAsync(entity);
+            await _unitOfWork.SaveChangesAsync();
+
+            return true;
+        }
+    }
+
+}
