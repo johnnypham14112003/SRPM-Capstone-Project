@@ -14,6 +14,7 @@ using SRPM_Repositories.Repositories.Implements;
 using Microsoft.OpenApi.Models;
 using SRPM_Repositories.Models;
 using SRPM_Services.BusinessModels.RequestModels;
+using SRPM_Services.Extensions.Enumerables;
 
 namespace SRPM_APIServices;
 
@@ -55,7 +56,13 @@ public static class DIContainer
         services.AddScoped<ITokenService, TokenService>();
         services.AddScoped<IEvaluationService, EvaluationService>();
         services.AddScoped<IEvaluationStageService, EvaluationStageService>();
+        services.AddScoped<IProjectService, ProjectService>();
+        services.AddScoped<IProjectTagService, ProjectTagService>();
+        services.AddScoped<IRoleService, RoleService>();
+        services.AddScoped<IUserRoleService, UserRoleService>();
         services.AddScoped<IIndividualEvaluationService, IndividualEvaluationService>();
+
+
 
         //Add other BusinessServices here...
 
@@ -251,9 +258,42 @@ public static class DIContainer
 
         TypeAdapterConfig<Major, RS_Major>.NewConfig();
 
+        TypeAdapterConfig<RQ_Role, Role>.NewConfig()
+            .Ignore(dest => dest.Id)
+            .Ignore(dest => dest.UserRoles)
+            .Map(dest => dest.Status, src => src.Status.ToString().ToLowerInvariant())
+            .IgnoreNullValues(true);
+
+        TypeAdapterConfig<Role, RS_Role>.NewConfig()
+            .Map(dest => dest.Status, src => src.Status.ToStatus());
+
+            TypeAdapterConfig<RQ_UserRole, UserRole>.NewConfig()
+                .Ignore(dest => dest.Id)
+                .Ignore(dest => dest.CreatedAt)
+                .Ignore(dest => dest.Account)
+                .Ignore(dest => dest.Role)
+                .Ignore(dest => dest.Project)
+                .Ignore(dest => dest.AppraisalCouncil)
+                .Ignore(dest => dest.UploadedDocuments)
+                .Ignore(dest => dest.Signatures)
+                .Ignore(dest => dest.ResearchPapers)
+                .Ignore(dest => dest.IndividualEvaluations)
+                .Ignore(dest => dest.CreatedProjects)
+                .Ignore(dest => dest.CreatedMilestones)
+                .Ignore(dest => dest.CreatedTasks)
+                .Ignore(dest => dest.MemberTasks)
+                .Ignore(dest => dest.RequestTransactions)
+                .Ignore(dest => dest.HandleTransactions)
+                .Ignore(dest => dest.Notifications)
+                .IgnoreNullValues(true);
+
+            TypeAdapterConfig<UserRole, RS_UserRole>.NewConfig();
+
+
         return services;
     }
     
+
 
     private static IServiceCollection ConfigJsonLoopDeserielize(this IServiceCollection services)
     {

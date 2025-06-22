@@ -8,68 +8,68 @@ namespace SRPM_APIServices.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class RoleController : ControllerBase
+    public class UserRoleController : ControllerBase
     {
-        private readonly IRoleService _service;
+        private readonly IUserRoleService _service;
 
-        public RoleController(IRoleService service)
+        public UserRoleController(IUserRoleService service)
         {
             _service = service;
         }
 
-        // GET: api/role
+        // GET: api/userrole
         [HttpGet]
-        public async Task<ActionResult<List<RS_Role>>> GetAll()
+        public async Task<ActionResult<List<RS_UserRole>>> GetAll()
         {
             var roles = await _service.GetAllAsync();
             return Ok(roles);
         }
 
-        // GET: api/role/{id}
+        // GET: api/userrole/{id}
         [HttpGet("{id}")]
-        public async Task<ActionResult<RS_Role>> GetById(Guid id)
+        public async Task<ActionResult<RS_UserRole>> GetById(Guid id)
         {
             var role = await _service.GetByIdAsync(id);
             if (role == null)
-                return NotFound($"Role with ID {id} not found.");
+                return NotFound($"UserRole with ID {id} not found.");
             return Ok(role);
         }
 
-        // POST: api/role
+        // POST: api/userrole
         [HttpPost]
-        public async Task<ActionResult<RS_Role>> Create(RQ_Role request)
+        public async Task<ActionResult<RS_UserRole>> Create(RQ_UserRole request)
         {
             var created = await _service.CreateAsync(request);
             return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
         }
 
-        // PUT: api/role/{id}
+        // PUT: api/userrole/{id}
         [HttpPut("{id}")]
-        public async Task<ActionResult<RS_Role>> Update(Guid id, RQ_Role request)
+        public async Task<ActionResult<RS_UserRole>> Update(Guid id, RQ_UserRole request)
         {
             var updated = await _service.UpdateAsync(id, request);
             if (updated == null)
-                return NotFound($"Role with ID {id} not found.");
+                return NotFound($"UserRole with ID {id} not found.");
             return Ok(updated);
         }
 
-        // PUT: api/role/{id}/toggle-status
+        // PUT: api/userrole/{id}/toggle-status
         [HttpPut("{id}/toggle-status")]
-        public async Task<ActionResult<RS_Role>> ToggleStatus(Guid id)
+        public async Task<ActionResult<RS_UserRole>> ToggleStatus(Guid id)
         {
-            var toggled = await _service.ToggleStatusAsync(id);
-            if (toggled == null)
-                return NotFound($"Role with ID {id} not found.");
-            return Ok(toggled);
+            var result = await _service.ToggleStatusAsync(id);
+            if (result == null)
+                return NotFound($"UserRole with ID {id} not found.");
+            return Ok(result);
         }
 
-        // DELETE: api/role/{id}
+        // DELETE: api/userrole/{id}
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(Guid id)
         {
             var deleted = await _service.DeleteAsync(id);
             if (!deleted)
-                return NotFound($"Role with ID {id} not found.");
+                return NotFound($"UserRole with ID {id} not found.");
             return NoContent();
         }
     }
