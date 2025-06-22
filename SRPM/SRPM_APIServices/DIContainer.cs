@@ -57,6 +57,8 @@ public static class DIContainer
         services.AddScoped<IEvaluationService, EvaluationService>();
         services.AddScoped<IEvaluationStageService, EvaluationStageService>();
         services.AddScoped<IProjectService, ProjectService>();
+        services.AddScoped<IProjectMajorService, ProjectMajorService>();
+        services.AddScoped<IMajorService, MajorService>();
         services.AddScoped<IProjectTagService, ProjectTagService>();
         services.AddScoped<IRoleService, RoleService>();
         services.AddScoped<IUserRoleService, UserRoleService>();
