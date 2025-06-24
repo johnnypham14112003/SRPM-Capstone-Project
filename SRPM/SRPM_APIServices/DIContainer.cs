@@ -63,7 +63,9 @@ public static class DIContainer
         services.AddScoped<IRoleService, RoleService>();
         services.AddScoped<IUserRoleService, UserRoleService>();
         services.AddScoped<IIndividualEvaluationService, IndividualEvaluationService>();
-
+        services.AddScoped<ITaskService, TaskService>();
+        services.AddScoped<IMilestoneService, MilestoneService>();
+        services.AddScoped<IMemberTaskService, MemberTaskService>();    
 
 
         //Add other BusinessServices here...
@@ -290,7 +292,36 @@ public static class DIContainer
                 .IgnoreNullValues(true);
 
             TypeAdapterConfig<UserRole, RS_UserRole>.NewConfig();
+        TypeAdapterConfig<RQ_Task, SRPM_Repositories.Models.Task>.NewConfig()
+            .Ignore(dest => dest.Id)
+            .Ignore(dest => dest.Milestone)
+            .Ignore(dest => dest.Creator)
+            .Ignore(dest => dest.MemberTasks)
+            .Ignore(dest => dest.Notifications)
+            .IgnoreNullValues(true);
 
+        TypeAdapterConfig<SRPM_Repositories.Models.Task, RS_Task>.NewConfig();
+        TypeAdapterConfig<RQ_Milestone, Milestone>.NewConfig()
+            .Ignore(dest => dest.Id)
+            .Ignore(dest => dest.CreatedAt)
+            .Ignore(dest => dest.Project)
+            .Ignore(dest => dest.Creator)
+            .Ignore(dest => dest.Evaluations)
+            .Ignore(dest => dest.IndividualEvaluations)
+            .Ignore(dest => dest.Tasks)
+            .IgnoreNullValues(true);
+
+        TypeAdapterConfig<Milestone, RS_Milestone>.NewConfig();
+
+        TypeAdapterConfig<RQ_MemberTask, MemberTask>.NewConfig()
+            .Ignore(dest => dest.Id)
+            .Ignore(dest => dest.JoinedAt)
+            .Ignore(dest => dest.Member)
+            .Ignore(dest => dest.Task)
+            .Ignore(dest => dest.Notifications)
+            .IgnoreNullValues(true);
+
+        TypeAdapterConfig<MemberTask, RS_MemberTask>.NewConfig();
 
         return services;
     }
