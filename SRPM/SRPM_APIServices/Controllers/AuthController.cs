@@ -91,7 +91,7 @@ namespace SRPM_APIServices.Controllers
             var claims = new List<Claim>
     {
         new Claim(ClaimTypes.NameIdentifier, account.Id.ToString()),
-        new Claim("Id", account.Id.ToString()),
+        new Claim("Id", account.Id.ToString()), 
         new Claim(ClaimTypes.Role, role ?? string.Empty)
     };
 
