@@ -11,6 +11,9 @@ namespace SRPM_Services.Interfaces
     public interface IUserRoleService
     {
         Task<RS_UserRole?> GetByIdAsync(Guid id);
+        Task<bool> UserHasRoleAsync(Guid accountId, string roleName);
+
+        Task<IEnumerable<string>> GetAllUserRole(Guid userId);
         Task<List<RS_UserRole>> GetAllAsync();
         Task<RS_UserRole> CreateAsync(RQ_UserRole request);
         Task<RS_UserRole?> UpdateAsync(Guid id, RQ_UserRole request);

@@ -27,6 +27,41 @@ namespace SRPM_Services.Implements
             var entity = await _unitOfWork.GetUserRoleRepository().GetByIdAsync<Guid>(id);
             return entity?.Adapt<RS_UserRole>();
         }
+        public async Task<bool> UserHasRoleAsync(Guid accountId, string roleName)
+        {
+            var userRoles = await _unitOfWork.GetUserRoleRepository().GetListByFilterAsync(
+                accountId: accountId,
+                roleId: null,
+                projectId: null,
+                appraisalCouncilId: null,
+                status: Status.Created.ToString().ToLower(),
+                isOfficial: null
+            );
+
+            return userRoles
+                .Where(ur => ur.Role != null && ur.Role.Name == roleName)
+                .Any();
+        }
+
+        public async Task<IEnumerable<string>> GetAllUserRole(Guid userId)
+        {
+            var roles = await _unitOfWork.GetUserRoleRepository().GetListByFilterAsync(
+                accountId: userId,
+                roleId: null,
+                projectId: null,
+                appraisalCouncilId: null,
+                status: Status.Created.ToString().ToLower(),
+                isOfficial: null
+            );
+
+            return roles
+                .Where(r => r.Role != null)
+                .Select(r => r.Role.Name)
+                .Distinct()
+                .ToList();
+        }
+
+
 
         public async Task<List<RS_UserRole>> GetAllAsync()
         {
