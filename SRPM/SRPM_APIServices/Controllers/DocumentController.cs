@@ -32,7 +32,7 @@ public class DocumentController : Controller
         return Ok(result);
     }
 
-    [HttpGet("list")]
+    [HttpPost("list")]
     public async Task<IActionResult> List([FromBody] Q_Document queryInput)
     {
         var result = await _documentService.ListDocument(queryInput);

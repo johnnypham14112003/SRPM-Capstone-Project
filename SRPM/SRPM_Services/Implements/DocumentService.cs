@@ -36,7 +36,7 @@ public class DocumentService : IDocumentService
     {
         //Re-assign value if it smaller than 1
         queryInput.PageIndex = queryInput.PageIndex < 1 ? 1 : queryInput.PageIndex;
-        queryInput.PageSize = queryInput.PageIndex < 1 ? 1 : queryInput.PageIndex;
+        queryInput.PageSize = queryInput.PageSize < 1 ? 1 : queryInput.PageSize;
 
         var dataResult = await _unitOfWork.GetDocumentRepository().ListPaging
             (queryInput.KeyWord, queryInput.Type, queryInput.Status,
