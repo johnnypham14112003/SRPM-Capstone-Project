@@ -38,24 +38,23 @@ public class SRPMDbContext : DbContext
     public DbSet<Transaction> Transaction { get; set; }
     public DbSet<UserRole> UserRole { get; set; }
 
-    private string GetConnectionString()
+    private static string GetConnectionString()
     {
         string root = Directory.GetParent(Directory.GetCurrentDirectory())?.FullName ?? "";
         string apiDirectory = Path.Combine(root, "SRPM_APIServices");
         IConfiguration configuration = new ConfigurationBuilder()
-            //.SetBasePath(Path.Combine(Directory.GetCurrentDirectory()))
             .SetBasePath(apiDirectory)
             .AddJsonFile("appsettings.json", true, true).Build();
         return configuration["ConnectionStrings:DefaultConnection"]!;
     }
 
-    /**/
-    // Comment Method OnConfiguring(...) after migration to avoid conflic in Dependency Injection
-    /* ============================================================================================== */
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-        => optionsBuilder.UseSqlServer(GetConnectionString());
-    /* ============================================================================================== */
-    /**/
+    {
+        if (!optionsBuilder.IsConfigured)
+        {
+            optionsBuilder.UseSqlServer(GetConnectionString());
+        }
+    }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

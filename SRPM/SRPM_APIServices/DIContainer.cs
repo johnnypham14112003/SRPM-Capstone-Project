@@ -21,7 +21,7 @@ namespace SRPM_APIServices;
 
 public static class DIContainer
 {
-    public static IServiceCollection RegisterServices(this IServiceCollection services, IConfiguration configuration)
+    public static IServiceCollection RegisterServices(this IServiceCollection services, IConfiguration configuration, IWebHostEnvironment env)
     {
         //System Services
         services.InjectDbContext(configuration);
@@ -36,7 +36,7 @@ public static class DIContainer
 
         //Third Party Services
         services.ConfigFluentEmail(configuration);
-        services.ConfigRazorTemplate(configuration);
+        services.ConfigRazorTemplate(configuration, env);
         //...
 
         return services;
@@ -301,15 +301,17 @@ public static class DIContainer
         services.AddFluentEmail(defaultFromEmail).AddSmtpSender(host, port, username, password);
         return services;
     }
-    private static IServiceCollection ConfigRazorTemplate(this IServiceCollection services, IConfiguration configuration)
+    private static IServiceCollection ConfigRazorTemplate(this IServiceCollection services, IConfiguration configuration, IWebHostEnvironment env)
     {
+        var templatePath = Path.Combine(env.ContentRootPath, "Extensions/FluentEmail/UIEmail");
+        if (!Directory.Exists(templatePath))
+            Directory.CreateDirectory(templatePath);
+
         services.AddMvcCore().AddRazorRuntimeCompilation();
         services.Configure<MvcRazorRuntimeCompilationOptions>(opts =>
         {
             opts.FileProviders.Add(
-                new PhysicalFileProvider(
-                    Path.Combine(AppContext.BaseDirectory, "Extensions", "FluentEmail", "UIEmail")
-                )
+                new PhysicalFileProvider(templatePath)
             );
         });
         services.AddRazorTemplating();

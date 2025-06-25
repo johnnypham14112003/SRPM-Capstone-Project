@@ -16,9 +16,10 @@ using SRPM_Services.Implements;
 
 var builder = WebApplication.CreateBuilder(args);
 var config = builder.Configuration;
+var env = builder.Environment;
 
 // Add services to the container.
-builder.Services.RegisterServices(config);
+builder.Services.RegisterServices(config, env);
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
