@@ -78,13 +78,16 @@ namespace SRPM_APIServices.Controllers
                 SelectedRole = role
             };
 
-            var account = await _accountService.LoginWithGoogleAsync(loginRequest);
-            if (account == null)
-                throw new NotFoundException("Account not found during Google login flow.");
-            var isAuthorized = await _roleService.UserHasRoleAsync(account.Id, role);
+                var account = await _accountService.LoginWithGoogleAsync(loginRequest);
+                if (account == null)
+                    throw new NotFoundException("Account not found during Google login flow.");
+            if (role != null)
+            {
+                var isAuthorized = await _roleService.UserHasRoleAsync(account.Id, role);
 
-            if (!isAuthorized)
-                return Forbid("Selected role is not assigned to this user.");
+                if (!isAuthorized)
+                    return Forbid("Selected role is not assigned to this user.");
+            }
 
             var allRoles = await _roleService.GetAllUserRole(account.Id);
 

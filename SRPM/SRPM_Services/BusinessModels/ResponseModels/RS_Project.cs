@@ -26,10 +26,12 @@ namespace SRPM_Services.BusinessModels.ResponseModels
         public string Language { get; set; } = null!;
         public string Category { get; set; } = null!;
         public string Type { get; set; } = null!;
+        public string Genre { get; set; } = null!;
         public DateTime CreatedAt { get; set; }
         public DateTime? UpdatedAt { get; set; }
         public string Status { get; set; } = null!;
         public Guid CreatorId { get; set; }
     }
+
 
 }

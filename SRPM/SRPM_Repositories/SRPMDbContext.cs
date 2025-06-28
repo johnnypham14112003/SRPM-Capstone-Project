@@ -38,25 +38,25 @@ public class SRPMDbContext : DbContext
     public DbSet<Transaction> Transaction { get; set; }
     public DbSet<UserRole> UserRole { get; set; }
 
-    //private string GetConnectionString()
-    //{
-    //    string root = Directory.GetParent(Directory.GetCurrentDirectory())?.FullName ?? "";
-    //    string apiDirectory = Path.Combine(root, "SRPM_APIServices");
-    //    IConfiguration configuration = new ConfigurationBuilder()
-    //        //.SetBasePath(Path.Combine(Directory.GetCurrentDirectory()))
-    //        .SetBasePath(apiDirectory)
-    //        .AddJsonFile("appsettings.json", true, true).Build();
-    //    return configuration["ConnectionStrings:DefaultConnection"]!;
-    //}
     private string GetConnectionString()
     {
+        string root = Directory.GetParent(Directory.GetCurrentDirectory())?.FullName ?? "";
+        string apiDirectory = Path.Combine(root, "SRPM_APIServices");
         IConfiguration configuration = new ConfigurationBuilder()
-            .SetBasePath(AppContext.BaseDirectory)
-            .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
-            .Build();
-
+            //.SetBasePath(Path.Combine(Directory.GetCurrentDirectory()))
+            .SetBasePath(apiDirectory)
+            .AddJsonFile("appsettings.json", true, true).Build();
         return configuration["ConnectionStrings:DefaultConnection"]!;
     }
+    //private string GetConnectionString()
+    //{
+    //    IConfiguration configuration = new ConfigurationBuilder()
+    //        .SetBasePath(AppContext.BaseDirectory)
+    //        .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
+    //        .Build();
+
+    //    return configuration["ConnectionStrings:DefaultConnection"]!;
+    //}
 
     /**/
     // Comment Method OnConfiguring(...) after migration to avoid conflic in Dependency Injection

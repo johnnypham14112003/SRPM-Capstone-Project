@@ -8,9 +8,6 @@ namespace SRPM_Services.BusinessModels.RequestModels
 {
     public class RQ_Project
     {
-        public string? LogoURL { get; set; }
-        public string? PictureURL { get; set; }
-        public string Code { get; set; } = null!;
         public string EnglishTitle { get; set; } = null!;
         public string VietnameseTitle { get; set; } = null!;
         public string? Abbreviations { get; set; }
@@ -23,11 +20,13 @@ namespace SRPM_Services.BusinessModels.RequestModels
         public decimal Progress { get; set; }
         public int MaximumMember { get; set; }
         public string Language { get; set; } = null!;
-        public string Category { get; set; } = null!;
-        public string Type { get; set; } = null!;
-        public string? Status { get; set; }
-        public Guid CreatorId { get; set; }
+
+        // Enum-like fields
+        public string Category { get; set; } = null!; // "basic" or "application/implementation"
+        public string Type { get; set; } = null!;     // "school level" or "cooperate"
+        public string Genre { get; set; } = null!;    // "normal", "proposal", "propose"
     }
+
 
 
 }

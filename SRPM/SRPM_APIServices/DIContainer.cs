@@ -65,7 +65,8 @@ public static class DIContainer
         services.AddScoped<IIndividualEvaluationService, IndividualEvaluationService>();
         services.AddScoped<ITaskService, TaskService>();
         services.AddScoped<IMilestoneService, MilestoneService>();
-        services.AddScoped<IMemberTaskService, MemberTaskService>();    
+        services.AddScoped<IMemberTaskService, MemberTaskService>();   
+        services.AddScoped<IUserContextService, UserContextService>();
 
 
         //Add other BusinessServices here...

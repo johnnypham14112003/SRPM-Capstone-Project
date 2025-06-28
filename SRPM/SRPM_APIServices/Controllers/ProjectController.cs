@@ -1,4 +1,7 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using SRPM_Services.BusinessModels;
 using SRPM_Services.BusinessModels.RequestModels;
 using SRPM_Services.BusinessModels.ResponseModels;
 using SRPM_Services.Interfaces;
@@ -18,13 +21,15 @@ namespace SRPM_APIServices.Controllers
             _service = service;
         }
 
-        // GET: api/project
-        [HttpGet]
-        public async Task<ActionResult<List<RS_Project>>> GetAll()
+        // GET: api/project/filter
+        [HttpGet("filter")]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "Member, Host Institution, Staff")]
+        public async Task<ActionResult<PagingResult<RS_Project>>> GetList([FromQuery] RQ_ProjectQuery query)
         {
-            var result = await _service.GetAllAsync();
+            var result = await _service.GetListAsync(query);
             return Ok(result);
         }
+
 
         // GET: api/project/{id}
         [HttpGet("{id}")]
@@ -38,11 +43,13 @@ namespace SRPM_APIServices.Controllers
 
         // POST: api/project
         [HttpPost]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "Host Institution, Staff")]
         public async Task<ActionResult<RS_Project>> Create(RQ_Project request)
         {
             var created = await _service.CreateAsync(request);
             return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
         }
+
 
         // PUT: api/project/{id}
         [HttpPut("{id}")]

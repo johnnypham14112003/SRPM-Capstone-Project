@@ -19,7 +19,7 @@ var config = builder.Configuration;
 
 // Add services to the container.
 builder.Services.RegisterServices(config);
-
+builder.Services.AddHttpContextAccessor();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
@@ -40,7 +40,8 @@ builder.Services.AddAuthentication(options =>
         ValidAudience = config["Jwt:Audience"],
         ValidateLifetime = true,
         IssuerSigningKey = new SymmetricSecurityKey(
-            Encoding.UTF8.GetBytes(config["Jwt:Key"]))
+            Encoding.UTF8.GetBytes(config["Jwt:Key"])),
+        RoleClaimType = ClaimTypes.Role
     };
 })
 .AddCookie("Cookies")
