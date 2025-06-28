@@ -47,6 +47,15 @@ public class SRPMDbContext : DbContext
             .AddJsonFile("appsettings.json", true, true).Build();
         return configuration["ConnectionStrings:DefaultConnection"]!;
     }
+    //private string GetConnectionString()
+    //{
+    //    IConfiguration configuration = new ConfigurationBuilder()
+    //        .SetBasePath(AppContext.BaseDirectory)
+    //        .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
+    //        .Build();
+
+    //    return configuration["ConnectionStrings:DefaultConnection"]!;
+    //}
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {

@@ -21,8 +21,9 @@ public class Project
     [Required] public decimal Progress { get; set; } = 0m;//100.00
     [Required] public int MaximumMember { get; set; } = 0;
     [Required, MaxLength(30)] public string Language { get; set; } = null!;
-    [Required, MaxLength(30)] public string Category { get; set; } = null!;//basic || coop...
-    [Required, MaxLength(30)] public string Type { get; set; } = null!;//normal || proposal || propose
+    [Required, MaxLength(30)] public string Category { get; set; } = null!;//basic || application/implementation
+    [Required, MaxLength(30)] public string Type { get; set; } = null!;//school level || cooperate
+    [Required, MaxLength(30)] public string Genre { get; set; } = null!;//normal || proposal || propose
     [Required] public DateTime CreatedAt { get; set; } = DateTime.Now;
     public DateTime? UpdatedAt { get; set; }
     [Required, MaxLength(30)] public string Status { get; set; } = "created";

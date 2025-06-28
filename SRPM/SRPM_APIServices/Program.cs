@@ -20,7 +20,7 @@ var env = builder.Environment;
 
 // Add services to the container.
 builder.Services.RegisterServices(config, env);
-
+builder.Services.AddHttpContextAccessor();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
@@ -41,7 +41,8 @@ builder.Services.AddAuthentication(options =>
         ValidAudience = config["Jwt:Audience"],
         ValidateLifetime = true,
         IssuerSigningKey = new SymmetricSecurityKey(
-            Encoding.UTF8.GetBytes(config["Jwt:Key"]))
+            Encoding.UTF8.GetBytes(config["Jwt:Key"])),
+        RoleClaimType = ClaimTypes.Role
     };
 })
 .AddCookie("Cookies")
@@ -91,11 +92,8 @@ builder.Services.AddAuthentication(options =>
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+app.UseSwagger();
+app.UseSwaggerUI();
 
 app.UseHttpsRedirection();
 
