@@ -4,6 +4,8 @@ using SRPM_Services.BusinessModels.RequestModels;
 using SRPM_Services.BusinessModels.ResponseModels;
 using SRPM_Services.BusinessModels;
 using SRPM_Services.Interfaces;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 
 namespace SRPM_APIServices.Controllers
 {
@@ -20,6 +22,7 @@ namespace SRPM_APIServices.Controllers
 
         // GET: api/milestone/{id}
         [HttpGet("{id}")]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "Staff, Member")]
         public async Task<ActionResult<RS_Milestone>> GetById(Guid id)
         {
             var result = await _service.GetByIdAsync(id);
@@ -30,6 +33,7 @@ namespace SRPM_APIServices.Controllers
 
         // GET: api/milestone/project/{projectId}
         [HttpGet("project/{projectId}")]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "Staff, Member")]
         public async Task<ActionResult<List<RS_Milestone>>> GetByProjectId(Guid projectId)
         {
             var result = await _service.GetByProjectAsync(projectId);
@@ -38,6 +42,7 @@ namespace SRPM_APIServices.Controllers
 
         // GET: api/milestone/filter
         [HttpGet("filter")]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "Staff")]
         public async Task<ActionResult<PagingResult<RS_Milestone>>> GetList([FromQuery] RQ_MilestoneQuery query)
         {
             var result = await _service.GetListAsync(query);
@@ -46,6 +51,7 @@ namespace SRPM_APIServices.Controllers
 
         // POST: api/milestone
         [HttpPost]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "Staff")]
         public async Task<ActionResult<RS_Milestone>> Create([FromBody] RQ_Milestone request)
         {
             var created = await _service.CreateAsync(request);
@@ -54,6 +60,7 @@ namespace SRPM_APIServices.Controllers
 
         // PUT: api/milestone/{id}
         [HttpPut("{id}")]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "Staff")]
         public async Task<ActionResult<RS_Milestone>> Update(Guid id, [FromBody] RQ_Milestone request)
         {
             var updated = await _service.UpdateAsync(id, request);
@@ -64,6 +71,7 @@ namespace SRPM_APIServices.Controllers
 
         // PUT: api/milestone/{id}/toggle-status
         [HttpPut("{id}/toggle-status")]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "Staff")]
         public async Task<ActionResult<RS_Milestone>> ToggleStatus(Guid id)
         {
             var toggled = await _service.ToggleStatusAsync(id);
@@ -74,6 +82,7 @@ namespace SRPM_APIServices.Controllers
 
         // DELETE: api/milestone/{id}
         [HttpDelete("{id}")]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "Staff")]
         public async Task<IActionResult> Delete(Guid id)
         {
             var success = await _service.DeleteAsync(id);

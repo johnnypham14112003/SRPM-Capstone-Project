@@ -74,8 +74,6 @@ namespace SRPM_Services.Implements
             var repo = _unitOfWork.GetMemberTaskRepository();
             var entity = await repo.GetByIdAsync<Guid>(id);
             if (entity == null) return null;
-
-            entity.Status = request.Status.ToStatus().ToString().ToLowerInvariant();
             request.Adapt(entity);
 
             await repo.UpdateAsync(entity);

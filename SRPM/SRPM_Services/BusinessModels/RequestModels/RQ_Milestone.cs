@@ -8,7 +8,6 @@ namespace SRPM_Services.BusinessModels.RequestModels
 {
     public class RQ_Milestone
     {
-        public string Code { get; set; } = null!;
         public string Title { get; set; } = null!;
         public string? Description { get; set; }
         public string? Objective { get; set; }

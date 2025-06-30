@@ -9,5 +9,6 @@ namespace SRPM_Repositories.Repositories.Interfaces
 {
     public interface IProjectMajorRepository : IGenericRepository<ProjectMajor>
     {
+       Task<List<ProjectMajor>> GetListWithIncludesAsync(Guid? projectId, Guid? majorId);
     }
 }

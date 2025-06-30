@@ -266,7 +266,6 @@ public static class DIContainer
         TypeAdapterConfig<RQ_Role, Role>.NewConfig()
             .Ignore(dest => dest.Id)
             .Ignore(dest => dest.UserRoles)
-            .Map(dest => dest.Status, src => src.Status.ToString().ToLowerInvariant())
             .IgnoreNullValues(true);
 
         TypeAdapterConfig<Role, RS_Role>.NewConfig()

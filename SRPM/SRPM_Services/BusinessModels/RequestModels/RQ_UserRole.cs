@@ -8,7 +8,6 @@ namespace SRPM_Services.BusinessModels.RequestModels
 {
     public class RQ_UserRole
     {
-        public string Code { get; set; } = null!;
         public string? GroupName { get; set; }
         public bool IsOfficial { get; set; }
         public DateTime? ExpireDate { get; set; }

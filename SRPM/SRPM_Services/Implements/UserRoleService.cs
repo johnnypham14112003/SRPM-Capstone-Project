@@ -1,6 +1,7 @@
 ﻿using Mapster;
 using SRPM_Repositories.Models;
 using SRPM_Repositories.Repositories.Interfaces;
+using SRPM_Services.BusinessModels;
 using SRPM_Services.BusinessModels.RequestModels;
 using SRPM_Services.BusinessModels.ResponseModels;
 using SRPM_Services.Extensions.Enumerables;
@@ -61,7 +62,31 @@ namespace SRPM_Services.Implements
                 .ToList();
         }
 
+        public async Task<PagingResult<RS_UserRole>> GetListAsync(RQ_UserRoleQuery query)
+        {
+            var list = await _unitOfWork.GetUserRoleRepository().GetListByFilterAsync(
+                query.AccountId,
+                query.RoleId,
+                query.ProjectId,
+                query.AppraisalCouncilId,
+                query.Status,
+                query.IsOfficial
+            );
 
+            var total = list.Count;
+            var paged = list
+                .Skip((query.PageIndex - 1) * query.PageSize)
+                .Take(query.PageSize)
+                .ToList();
+
+            return new PagingResult<RS_UserRole>
+            {
+                PageIndex = query.PageIndex,
+                PageSize = query.PageSize,
+                TotalCount = total,
+                DataList = paged.Adapt<List<RS_UserRole>>()
+            };
+        }
 
         public async Task<List<RS_UserRole>> GetAllAsync()
         {
@@ -76,11 +101,23 @@ namespace SRPM_Services.Implements
             entity.Id = Guid.NewGuid();
             entity.CreatedAt = DateTime.UtcNow;
 
+            // Generate a short UID fragment — e.g. UR-X9TZ3B
+            string fragment = Convert.ToBase64String(Guid.NewGuid().ToByteArray())
+                                .Replace("=", "")
+                                .Replace("+", "")
+                                .Replace("/", "")
+                                .Substring(0, 6)
+                                .ToUpperInvariant();
+
+            entity.Code = $"UR-{fragment}";
+            entity.Status = Status.Created.ToString().ToLowerInvariant();
+
             await _unitOfWork.GetUserRoleRepository().AddAsync(entity);
             await _unitOfWork.SaveChangesAsync();
 
             return entity.Adapt<RS_UserRole>();
         }
+
 
         public async Task<RS_UserRole?> UpdateAsync(Guid id, RQ_UserRole request)
         {

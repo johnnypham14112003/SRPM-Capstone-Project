@@ -1,5 +1,8 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using SRPM_Services.BusinessModels;
 using SRPM_Services.BusinessModels.RequestModels;
 using SRPM_Services.BusinessModels.ResponseModels;
 using SRPM_Services.Interfaces;
@@ -17,21 +20,32 @@ namespace SRPM_APIServices.Controllers
             _service = service;
         }
 
-        // GET: api/projectmajor/by-project/{projectId}
-        [HttpGet("by-project/{projectId}")]
-        public async Task<ActionResult<List<RS_ProjectMajor>>> GetByProject(Guid projectId)
+        // GET: api/projectmajor/filter
+        [HttpGet("filter")]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+        public async Task<ActionResult<PagingResult<RS_ProjectMajor>>> GetList([FromQuery] RQ_ProjectMajorQuery query)
         {
-            var result = await _service.GetMajorsByProjectIdAsync(projectId);
+            var result = await _service.GetListAsync(query);
             return Ok(result);
         }
 
+
+
         // POST: api/projectmajor
         [HttpPost]
-        public async Task<ActionResult<RS_ProjectMajor>> Create(RQ_ProjectMajor request)
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+        public async Task<ActionResult<RS_ProjectMajor>> Create([FromBody] RQ_ProjectMajor request)
         {
             var created = await _service.CreateAsync(request);
-            return CreatedAtAction(nameof(GetByProject), new { projectId = created.ProjectId }, created);
+
+            // Redirect to filtered list with ProjectId and MajorId as route values
+            return CreatedAtAction(
+                nameof(GetList),
+                new { projectId = created.ProjectId, majorId = created.MajorId },
+                created
+            );
         }
+
 
         // PUT: api/projectmajor/{projectId}/{majorId}
         [HttpPut("{projectId}/{majorId}")]
