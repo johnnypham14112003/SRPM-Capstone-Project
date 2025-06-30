@@ -3,10 +3,10 @@ using SRPM_Repositories.Repositories.Interfaces;
 
 namespace SRPM_Repositories.Repositories.Implements;
 
-public class ContentTableRepository : GenericRepository<ContentTable>, IContentTableRepository
+public class SectionContentRepository : GenericRepository<SectionContent>, ISectionContentRepository
 {
     private readonly SRPMDbContext _context;
-    public ContentTableRepository(SRPMDbContext context) : base(context)
+    public SectionContentRepository(SRPMDbContext context) : base(context)
     {
         _context = context;
     }

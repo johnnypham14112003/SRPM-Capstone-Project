@@ -2,6 +2,6 @@
 
 namespace SRPM_Repositories.Repositories.Interfaces;
 
-public interface IFieldContentRepository : IGenericRepository<FieldContent>
+public interface IDocumentSectionRepository : IGenericRepository<DocumentSection>
 {
 }

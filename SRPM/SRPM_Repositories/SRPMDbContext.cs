@@ -14,13 +14,11 @@ public class SRPMDbContext : DbContext
     public DbSet<Account> Account { get; set; }
     public DbSet<AccountNotification> AccountNotification { get; set; }
     public DbSet<AppraisalCouncil> AppraisalCouncil { get; set; }
-    public DbSet<ContentTable> ContentTable { get; set; }
     public DbSet<Document> Document { get; set; }
-    public DbSet<DocumentField> DocumentField { get; set; }
+    public DbSet<DocumentSection> DocumentSection { get; set; }
     public DbSet<Evaluation> Evaluation { get; set; }
     public DbSet<EvaluationStage> EvaluationStage { get; set; }
     public DbSet<Field> Field { get; set; }
-    public DbSet<FieldContent> FieldContent { get; set; }
     public DbSet<IndividualEvaluation> IndividualEvaluation { get; set; }
     public DbSet<Major> Major { get; set; }
     public DbSet<MemberTask> MemberTask { get; set; }
@@ -32,8 +30,11 @@ public class SRPMDbContext : DbContext
     public DbSet<ProjectTag> ProjectTag { get; set; }
     public DbSet<ResearchPaper> ResearchPaper { get; set; }
     public DbSet<Role> Role { get; set; }
+    public DbSet<SectionContent> SectionContent { get; set; }
     public DbSet<Signature> Signature { get; set; }
     public DbSet<SystemConfiguration> SystemConfiguration { get; set; }
+    public DbSet<TableRow> TableRow { get; set; }
+    public DbSet<TableStructure> TableStructure { get; set; }
     public DbSet<Models.Task> Task { get; set; }
     public DbSet<Transaction> Transaction { get; set; }
     public DbSet<UserRole> UserRole { get; set; }
@@ -47,6 +48,7 @@ public class SRPMDbContext : DbContext
     //        .AddJsonFile("appsettings.json", true, true).Build();
     //    return configuration["ConnectionStrings:DefaultConnection"]!;
     //}
+
     private string GetConnectionString()
     {
         IConfiguration configuration = new ConfigurationBuilder()
@@ -129,21 +131,17 @@ public class SRPMDbContext : DbContext
             .OnDelete(DeleteBehavior.Restrict); //when delete AppraisalCouncil - block if not handle CouncilId in UserRole
         });
 
-        //ContentTable
-        modelBuilder.Entity<ContentTable>(conTab =>
-        {
-            conTab.HasOne(ct => ct.FieldContent)
-            .WithMany(fc => fc.ContentTables)
-            .HasForeignKey(ct => ct.FieldContentId)
-            .OnDelete(DeleteBehavior.Cascade); // when delete FieldContent - cascade ContentTable
-        });
-
         //Document
         modelBuilder.Entity<Document>(doc =>
         {
             doc.HasOne(d => d.Uploader)
             .WithMany(ur => ur.UploadedDocuments)
             .HasForeignKey(d => d.UploaderId)
+            .OnDelete(DeleteBehavior.Restrict); //when delete Uploader - block if not handle UploaderId in Doc
+
+            doc.HasOne(d => d.Editor)
+            .WithMany(ur => ur.ModifiedDocuments)
+            .HasForeignKey(d => d.EditorId)
             .OnDelete(DeleteBehavior.Restrict); //when delete Uploader - block if not handle UploaderId in Doc
 
             doc.HasOne(d => d.Project)
@@ -166,7 +164,7 @@ public class SRPMDbContext : DbContext
             .HasForeignKey(d => d.TransactionId)
             .OnDelete(DeleteBehavior.Restrict); //when delete Transaction - block if not handle Documents of Transaction
             //xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-            doc.HasMany(d => d.DocumentFields)
+            doc.HasMany(d => d.DocumentSections)
             .WithOne(df => df.Document)
             .HasForeignKey(df => df.DocumentId)
             .OnDelete(DeleteBehavior.Restrict); //when delete Document - block if not handle DocumentFields
@@ -182,17 +180,22 @@ public class SRPMDbContext : DbContext
             .OnDelete(DeleteBehavior.Restrict);//when delete Document - block if not handle Notifications
         });
 
-        //DocumentField
-        modelBuilder.Entity<DocumentField>(docFi =>
+        //DocumentSection
+        modelBuilder.Entity<DocumentSection>(docFi =>
         {
             docFi.HasOne(df => df.Document)
-            .WithMany(d => d.DocumentFields)
+            .WithMany(d => d.DocumentSections)
             .HasForeignKey(df => df.DocumentId)
             .OnDelete(DeleteBehavior.Restrict); //when delete Document - block if not handle DocumentFields
             //xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-            docFi.HasMany(df => df.FieldContents)
-            .WithOne(fc => fc.DocumentField)
-            .HasForeignKey(fc => fc.DocumentFieldId)
+            docFi.HasMany(df => df.SectionContents)
+            .WithOne(fc => fc.DocumentSection)
+            .HasForeignKey(fc => fc.DocumentSectionId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+            docFi.HasMany(df => df.TableStructures)
+            .WithOne(fc => fc.DocumentSection)
+            .HasForeignKey(fc => fc.DocumentSectionId)
             .OnDelete(DeleteBehavior.Restrict);
         });
 
@@ -265,20 +268,6 @@ public class SRPMDbContext : DbContext
             fie.HasMany(f => f.Majors)
             .WithOne(m => m.Field)
             .HasForeignKey(m => m.FieldId)
-            .OnDelete(DeleteBehavior.Restrict);
-        });
-
-        //FieldContent
-        modelBuilder.Entity<FieldContent>(fieCon =>
-        {
-            fieCon.HasOne(fc => fc.DocumentField)
-            .WithMany(df => df.FieldContents)
-            .HasForeignKey(fc => fc.DocumentFieldId)
-            .OnDelete(DeleteBehavior.Restrict);
-            //xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-            fieCon.HasMany(fc => fc.ContentTables)
-            .WithOne(ct => ct.FieldContent)
-            .HasForeignKey(ct => ct.FieldContentId)
             .OnDelete(DeleteBehavior.Restrict);
         });
 
@@ -564,6 +553,15 @@ public class SRPMDbContext : DbContext
             .OnDelete(DeleteBehavior.Restrict);
         });
 
+        //SectionContent
+        modelBuilder.Entity<SectionContent>(secCon =>
+        {
+            secCon.HasOne(sc => sc.DocumentSection)
+            .WithMany(ds => ds.SectionContents)
+            .HasForeignKey(sc => sc.DocumentSectionId)
+            .OnDelete(DeleteBehavior.Restrict);
+        });
+
         //Signature
         modelBuilder.Entity<Signature>(sign =>
         {
@@ -590,6 +588,15 @@ public class SRPMDbContext : DbContext
             .WithOne(n => n.SystemConfiguration)
             .HasForeignKey(n => n.SystemConfigurationId)
             .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        //TableRow
+        modelBuilder.Entity<TableRow>(tabRow =>
+        {
+            tabRow.HasOne(tr => tr.TableStructure)
+            .WithMany(ts => ts.TableRows)
+            .HasForeignKey(tr => tr.TableStructureId)
+            .OnDelete(DeleteBehavior.Cascade); // when delete TableStructure - cascade TableRow
         });
 
         //Task
@@ -683,6 +690,11 @@ public class SRPMDbContext : DbContext
             user.HasMany(ur => ur.UploadedDocuments)
             .WithOne(d => d.Uploader)
             .HasForeignKey(d => d.UploaderId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+            user.HasMany(ur => ur.ModifiedDocuments)
+            .WithOne(d => d.Editor)
+            .HasForeignKey(d => d.EditorId)
             .OnDelete(DeleteBehavior.Restrict);
 
             user.HasMany(ur => ur.Signatures)

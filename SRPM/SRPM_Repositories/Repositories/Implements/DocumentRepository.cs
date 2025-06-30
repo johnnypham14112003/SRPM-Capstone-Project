@@ -16,9 +16,10 @@ public class DocumentRepository : GenericRepository<Document>, IDocumentReposito
     public async Task<Document?> GetFullDetailDocument(Guid id)
     {
         return await _context.Document.AsSplitQuery()
-            .Include(d => d.DocumentFields!.OrderBy(df => df.IndexInDoc))
-            .ThenInclude(df => df.FieldContents!.OrderBy(fc => fc.IndexInField))
-            .ThenInclude(fc => fc.ContentTables!.OrderBy(ct => ct.ColumnIndex).ThenBy(ct => ct.RowIndex))
+            .Include(d => d.DocumentSections!.OrderBy(ds => ds.SectionOrder))
+                .ThenInclude(ds => ds.SectionContents!.OrderBy(sc => sc.ContentOrder))
+            .Include(d => d.DocumentSections!.OrderBy(ds => ds.SectionOrder))
+                .ThenInclude(ds => ds.TableStructures!.OrderBy(ct => ct.TableOrder))
             .FirstOrDefaultAsync(d => d.Id == id);
     }
 
@@ -29,9 +30,10 @@ public class DocumentRepository : GenericRepository<Document>, IDocumentReposito
     {
         var query = _context.Document
             .AsSplitQuery()
-            .Include(d => d.DocumentFields!.OrderBy(df => df.IndexInDoc))
-            .ThenInclude(df => df.FieldContents!.OrderBy(fc => fc.IndexInField))
-            .ThenInclude(fc => fc.ContentTables!.OrderBy(ct => ct.ColumnIndex).ThenBy(ct => ct.RowIndex))
+            .Include(d => d.DocumentSections!.OrderBy(ds => ds.SectionOrder))
+                .ThenInclude(ds => ds.SectionContents!.OrderBy(sc => sc.ContentOrder))
+            .Include(d => d.DocumentSections!.OrderBy(ds => ds.SectionOrder))
+                .ThenInclude(ds => ds.TableStructures!.OrderBy(ct => ct.TableOrder))
             .AsNoTracking()
             .AsQueryable();
 
@@ -68,7 +70,7 @@ public class DocumentRepository : GenericRepository<Document>, IDocumentReposito
         switch (SortBy)
         {
             default://Name
-                query = query.OrderByDescending(d => d.Name);
+                query = query.OrderBy(d => d.Name);
                 break;
             case 1://UpdateTime
                 query = query.OrderByDescending(d => d.UpdatedAt);
@@ -77,19 +79,19 @@ public class DocumentRepository : GenericRepository<Document>, IDocumentReposito
                 query = query.OrderByDescending(d => d.UploadAt);
                 break;
             case 3://UploaderId
-                query = query.OrderByDescending(d => d.UploaderId);
+                query = query.OrderBy(d => d.UploaderId);
                 break;
             case 4://ProjectId
-                query = query.OrderByDescending(d => d.ProjectId);
+                query = query.OrderBy(d => d.ProjectId);
                 break;
             case 5://EvaluationId
-                query = query.OrderByDescending(d => d.EvaluationId);
+                query = query.OrderBy(d => d.EvaluationId);
                 break;
             case 6://IndividualEvaluationId
-                query = query.OrderByDescending(d => d.IndividualEvaluationId);
+                query = query.OrderBy(d => d.IndividualEvaluationId);
                 break;
             case 7://TransactionId
-                query = query.OrderByDescending(d => d.TransactionId);
+                query = query.OrderBy(d => d.TransactionId);
                 break;
         }
 

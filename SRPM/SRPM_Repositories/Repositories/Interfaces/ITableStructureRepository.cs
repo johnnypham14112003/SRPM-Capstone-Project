@@ -2,6 +2,6 @@
 
 namespace SRPM_Repositories.Repositories.Interfaces;
 
-public interface IContentTableRepository : IGenericRepository<ContentTable>
+public interface ITableStructureRepository : IGenericRepository<TableStructure>
 {
 }
