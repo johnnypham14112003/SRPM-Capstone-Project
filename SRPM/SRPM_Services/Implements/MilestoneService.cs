@@ -74,7 +74,7 @@ namespace SRPM_Services.Implements
             var entity = request.Adapt<Milestone>();
             entity.Id = Guid.NewGuid();
             entity.CreatedAt = DateTime.UtcNow;
-            entity.Status = request.Status.ToStatus().ToString().ToLowerInvariant();
+            entity.Status = Status.Created.ToString().ToLowerInvariant();
 
             await _unitOfWork.GetMilestoneRepository().AddAsync(entity);
             await _unitOfWork.SaveChangesAsync();

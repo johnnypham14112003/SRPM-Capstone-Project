@@ -16,7 +16,6 @@ namespace SRPM_Services.BusinessModels.RequestModels
         public DateTime? StartDate { get; set; }
         public DateTime? EndDate { get; set; }
         public string Type { get; set; } = "normal";
-        public string Status { get; set; } = "created";
         public Guid ProjectId { get; set; }
         public Guid CreatorId { get; set; }
     }

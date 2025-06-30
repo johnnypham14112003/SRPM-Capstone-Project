@@ -68,7 +68,7 @@ namespace SRPM_Services.Implements
         {
             var entity = request.Adapt<SRPM_Repositories.Models.Task>();
             entity.Id = Guid.NewGuid();
-            entity.Status = Status.Created.ToString();
+            entity.Status = Status.Created.ToString().ToLowerInvariant();
 
             await _unitOfWork.GetTaskRepository().AddAsync(entity);
             await _unitOfWork.SaveChangesAsync();
@@ -81,9 +81,7 @@ namespace SRPM_Services.Implements
             var repo = _unitOfWork.GetTaskRepository();
             var entity = await repo.GetByIdAsync<Guid>(id);
             if (entity == null) return null;
-
-            var parsedStatus = request.Status.ToStatus();
-            entity.Status = parsedStatus.ToString().ToLowerInvariant();
+            entity.Status = Status.Created.ToString().ToLowerInvariant();
 
             request.Adapt(entity);
             await repo.UpdateAsync(entity);

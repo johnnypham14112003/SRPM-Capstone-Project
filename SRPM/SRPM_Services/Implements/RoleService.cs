@@ -38,6 +38,7 @@ namespace SRPM_Services.Implements
         {
             var entity = request.Adapt<Role>();
             entity.Id = Guid.NewGuid();
+            entity.Status = Status.Created.ToString().ToLowerInvariant();
 
             await _unitOfWork.GetRoleRepository().AddAsync(entity);
             await _unitOfWork.SaveChangesAsync();

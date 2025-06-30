@@ -88,8 +88,7 @@ namespace SRPM_Services.Implements
             var entity = await repo.GetByIdAsync<Guid>(id);
             if (entity == null) return null;
 
-            var parsedStatus = request.Status.ToStatus();
-            entity.Status = parsedStatus.ToString().ToLowerInvariant();
+            entity.Status = Status.Created.ToString().ToLowerInvariant();
             request.Adapt(entity);
 
             await repo.UpdateAsync(entity);
