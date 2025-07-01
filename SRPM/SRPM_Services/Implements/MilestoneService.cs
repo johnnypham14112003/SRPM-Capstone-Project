@@ -38,24 +38,24 @@ namespace SRPM_Services.Implements
 
         public async Task<PagingResult<RS_Milestone>> GetListAsync(RQ_MilestoneQuery query)
         {
-            query.PageIndex = query.PageIndex < 1 ? 1 : query.PageIndex;
-            query.PageSize = query.PageSize < 1 ? 10 : query.PageSize;
-
-            var list = await _unitOfWork.GetMilestoneRepository().GetListAsync(m =>
-                (string.IsNullOrWhiteSpace(query.Code) || m.Code == query.Code) &&
-                (string.IsNullOrWhiteSpace(query.Title) || m.Title.Contains(query.Title)) &&
-                (string.IsNullOrWhiteSpace(query.Type) || m.Type == query.Type) &&
-                (string.IsNullOrWhiteSpace(query.Status) || m.Status == query.Status) &&
-                (query.ProjectId == null || m.ProjectId == query.ProjectId) &&
-                (query.CreatorId == null || m.CreatorId == query.CreatorId),
+            var list = await _unitOfWork.GetMilestoneRepository().GetListAsync(
+                m =>
+                    (string.IsNullOrWhiteSpace(query.Code) || m.Code.Contains(query.Code)) &&
+                    (string.IsNullOrWhiteSpace(query.Title) || m.Title.Contains(query.Title)) &&
+                    (string.IsNullOrWhiteSpace(query.Description) || (m.Description ?? "").Contains(query.Description)) &&
+                    (string.IsNullOrWhiteSpace(query.Objective) || (m.Objective ?? "").Contains(query.Objective)) &&
+                    (!query.Cost.HasValue || m.Cost == query.Cost.Value) &&
+                    (string.IsNullOrWhiteSpace(query.Type) || m.Type == query.Type) &&
+                    (!query.StartDate.HasValue || m.StartDate >= query.StartDate.Value) &&
+                    (!query.EndDate.HasValue || m.EndDate <= query.EndDate.Value) &&
+                    (string.IsNullOrWhiteSpace(query.Status) || m.Status == query.Status) &&
+                    (!query.ProjectId.HasValue || m.ProjectId == query.ProjectId.Value) &&
+                    (!query.CreatorId.HasValue || m.CreatorId == query.CreatorId.Value),
                 hasTrackings: false
             );
 
             var total = list.Count;
-            if (total == 0)
-                throw new NotFoundException("No milestones found.");
-
-            var page = list
+            var paged = list
                 .Skip((query.PageIndex - 1) * query.PageSize)
                 .Take(query.PageSize)
                 .ToList();
@@ -65,16 +65,22 @@ namespace SRPM_Services.Implements
                 PageIndex = query.PageIndex,
                 PageSize = query.PageSize,
                 TotalCount = total,
-                DataList = page.Adapt<List<RS_Milestone>>()
+                DataList = paged.Adapt<List<RS_Milestone>>()
             };
         }
+
 
         public async Task<RS_Milestone> CreateAsync(RQ_Milestone request)
         {
             var entity = request.Adapt<Milestone>();
             entity.Id = Guid.NewGuid();
             entity.CreatedAt = DateTime.UtcNow;
-            entity.Status = request.Status.ToStatus().ToString().ToLowerInvariant();
+            entity.Status = Status.Created.ToString().ToLowerInvariant();
+            // e.g. MS-202507-001
+            var yyyymm = DateTime.UtcNow.ToString("yyyyMM");
+            var sequence = new Random().Next(1, 999).ToString("D3");
+            entity.Code = $"MS-{yyyymm}-{sequence}";
+
 
             await _unitOfWork.GetMilestoneRepository().AddAsync(entity);
             await _unitOfWork.SaveChangesAsync();
@@ -87,8 +93,6 @@ namespace SRPM_Services.Implements
             var repo = _unitOfWork.GetMilestoneRepository();
             var entity = await repo.GetByIdAsync<Guid>(id);
             if (entity == null) return null;
-
-            entity.Status = request.Status.ToStatus().ToString().ToLowerInvariant();
             request.Adapt(entity);
 
             await repo.UpdateAsync(entity);

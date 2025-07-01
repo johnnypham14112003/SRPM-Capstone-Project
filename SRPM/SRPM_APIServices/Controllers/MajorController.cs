@@ -1,5 +1,8 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using SRPM_Services.BusinessModels;
 using SRPM_Services.BusinessModels.RequestModels;
 using SRPM_Services.BusinessModels.ResponseModels;
 using SRPM_Services.Interfaces;
@@ -17,13 +20,15 @@ namespace SRPM_APIServices.Controllers
             _service = service;
         }
 
-        // GET: api/major
-        [HttpGet]
-        public async Task<ActionResult<List<RS_Major>>> GetAll()
+        // GET: api/major/filter
+        [HttpGet("filter")]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+        public async Task<ActionResult<PagingResult<RS_Major>>> GetList([FromQuery] RQ_MajorQuery query)
         {
-            var result = await _service.GetAllAsync();
+            var result = await _service.GetListAsync(query);
             return Ok(result);
         }
+
 
         // GET: api/major/{id}
         [HttpGet("{id}")]

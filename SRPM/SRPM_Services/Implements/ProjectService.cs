@@ -1,4 +1,5 @@
 ﻿using Mapster;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using SRPM_Repositories.Models;
 using SRPM_Repositories.Repositories.Interfaces;
 using SRPM_Services.BusinessModels;
@@ -76,9 +77,30 @@ namespace SRPM_Services.Implements
             var sanitizedAbbr = (entity.Abbreviations ?? "XXX").Trim().ToUpperInvariant();
 
             // Format: RP2025_06_ABC
-            entity.Code = $"RP{DateTime.UtcNow:yyyy_MM}_{sanitizedAbbr}";
+            entity.Code = $"RP-{DateTime.UtcNow:yyyy_MM}{sanitizedAbbr}";
+
+            var accountId = Guid.Parse(_userContextService.GetCurrentUserId());
+
+            var userRoles = await _unitOfWork.GetUserRoleRepository().GetListByFilterAsync(
+                accountId: accountId,
+                roleId: null,
+                projectId: null,
+                appraisalCouncilId: null,
+                status: Status.Created.ToString().ToLower(),
+                isOfficial: null
+            );
+
+            // Filter for the correct role name (Role is already included)
+            var hostInstitutionUserRole = userRoles
+                .FirstOrDefault(ur => ur.Role != null && ur.Role.Name == "Host Institution");
+
+            if (hostInstitutionUserRole == null)
+                throw new UnauthorizedException("Not authorized");
+
+            entity.CreatorId = hostInstitutionUserRole.Id;
+
+
             entity.Status = Status.Created.ToString().ToLowerInvariant();
-            entity.CreatorId = Guid.Parse(_userContextService.GetCurrentUserId());
             await _unitOfWork.GetProjectRepository().AddAsync(entity);
             await _unitOfWork.SaveChangesAsync();
 

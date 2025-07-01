@@ -1,6 +1,7 @@
 ﻿using Mapster;
 using SRPM_Repositories.Models;
 using SRPM_Repositories.Repositories.Interfaces;
+using SRPM_Services.BusinessModels;
 using SRPM_Services.BusinessModels.RequestModels;
 using SRPM_Services.BusinessModels.ResponseModels;
 using SRPM_Services.Interfaces;
@@ -21,13 +22,27 @@ namespace SRPM_Services.Implements
             _unitOfWork = unitOfWork;
         }
 
-        public async Task<List<RS_ProjectMajor>> GetMajorsByProjectIdAsync(Guid projectId)
+        public async Task<PagingResult<RS_ProjectMajor>> GetListAsync(RQ_ProjectMajorQuery query)
         {
             var list = await _unitOfWork.GetProjectMajorRepository()
-                .GetListAsync(pm => pm.ProjectId == projectId, hasTrackings: false);
+                .GetListWithIncludesAsync(query.ProjectId, query.MajorId);
 
-            return list.Adapt<List<RS_ProjectMajor>>();
+            var total = list.Count;
+            var paged = list
+                .Skip((query.PageIndex - 1) * query.PageSize)
+                .Take(query.PageSize)
+                .ToList();
+
+            return new PagingResult<RS_ProjectMajor>
+            {
+                PageIndex = query.PageIndex,
+                PageSize = query.PageSize,
+                TotalCount = total,
+                DataList = paged.Adapt<List<RS_ProjectMajor>>()
+            };
         }
+
+
 
         public async Task<RS_ProjectMajor> CreateAsync(RQ_ProjectMajor request)
         {

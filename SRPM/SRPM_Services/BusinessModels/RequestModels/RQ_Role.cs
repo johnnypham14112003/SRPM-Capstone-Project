@@ -11,7 +11,6 @@ namespace SRPM_Services.BusinessModels.RequestModels
     {
         public string Name { get; set; } = null!;
         public bool IsGroupRole { get; set; }
-        public string Status { get; set; } = "created";
     }
 
 }

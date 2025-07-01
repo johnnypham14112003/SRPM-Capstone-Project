@@ -8,11 +8,9 @@ namespace SRPM_Services.BusinessModels.RequestModels
 {
     public class RQ_UserRole
     {
-        public string Code { get; set; } = null!;
         public string? GroupName { get; set; }
         public bool IsOfficial { get; set; }
         public DateTime? ExpireDate { get; set; }
-        public string Status { get; set; } = "created";
         public Guid AccountId { get; set; }
         public Guid RoleId { get; set; }
         public Guid? ProjectId { get; set; }

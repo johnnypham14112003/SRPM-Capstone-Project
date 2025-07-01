@@ -3,6 +3,7 @@ using SRPM_Repositories.Models;
 using SRPM_Repositories.Repositories.Interfaces;
 using SRPM_Services.BusinessModels.RequestModels;
 using SRPM_Services.BusinessModels.ResponseModels;
+using SRPM_Services.Extensions.Enumerables;
 using SRPM_Services.Interfaces;
 using System;
 using System.Collections.Generic;
@@ -42,7 +43,7 @@ namespace SRPM_Services.Implements
             evaluation.Id = Guid.NewGuid();
             evaluation.Code = code;
             evaluation.CreateDate = DateTime.UtcNow;
-            evaluation.Status = "created";
+            evaluation.Status = Status.Created.ToString().ToLowerInvariant();
 
             await _unitOfWork.GetEvaluationRepository().AddAsync(evaluation);
             await _unitOfWork.SaveChangesAsync();

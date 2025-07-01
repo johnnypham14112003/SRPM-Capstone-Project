@@ -3,6 +3,7 @@ using SRPM_Repositories.Models;
 using SRPM_Repositories.Repositories.Interfaces;
 using SRPM_Services.BusinessModels.RequestModels;
 using SRPM_Services.BusinessModels.ResponseModels;
+using SRPM_Services.Extensions.Enumerables;
 using SRPM_Services.Interfaces;
 using System;
 using System.Collections.Generic;
@@ -40,7 +41,7 @@ namespace SRPM_Services.Implements
             var entity = request.Adapt<IndividualEvaluation>();
             entity.Id = Guid.NewGuid();
             entity.SubmittedAt = DateTime.UtcNow;
-            entity.Status = "created";
+            entity.Status = Status.Created.ToString().ToLowerInvariant();
 
             await _unitOfWork.GetIndividualEvaluationRepository().AddAsync(entity);
             await _unitOfWork.SaveChangesAsync();

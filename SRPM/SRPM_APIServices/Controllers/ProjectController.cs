@@ -32,6 +32,7 @@ namespace SRPM_APIServices.Controllers
 
 
         // GET: api/project/{id}
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "Member, Host Institution, Staff")]
         [HttpGet("{id}")]
         public async Task<ActionResult<RS_Project>> GetById(Guid id)
         {
@@ -53,6 +54,7 @@ namespace SRPM_APIServices.Controllers
 
         // PUT: api/project/{id}
         [HttpPut("{id}")]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "Host Institution, Staff")]
         public async Task<ActionResult<RS_Project>> Update(Guid id, RQ_Project request)
         {
             var updated = await _service.UpdateAsync(id, request);
@@ -63,6 +65,7 @@ namespace SRPM_APIServices.Controllers
 
         // DELETE: api/project/{id}
         [HttpDelete("{id}")]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "Admin, Staff")]
         public async Task<IActionResult> Delete(Guid id)
         {
             var deleted = await _service.DeleteAsync(id);

@@ -38,6 +38,7 @@ namespace SRPM_Services.Implements
         {
             var entity = request.Adapt<Role>();
             entity.Id = Guid.NewGuid();
+            entity.Status = Status.Created.ToString().ToLowerInvariant();
 
             await _unitOfWork.GetRoleRepository().AddAsync(entity);
             await _unitOfWork.SaveChangesAsync();
@@ -50,9 +51,6 @@ namespace SRPM_Services.Implements
             var repo = _unitOfWork.GetRoleRepository();
             var entity = await repo.GetByIdAsync<Guid>(id);
             if (entity == null) return null;
-
-            var parsedStatus = request.Status.ToStatus();
-            entity.Status = parsedStatus.ToString().ToLowerInvariant();
 
             request.Adapt(entity);
             await repo.UpdateAsync(entity);

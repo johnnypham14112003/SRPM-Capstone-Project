@@ -1,6 +1,7 @@
 ﻿using Mapster;
 using SRPM_Repositories.Models;
 using SRPM_Repositories.Repositories.Interfaces;
+using SRPM_Services.BusinessModels;
 using SRPM_Services.BusinessModels.RequestModels;
 using SRPM_Services.BusinessModels.ResponseModels;
 using SRPM_Services.Interfaces;
@@ -27,11 +28,31 @@ namespace SRPM_Services.Implements
             return major?.Adapt<RS_Major>();
         }
 
-        public async Task<List<RS_Major>> GetAllAsync()
+        public async Task<PagingResult<RS_Major>> GetListAsync(RQ_MajorQuery query)
         {
-            var majors = await _unitOfWork.GetMajorRepository().GetListAsync(_ => true, hasTrackings: false);
-            return majors.Adapt<List<RS_Major>>();
+            var majors = await _unitOfWork.GetMajorRepository().GetListAsync(
+                m =>
+                    (!query.FieldId.HasValue || m.FieldId == query.FieldId.Value) &&
+                    (string.IsNullOrWhiteSpace(query.Name) || m.Name.Contains(query.Name)),
+                hasTrackings: false
+            );
+
+            var total = majors.Count;
+            var paged = majors
+                .Skip((query.PageIndex - 1) * query.PageSize)
+                .Take(query.PageSize)
+                .ToList();
+
+            return new PagingResult<RS_Major>
+            {
+                PageIndex = query.PageIndex,
+                PageSize = query.PageSize,
+                TotalCount = total,
+                DataList = paged.Adapt<List<RS_Major>>()
+            };
         }
+
+
 
         public async Task<RS_Major> CreateAsync(RQ_Major request)
         {

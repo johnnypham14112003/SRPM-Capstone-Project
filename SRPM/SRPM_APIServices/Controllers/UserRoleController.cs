@@ -1,5 +1,8 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using SRPM_Services.BusinessModels;
 using SRPM_Services.BusinessModels.RequestModels;
 using SRPM_Services.BusinessModels.ResponseModels;
 using SRPM_Services.Interfaces;
@@ -23,6 +26,14 @@ namespace SRPM_APIServices.Controllers
         {
             var roles = await _service.GetAllAsync();
             return Ok(roles);
+        }
+        // GET: api/userrole/filter
+        [HttpGet("filter")]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+        public async Task<ActionResult<PagingResult<RS_UserRole>>> GetList([FromQuery] RQ_UserRoleQuery query)
+        {
+            var result = await _service.GetListAsync(query);
+            return Ok(result);
         }
 
         // GET: api/userrole/{id}

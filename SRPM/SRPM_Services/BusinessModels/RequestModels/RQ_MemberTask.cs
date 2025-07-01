@@ -17,8 +17,6 @@ namespace SRPM_Services.BusinessModels.RequestModels
 
         public string? Note { get; set; }
         public DateTime? DeliveryDate { get; set; }
-        public string Status { get; set; } = "created";
-
         public Guid MemberId { get; set; }
         public Guid TaskId { get; set; }
     }
