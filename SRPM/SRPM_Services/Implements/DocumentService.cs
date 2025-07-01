@@ -67,7 +67,7 @@ public class DocumentService : IDocumentService
 
     public async Task<bool> UpdateDocumentInfo(RQ_Document newDocument)
     {
-        var existDocument = await _unitOfWork.GetDocumentRepository().GetOneAsync(ac => ac.Id == newDocument.Id)
+        var existDocument = await _unitOfWork.GetDocumentRepository().GetOneAsync(d => d.Id == newDocument.Id)
             ?? throw new NotFoundException("Not found any Document match this Id!");
 
         //Transfer new Data to old Data
@@ -77,14 +77,14 @@ public class DocumentService : IDocumentService
 
     public async Task<bool> DeleteDocument(Guid id)
     {
-        var existCouncil = await _unitOfWork.GetDocumentRepository().GetOneAsync(ac => ac.Id == id)
+        var existDocument = await _unitOfWork.GetDocumentRepository().GetOneAsync(d => d.Id == id)
             ?? throw new NotFoundException("Not found any Document match this Id!");
 
         //Remove reference Key
         //...
         //await _unitOfWork.GetDocumentCouncilRepository().DeleteAsync(existCouncil);
 
-        existCouncil.Status = "deleted";
+        existDocument.Status = "deleted";
         return await _unitOfWork.GetDocumentRepository().SaveChangeAsync();
     }
 }

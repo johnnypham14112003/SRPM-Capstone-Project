@@ -44,7 +44,7 @@ namespace SRPM_APIServices.Controllers
             return Ok(categoryInfo);
         }
 
-        [HttpPatch]
+        [HttpPut]
         public async Task<IActionResult> UpdateConfig([FromBody] RQ_SystemConfiguration inputData)
         {
             bool result = await _systemConfigurationService.ChangeConfig(inputData);

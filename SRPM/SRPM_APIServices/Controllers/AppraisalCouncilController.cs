@@ -39,7 +39,7 @@ public class AppraisalCouncilController : Controller
         return Ok(result);
     }
 
-    [HttpPatch]
+    [HttpPut]
     public async Task<IActionResult> Update([FromBody] RQ_AppraisalCouncil inputData)
     {
         bool result = await _appraisalCouncilService.UpdateCouncilInfo(inputData);
