@@ -20,5 +20,5 @@ public class RQ_Document
     public Guid? IndividualEvaluationId { get; set; }
     public Guid? TransactionId { get; set; }
 
-    public virtual IEnumerable<RQ_DocumentField>? DocumentFields { get; set; }
+    public virtual ICollection<RQ_DocumentSection>? DocumentFields { get; set; }
 }

@@ -10,7 +10,6 @@ public class DocumentSection
     [Required] public int SectionOrder { get; set; } = 1;
     [Required] public bool IsTable { get; set; } = false;//true -< SectionContent   | false -< TableStructure
     [Required] public bool IsSpacing { get; set; } = false;//space between section
-    [MaxLength(30)] public string? FieldAlign { get; set; }
 
     // Foreign keys
     [Required] public Guid DocumentId { get; set; }

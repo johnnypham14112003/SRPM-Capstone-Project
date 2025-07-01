@@ -16,8 +16,6 @@ using SRPM_Services.Interfaces;
 using SRPM_Services.Implements;
 using SRPM_Repositories.Repositories.Implements;
 using Microsoft.OpenApi.Models;
-using SRPM_Repositories.Models;
-using SRPM_Services.BusinessModels.RequestModels;
 using SRPM_Services.Extensions.Enumerables;
 
 namespace SRPM_APIServices;
@@ -57,25 +55,26 @@ public static class DIContainer
     private static IServiceCollection InjectBusinessServices(this IServiceCollection services)
     {
         services.AddScoped<IAccountService, AccountService>();
-        services.AddScoped<ISystemConfigurationService, SystemConfigurationService>();
-        services.AddScoped<INotificationService, NotificationService>();
-        services.AddScoped<ITokenService, TokenService>();
+        services.AddScoped<IAppraisalCouncilService, AppraisalCouncilService>();
+        services.AddScoped<IDocumentService, DocumentService>();
+        services.AddScoped<IDocumentSectionService, DocumentSectionService>();
         services.AddScoped<IEvaluationService, EvaluationService>();
         services.AddScoped<IEvaluationStageService, EvaluationStageService>();
+        services.AddScoped<IIndividualEvaluationService, IndividualEvaluationService>();
+        services.AddScoped<IMajorService, MajorService>();
+        services.AddScoped<IMemberTaskService, MemberTaskService>();   
+        services.AddScoped<IMilestoneService, MilestoneService>();
+        services.AddScoped<INotificationService, NotificationService>();
         services.AddScoped<IProjectService, ProjectService>();
         services.AddScoped<IProjectMajorService, ProjectMajorService>();
-        services.AddScoped<IMajorService, MajorService>();
         services.AddScoped<IProjectTagService, ProjectTagService>();
         services.AddScoped<IRoleService, RoleService>();
-        services.AddScoped<IUserRoleService, UserRoleService>();
-        services.AddScoped<IIndividualEvaluationService, IndividualEvaluationService>();
-        services.AddScoped<IAppraisalCouncilService, AppraisalCouncilService>();
-        services.AddScoped<ITransactionService, TransactionService>();
-        services.AddScoped<IDocumentService, DocumentService>();
+        services.AddScoped<ISystemConfigurationService, SystemConfigurationService>();
+        services.AddScoped<ITokenService, TokenService>();
         services.AddScoped<ITaskService, TaskService>();
-        services.AddScoped<IMilestoneService, MilestoneService>();
-        services.AddScoped<IMemberTaskService, MemberTaskService>();   
+        services.AddScoped<IUserRoleService, UserRoleService>();
         services.AddScoped<IUserContextService, UserContextService>();
+        services.AddScoped<ITransactionService, TransactionService>();
 
 
         services.AddScoped<IEmailService, EmailService>();
@@ -89,27 +88,32 @@ public static class DIContainer
         services.AddScoped<IUnitOfWork, UnitOfWork>();
         services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
         //---------------------------------------------------------------------------
-        services.AddScoped<IAccountRepository, AccountRepository>();
-        services.AddScoped<ISystemConfigurationRepository, SystemConfigurationRepository>();
-        services.AddScoped<INotificationRepository, NotificationRepository>();
         services.AddScoped<IAccountNotificationRepository, AccountNotificationRepository>();
+        services.AddScoped<IAccountRepository, AccountRepository>();
+        services.AddScoped<IAppraisalCouncilRepository, AppraisalCouncilRepository>();
         services.AddScoped<IDocumentRepository, DocumentRepository>();
+        services.AddScoped<IDocumentSectionRepository, DocumentSectionRepository>();
         services.AddScoped<IEvaluationRepository, EvaluationRepository>();
         services.AddScoped<IEvaluationStageRepository, EvaluationStageRepository>();
         services.AddScoped<IIndividualEvaluationRepository, IndividualEvaluationRepository>();
-        services.AddScoped<IMemberTaskRepository, MemberTaskRepository>();
-        services.AddScoped<ITaskRepository, TaskRepository>();
-        services.AddScoped<ITransactionRepository, TransactionRepository>();
-        services.AddScoped<IUserRoleRepository, UserRoleRepository>();
         services.AddScoped<IMajorRepository, MajorRepository>();
+        services.AddScoped<IMemberTaskRepository, MemberTaskRepository>();
         services.AddScoped<IMilestoneRepository, MilestoneRepository>();
+        services.AddScoped<INotificationRepository, NotificationRepository>();
         services.AddScoped<IOTPCodeRepository, OTPCodeRepository>();
         services.AddScoped<IProjectRepository, ProjectRepository>();
         services.AddScoped<IProjectMajorRepository, ProjectMajorRepository>();
         services.AddScoped<IProjectTagRepository, ProjectTagRepository>();
         services.AddScoped<IResearchPaperRepository, ResearchPaperRepository>();
         services.AddScoped<IRoleRepository, RoleRepository>();
+        services.AddScoped<ISectionContentRepository, SectionContentRepository>();
         services.AddScoped<ISignatureRepository, SignatureRepository>();
+        services.AddScoped<ISystemConfigurationRepository, SystemConfigurationRepository>();
+        services.AddScoped<ITableRowRepository, TableRowRepository>();
+        services.AddScoped<ITableStructureRepository, TableStructureRepository>();
+        services.AddScoped<ITaskRepository, TaskRepository>();
+        services.AddScoped<ITransactionRepository, TransactionRepository>();
+        services.AddScoped<IUserRoleRepository, UserRoleRepository>();
 
         //Add other repository here...
 
@@ -193,10 +197,6 @@ public static class DIContainer
         TypeAdapterConfig<EducationBM, Education>.NewConfig()
             .Map(dest => dest.Freelancer, src => new Account { Id = src.FreeLancerId });
         */
-
-        //Skip null data (suitable for Patch API)
-        TypeAdapterConfig<RQ_AppraisalCouncil, AppraisalCouncil>.NewConfig().IgnoreNullValues(true);
-        TypeAdapterConfig<RQ_SystemConfiguration, SystemConfiguration>.NewConfig().IgnoreNullValues(true);
 
         // Config NotificationWithReadStatus -> RS_AccountNotification
         TypeAdapterConfig<NotificationWithReadStatus, RS_AccountNotification>.NewConfig()
