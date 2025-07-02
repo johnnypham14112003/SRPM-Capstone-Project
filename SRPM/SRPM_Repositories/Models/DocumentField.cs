@@ -11,6 +11,12 @@ public class DocumentField
     [MaxLength(30)] public string? ChapterAlign { get; set; }
     [MaxLength(50)] public string? ChapterStyle { get; set; }
 
+    [Required] public bool IsBlankLine { get; set; } = false;
+    [Required] public bool HaveHeader { get; set; } = false;
+    public string? Header { get; set; }
+    [MaxLength(30)] public string? HeaderAlign { get; set; }
+    [MaxLength(50)] public string? HeaderStyle { get; set; }
+
     public string? Title { get; set; }
     [MaxLength(30)] public string? TitleAlign { get; set; }
     [MaxLength(50)] public string? TitleStyle { get; set; }

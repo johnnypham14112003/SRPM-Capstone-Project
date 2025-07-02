@@ -7,7 +7,7 @@ public class AppraisalCouncil
     [Key] public Guid Id { get; set; } = Guid.NewGuid();
 
     [Required, MaxLength(30)] public string Code { get; set; } = null!;
-    [MaxLength(200)] public string? Name { get; set; }
+    [Required, MaxLength(200)] public string Name { get; set; } = null!;
     [Required] public DateTime CreatedAt { get; set; } = DateTime.Now;
     [Required] public DateTime UpdatedAt { get; set; } = DateTime.Now;
     [Required, MaxLength(30)] public string Status { get; set; } = "created";

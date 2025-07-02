@@ -1,33 +1,6 @@
-﻿using Mapster;
-using Microsoft.AspNetCore.Mvc.ApplicationModels;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
-using Newtonsoft.Json.Serialization;
-using SRPM_Repositories;
-using SRPM_Repositories.Repositories.Interfaces;
-using SRPM_Services.BusinessModels.ResponseModels;
-using SRPM_Services.Extensions;
-using SRPM_Services.Interfaces;
-using SRPM_Services.Extensions.Mapster;
-using SRPM_Services.Implements;
-using SRPM_Repositories.Repositories.Implements;
-using Microsoft.OpenApi.Models;
-using SRPM_Repositories.Models;
-using SRPM_Services.BusinessModels.RequestModels;
-using SRPM_Services.Extensions.Enumerables;
-using Microsoft.AspNetCore.Authentication.Cookies;
-using Microsoft.AspNetCore.Authentication.Google;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNetCore.Authentication;
-using Microsoft.IdentityModel.Tokens;
-using System.Security.Claims;
-using System.Text;
-
-namespace SRPM_APIServices;
-
-public static class DIContainer
+﻿public static class DIContainer
 {
-    public static IServiceCollection RegisterServices(this IServiceCollection services, IConfiguration configuration)
+    public static IServiceCollection RegisterServices(this IServiceCollection services, IConfiguration configuration, IWebHostEnvironment env)
     {
         //System Services
         services.InjectDbContext(configuration);
@@ -39,13 +12,10 @@ public static class DIContainer
         services.ConfigJsonLoopDeserielize();
         services.InjectSwagger();
 
+
         //Third Party Services
-<<<<<<< Updated upstream
-=======
-        services.AddCustomAuthentication(configuration);
         services.ConfigFluentEmail(configuration);
         services.ConfigRazorTemplate(configuration, env);
->>>>>>> Stashed changes
         //...
 
         return services;
@@ -75,12 +45,16 @@ public static class DIContainer
         services.AddScoped<IRoleService, RoleService>();
         services.AddScoped<IUserRoleService, UserRoleService>();
         services.AddScoped<IIndividualEvaluationService, IndividualEvaluationService>();
+        services.AddScoped<IAppraisalCouncilService, AppraisalCouncilService>();
+        services.AddScoped<ITransactionService, TransactionService>();
+        services.AddScoped<IDocumentService, DocumentService>();
         services.AddScoped<ITaskService, TaskService>();
         services.AddScoped<IMilestoneService, MilestoneService>();
         services.AddScoped<IMemberTaskService, MemberTaskService>();   
         services.AddScoped<IUserContextService, UserContextService>();
 
 
+        services.AddScoped<IEmailService, EmailService>();
         //Add other BusinessServices here...
 
         return services;
@@ -195,6 +169,10 @@ public static class DIContainer
         TypeAdapterConfig<EducationBM, Education>.NewConfig()
             .Map(dest => dest.Freelancer, src => new Account { Id = src.FreeLancerId });
         */
+
+        //Skip null data (suitable for Patch API)
+        TypeAdapterConfig<RQ_AppraisalCouncil, AppraisalCouncil>.NewConfig().IgnoreNullValues(true);
+        TypeAdapterConfig<RQ_SystemConfiguration, SystemConfiguration>.NewConfig().IgnoreNullValues(true);
 
         // Config NotificationWithReadStatus -> RS_AccountNotification
         TypeAdapterConfig<NotificationWithReadStatus, RS_AccountNotification>.NewConfig()
@@ -337,7 +315,6 @@ public static class DIContainer
 
         return services;
     }
-    
 
 
     private static IServiceCollection ConfigJsonLoopDeserielize(this IServiceCollection services)
@@ -391,72 +368,35 @@ public static class DIContainer
                 }
             });
         });
-
         return services;
     }
-    public static IServiceCollection AddCustomAuthentication(
-        this IServiceCollection services, IConfiguration config)
+
+
+    private static IServiceCollection ConfigFluentEmail(this IServiceCollection services, IConfiguration configuration)
     {
-        services.AddAuthentication(options =>
+        string defaultFromEmail = configuration["FluentEmail:Address"]!;
+
+        string host = configuration["FluentEmail:Host"]!;
+        int port = int.Parse(configuration["FluentEmail:Port"]!);
+        string username = configuration["FluentEmail:Address"]!;
+        string password = configuration["FluentEmail:AppPassword"]!;
+        services.AddFluentEmail(defaultFromEmail).AddSmtpSender(host, port, username, password);
+        return services;
+    }
+    private static IServiceCollection ConfigRazorTemplate(this IServiceCollection services, IConfiguration configuration, IWebHostEnvironment env)
+    {
+        var templatePath = Path.Combine(env.ContentRootPath, "Extensions/FluentEmail/UIEmail");
+        if (!Directory.Exists(templatePath))
+            Directory.CreateDirectory(templatePath);
+
+        services.AddMvcCore().AddRazorRuntimeCompilation();
+        services.Configure<MvcRazorRuntimeCompilationOptions>(opts =>
         {
-            options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
-            options.DefaultAuthenticateScheme = CookieAuthenticationDefaults.AuthenticationScheme;
-            options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-            options.DefaultSignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
-        })
-        .AddJwtBearer(options =>
-        {
-            options.TokenValidationParameters = new TokenValidationParameters
-            {
-                ValidateIssuer = true,
-                ValidIssuer = config["Jwt:Issuer"],
-                ValidateAudience = true,
-                ValidAudience = config["Jwt:Audience"],
-                ValidateLifetime = true,
-                IssuerSigningKey = new SymmetricSecurityKey(
-                    Encoding.UTF8.GetBytes(config["Jwt:Key"])),
-                RoleClaimType = ClaimTypes.Role
-            };
-        })
-        .AddCookie("Cookies")
-        .AddGoogle(GoogleDefaults.AuthenticationScheme, googleOptions =>
-        {
-            googleOptions.ClientId = config["Authentication:Google:ClientId"];
-            googleOptions.ClientSecret = config["Authentication:Google:ClientSecret"];
-            googleOptions.Scope.Add("profile");
-            googleOptions.Scope.Add("email");
-            googleOptions.ClaimActions.MapJsonKey("AvatarUrl", "picture");
-
-            googleOptions.Events.OnCreatingTicket = async context =>
-            {
-                var emailClaim = context.Identity.FindFirst(ClaimTypes.Email);
-                if (emailClaim is null)
-                {
-                    throw new Exception("Email claim not found.");
-                }
-
-                var allowedDomain = config["AllowedEmailDomain"] ?? "fe.edu.vn";
-                var expectedDomain = "@" + allowedDomain;
-
-                if (!emailClaim.Value.EndsWith(expectedDomain, StringComparison.OrdinalIgnoreCase))
-                {
-                    throw new UnauthorizedAccessException($"Email must end with {expectedDomain}.");
-                }
-
-                var pictureClaim = context.Identity.FindFirst("picture")?.Value;
-                var nameClaim = context.Identity.FindFirst(ClaimTypes.Name)?.Value;
-
-                if (pictureClaim != null)
-                {
-                    context.Identity.AddClaim(new Claim("AvatarUrl", pictureClaim));
-                }
-                if (nameClaim != null)
-                {
-                    context.Identity.AddClaim(new Claim("FullName", nameClaim));
-                }
-            };
+            opts.FileProviders.Add(
+                new PhysicalFileProvider(templatePath)
+            );
         });
-
+        services.AddRazorTemplating();
         return services;
     }
     public static IApplicationBuilder UseCustomCors(this IApplicationBuilder app)

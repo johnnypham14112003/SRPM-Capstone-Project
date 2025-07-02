@@ -1,5 +1,6 @@
-﻿namespace SRPM_Services.BusinessModels.RequestModels;
-public class RQ_QueryAccountNotification
+﻿namespace SRPM_Services.BusinessModels.RequestModels.Query;
+
+public class Q_AccountNotification
 {
     public Guid AccountId { get; set; }
     public string? KeyWord { get; set; }

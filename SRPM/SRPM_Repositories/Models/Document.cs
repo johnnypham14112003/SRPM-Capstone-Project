@@ -5,31 +5,12 @@ public class Document
 {
     [Key] public Guid Id { get; set; } = Guid.NewGuid();
 
-    [Required] public bool HaveHeader { get; set; } = false;
-    public string? Header { get; set; }
-    [MaxLength(30)] public string? HeaderAlign { get; set; }
-    [MaxLength(50)] public string? HeaderStyle { get; set; }
-
-    public string? SubHeader { get; set; }
-    [MaxLength(30)] public string? SubHeaderAlign { get; set; }
-    [MaxLength(50)] public string? SubHeaderStyle { get; set; }
-
-    // Main
-    public string? Title { get; set; }
-    [MaxLength(30)] public string? TitleAlign { get; set; }
-    [MaxLength(50)] public string? TitleStyle { get; set; }
-
-    public string? Subtitle { get; set; }
-    [MaxLength(30)] public string? SubTitleAlign { get; set; }
-    [MaxLength(50)] public string? SubTitleStyle { get; set; }
-
+    [Required] public string Name { get; set; } = null!;
     [Required, MaxLength(30)] public string Type { get; set; } = "system";//Final E-Doc | Ly lich khoa hoc
     public DateTime? DateInDoc { get; set; }
     [Required] public DateTime UpdatedAt { get; set; } = DateTime.Now;
     [Required] public DateTime UploadAt { get; set; } = DateTime.Now;
-
-    [Required, MaxLength(30)]
-    public string Status { get; set; } = "created";
+    [Required, MaxLength(30)] public string Status { get; set; } = "created";
 
     // Foreign keys
     [Required] public Guid UploaderId { get; set; }

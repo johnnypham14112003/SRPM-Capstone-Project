@@ -4,11 +4,15 @@ public interface IUnitOfWork
 {
     Task<bool> SaveChangesAsync();
 
-    IAccountRepository GetAccountRepository();
     IAccountNotificationRepository GetAccountNotificationRepository();
+    IAccountRepository GetAccountRepository();
+    IAppraisalCouncilRepository GetAppraisalCouncilRepository();
+    IContentTableRepository GetContentTableRepository();
+    IDocumentFieldRepository GetDocumentFieldRepository();
     IDocumentRepository GetDocumentRepository();
     IEvaluationRepository GetEvaluationRepository();
     IEvaluationStageRepository GetEvaluationStageRepository();
+    IFieldContentRepository GetFieldContentRepository();
     IIndividualEvaluationRepository GetIndividualEvaluationRepository();
     IMemberTaskRepository GetMemberTaskRepository();
     INotificationRepository GetNotificationRepository();

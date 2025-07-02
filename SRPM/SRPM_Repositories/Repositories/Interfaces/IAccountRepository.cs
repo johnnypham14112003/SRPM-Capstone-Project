@@ -1,5 +1,4 @@
-﻿
-using SRPM_Repositories.Models;
+﻿using SRPM_Repositories.Models;
 
 namespace SRPM_Repositories.Repositories.Interfaces;
 
