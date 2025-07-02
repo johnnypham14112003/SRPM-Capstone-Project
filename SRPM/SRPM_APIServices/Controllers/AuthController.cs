@@ -2,13 +2,13 @@
 using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Mvc;
-using SRPM_Repositories.DTOs;
 using SRPM_Services.Interfaces;
 using System;
 using System.Threading.Tasks;
 using System.Security.Claims;
 using SRPM_Services.Implements;
 using SRPM_Services.Extensions.Exceptions;
+using SRPM_Services.BusinessModels.Others;
 
 namespace SRPM_APIServices.Controllers
 {
@@ -70,7 +70,7 @@ namespace SRPM_APIServices.Controllers
             if (string.IsNullOrEmpty(email) || string.IsNullOrEmpty(name))
                 return BadRequest("Missing required information from Google account.");
 
-            var loginRequest = new GoogleLoginRQ
+            var loginRequest = new RQ_GoogleLogin
             {
                 Email = email,
                 Name = name,
@@ -112,8 +112,102 @@ namespace SRPM_APIServices.Controllers
             });
         }
 
+        [HttpPost("login")]
+        public async Task<IActionResult> LoginWithEmailPassword([FromBody] RQ_EmailPasswordLogin request)
+        {
+            if (string.IsNullOrWhiteSpace(request.Email) || string.IsNullOrWhiteSpace(request.Password))
+                return BadRequest("Email and password are required.");
 
+            var account = await _accountService.LoginWithEmailPasswordAsync(request.Email, request.Password);
+            if (account == null)
+                return Unauthorized("Invalid credentials.");
 
+            // Validate selected role
+            if (!string.IsNullOrEmpty(request.SelectedRole))
+            {
+                var isAuthorized = await _roleService.UserHasRoleAsync(account.Id, request.SelectedRole);
+                if (!isAuthorized)
+                    return Forbid("Selected role is not assigned to this user.");
+            }
+
+            var allRoles = await _roleService.GetAllUserRole(account.Id);
+
+            var claims = new List<Claim>
+        {
+            new Claim(ClaimTypes.NameIdentifier, account.Id.ToString()),
+            new Claim("Id", account.Id.ToString()),
+            new Claim(ClaimTypes.Role, request.SelectedRole ?? string.Empty)
+        };
+
+            var token = _tokenService.GenerateJwtToken(claims);
+
+            return Ok(new
+            {
+                Token = token,
+                FullName = account.FullName,
+                AvatarUrl = account.AvatarURL,
+                Email = account.Email,
+                SelectedRole = request.SelectedRole,
+                Roles = allRoles
+            });
+        }
+
+        [HttpPost("forgot-password")]
+        public async Task<IActionResult> ForgotPassword([FromBody] string email)
+        {
+            if (string.IsNullOrWhiteSpace(email))
+                return BadRequest("Email is required.");
+
+            try
+            {
+                var result = await _accountService.ForgotPasswordAsync(email);
+
+                if (!result)
+                    return StatusCode(500, "Failed to send password reset email. Try again later.");
+
+                return Ok(new
+                {
+                    Message = "A password reset email has been sent if this email is associated with a valid account."
+                });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new
+                {
+                    Error = ex.Message
+                });
+            }
+        }
+
+        // ✅ Verify OTP
+        [HttpPost("verify-otp")]
+        public async Task<IActionResult> VerifyOtp([FromBody] string email, string otp)
+        {
+            if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(otp))
+                return BadRequest("Email and OTP are required.");
+
+            var isValid = await _accountService.VerifyOtpAsync(email, otp);
+
+            if (!isValid)
+                return Unauthorized("OTP is invalid, expired, or maximum attempts exceeded.");
+
+            return Ok(new { Message = "OTP is valid." });
+        }
+
+        // 🔄 Reset Password
+        [HttpPost("reset-password")]
+        public async Task<IActionResult> ResetPassword([FromBody] RQ_ResetPassword request)
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            var result = await _accountService.ResetPasswordAsync(request);
+
+            if (!result)
+                return StatusCode(500, "Failed to reset password. Try again later.");
+
+            return Ok(new { Message = "Password has been reset successfully." });
+        }
 
     }
 }

@@ -15,6 +15,13 @@ using Microsoft.OpenApi.Models;
 using SRPM_Repositories.Models;
 using SRPM_Services.BusinessModels.RequestModels;
 using SRPM_Services.Extensions.Enumerables;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authentication.Google;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.IdentityModel.Tokens;
+using System.Security.Claims;
+using System.Text;
 
 namespace SRPM_APIServices;
 
@@ -32,8 +39,13 @@ public static class DIContainer
         services.ConfigJsonLoopDeserielize();
         services.InjectSwagger();
 
-
         //Third Party Services
+<<<<<<< Updated upstream
+=======
+        services.AddCustomAuthentication(configuration);
+        services.ConfigFluentEmail(configuration);
+        services.ConfigRazorTemplate(configuration, env);
+>>>>>>> Stashed changes
         //...
 
         return services;
@@ -382,4 +394,101 @@ public static class DIContainer
 
         return services;
     }
+    public static IServiceCollection AddCustomAuthentication(
+        this IServiceCollection services, IConfiguration config)
+    {
+        services.AddAuthentication(options =>
+        {
+            options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
+            options.DefaultAuthenticateScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+            options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+            options.DefaultSignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+        })
+        .AddJwtBearer(options =>
+        {
+            options.TokenValidationParameters = new TokenValidationParameters
+            {
+                ValidateIssuer = true,
+                ValidIssuer = config["Jwt:Issuer"],
+                ValidateAudience = true,
+                ValidAudience = config["Jwt:Audience"],
+                ValidateLifetime = true,
+                IssuerSigningKey = new SymmetricSecurityKey(
+                    Encoding.UTF8.GetBytes(config["Jwt:Key"])),
+                RoleClaimType = ClaimTypes.Role
+            };
+        })
+        .AddCookie("Cookies")
+        .AddGoogle(GoogleDefaults.AuthenticationScheme, googleOptions =>
+        {
+            googleOptions.ClientId = config["Authentication:Google:ClientId"];
+            googleOptions.ClientSecret = config["Authentication:Google:ClientSecret"];
+            googleOptions.Scope.Add("profile");
+            googleOptions.Scope.Add("email");
+            googleOptions.ClaimActions.MapJsonKey("AvatarUrl", "picture");
+
+            googleOptions.Events.OnCreatingTicket = async context =>
+            {
+                var emailClaim = context.Identity.FindFirst(ClaimTypes.Email);
+                if (emailClaim is null)
+                {
+                    throw new Exception("Email claim not found.");
+                }
+
+                var allowedDomain = config["AllowedEmailDomain"] ?? "fe.edu.vn";
+                var expectedDomain = "@" + allowedDomain;
+
+                if (!emailClaim.Value.EndsWith(expectedDomain, StringComparison.OrdinalIgnoreCase))
+                {
+                    throw new UnauthorizedAccessException($"Email must end with {expectedDomain}.");
+                }
+
+                var pictureClaim = context.Identity.FindFirst("picture")?.Value;
+                var nameClaim = context.Identity.FindFirst(ClaimTypes.Name)?.Value;
+
+                if (pictureClaim != null)
+                {
+                    context.Identity.AddClaim(new Claim("AvatarUrl", pictureClaim));
+                }
+                if (nameClaim != null)
+                {
+                    context.Identity.AddClaim(new Claim("FullName", nameClaim));
+                }
+            };
+        });
+
+        return services;
+    }
+    public static IApplicationBuilder UseCustomCors(this IApplicationBuilder app)
+    {
+        var allowedOrigins = new[] {
+            "http://localhost:5173"
+        };
+
+        app.UseCors("CustomPolicy");
+
+        app.Use(async (context, next) =>
+        {
+            var origin = context.Request.Headers["Origin"].ToString();
+
+            if (allowedOrigins.Contains(origin))
+            {
+                context.Response.Headers.Append("Access-Control-Allow-Origin", origin);
+                context.Response.Headers.Append("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+                context.Response.Headers.Append("Access-Control-Allow-Headers", "Content-Type, Authorization");
+            }
+
+            if (context.Request.Method == "OPTIONS")
+            {
+                context.Response.StatusCode = 204;
+                await context.Response.CompleteAsync();
+                return;
+            }
+
+            await next();
+        });
+
+        return app;
+    }
+
 }
