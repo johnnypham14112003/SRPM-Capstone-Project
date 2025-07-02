@@ -1,4 +1,33 @@
-﻿public static class DIContainer
+﻿using Mapster;
+using Microsoft.AspNetCore.Mvc.ApplicationModels;
+using Microsoft.AspNetCore.Mvc.Razor.RuntimeCompilation;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.FileProviders;
+using Newtonsoft.Json.Serialization;
+using SRPM_Repositories;
+using SRPM_Repositories.Models;
+using SRPM_Repositories.Repositories.Interfaces;
+using SRPM_Services.BusinessModels.RequestModels;
+using SRPM_Services.BusinessModels.ResponseModels;
+using SRPM_Services.Extensions;
+using SRPM_Services.Extensions.FluentEmail;
+using SRPM_Services.Extensions.Mapster;
+using SRPM_Services.Interfaces;
+using SRPM_Services.Implements;
+using SRPM_Repositories.Repositories.Implements;
+using Microsoft.OpenApi.Models;
+using SRPM_Repositories.Models;
+using SRPM_Services.BusinessModels.RequestModels;
+using SRPM_Services.Extensions.Enumerables;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authentication.Google;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.IdentityModel.Tokens;
+using System.Security.Claims;
+using System.Text;
+
+public static class DIContainer
 {
     public static IServiceCollection RegisterServices(this IServiceCollection services, IConfiguration configuration, IWebHostEnvironment env)
     {
@@ -10,6 +39,8 @@
         services.ConfigKebabCase();
         services.ConfigMapster();
         services.ConfigJsonLoopDeserielize();
+        services.AddCustomAuthentication(configuration);
+        services.AddHttpContextAccessor();
         services.InjectSwagger();
 
 
@@ -399,10 +430,75 @@
         services.AddRazorTemplating();
         return services;
     }
+    public static IServiceCollection AddCustomAuthentication(this IServiceCollection services, IConfiguration config)
+    {
+        services.AddAuthentication(options =>
+        {
+            options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
+            options.DefaultAuthenticateScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+            options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+            options.DefaultSignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+        })
+        .AddJwtBearer(options =>
+        {
+            options.TokenValidationParameters = new TokenValidationParameters
+            {
+                ValidateIssuer = true,
+                ValidIssuer = config["Jwt:Issuer"],
+                ValidateAudience = true,
+                ValidAudience = config["Jwt:Audience"],
+                ValidateLifetime = true,
+                IssuerSigningKey = new SymmetricSecurityKey(
+                    Encoding.UTF8.GetBytes(config["Jwt:Key"])),
+                RoleClaimType = ClaimTypes.Role
+            };
+        })
+        .AddCookie("Cookies")
+        .AddGoogle(GoogleDefaults.AuthenticationScheme, googleOptions =>
+        {
+            googleOptions.ClientId = config["Authentication:Google:ClientId"];
+            googleOptions.ClientSecret = config["Authentication:Google:ClientSecret"];
+            googleOptions.Scope.Add("profile");
+            googleOptions.Scope.Add("email");
+            googleOptions.ClaimActions.MapJsonKey("AvatarUrl", "picture");
+
+            googleOptions.Events.OnCreatingTicket = async context =>
+            {
+                var emailClaim = context.Identity.FindFirst(ClaimTypes.Email);
+                if (emailClaim is null)
+                {
+                    throw new Exception("Email claim not found.");
+                }
+
+                var allowedDomain = config["AllowedEmailDomain"] ?? "fe.edu.vn";
+                var expectedDomain = "@" + allowedDomain;
+
+                if (!emailClaim.Value.EndsWith(expectedDomain, StringComparison.OrdinalIgnoreCase))
+                {
+                    throw new UnauthorizedAccessException($"Email must end with {expectedDomain}.");
+                }
+
+                var pictureClaim = context.Identity.FindFirst("picture")?.Value;
+                var nameClaim = context.Identity.FindFirst(ClaimTypes.Name)?.Value;
+
+                if (pictureClaim != null)
+                {
+                    context.Identity.AddClaim(new Claim("AvatarUrl", pictureClaim));
+                }
+                if (nameClaim != null)
+                {
+                    context.Identity.AddClaim(new Claim("FullName", nameClaim));
+                }
+            };
+        });
+
+        return services;
+    }
     public static IApplicationBuilder UseCustomCors(this IApplicationBuilder app)
     {
         var allowedOrigins = new[] {
-            "http://localhost:5173"
+            "http://localhost:5173",
+            "http://localhost:3000"
         };
 
         app.UseCors("CustomPolicy");
