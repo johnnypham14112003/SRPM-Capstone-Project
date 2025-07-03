@@ -23,6 +23,7 @@ builder.Services.RegisterServices(config, env);
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+builder.Services.AddMemoryCache();
 
 
 

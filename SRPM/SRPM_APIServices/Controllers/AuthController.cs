@@ -8,6 +8,8 @@ using System.Threading.Tasks;
 using System.Security.Claims;
 using SRPM_Services.Extensions.Exceptions;
 using SRPM_Services.BusinessModels.Others;
+using SRPM_Services.Extensions;
+using Microsoft.AspNetCore.WebUtilities;
 
 namespace SRPM_APIServices.Controllers
 {
@@ -18,13 +20,20 @@ namespace SRPM_APIServices.Controllers
         private readonly IAccountService _accountService;
         private readonly IUserRoleService _roleService;
         private readonly ITokenService _tokenService;
+        private readonly ISessionService _sessionService;
 
-        public AuthController(IAccountService accountService, ITokenService tokenService, IUserRoleService roleService)
+        public AuthController(
+            IAccountService accountService,
+            ITokenService tokenService,
+            IUserRoleService roleService,
+            ISessionService sessionService)
         {
             _accountService = accountService;
             _tokenService = tokenService;
-            _roleService = roleService; 
+            _roleService = roleService;
+            _sessionService = sessionService;
         }
+
 
         //    [HttpPost("google-login")]
         //    public async Task<IActionResult> GoogleLogin([FromBody] GoogleLoginRQ request)
@@ -77,13 +86,13 @@ namespace SRPM_APIServices.Controllers
                 SelectedRole = role
             };
 
-                var account = await _accountService.LoginWithGoogleAsync(loginRequest);
-                if (account == null)
-                    throw new NotFoundException("Account not found during Google login flow.");
+            var account = await _accountService.LoginWithGoogleAsync(loginRequest);
+            if (account == null)
+                throw new NotFoundException("Account not found during Google login flow.");
+
             if (role != null)
             {
                 var isAuthorized = await _roleService.UserHasRoleAsync(account.Id, role);
-
                 if (!isAuthorized)
                     return Forbid("Selected role is not assigned to this user.");
             }
@@ -93,23 +102,43 @@ namespace SRPM_APIServices.Controllers
             var claims = new List<Claim>
     {
         new Claim(ClaimTypes.NameIdentifier, account.Id.ToString()),
-        new Claim("Id", account.Id.ToString()), 
+        new Claim("Id", account.Id.ToString()),
         new Claim(ClaimTypes.Role, role ?? string.Empty)
     };
 
             var token = _tokenService.GenerateJwtToken(claims);
 
-            return Ok(new
+            // Prepare session data
+            var sessionPayload = new
             {
                 Token = token,
                 FullName = account.FullName,
                 AvatarUrl = account.AvatarURL,
                 Email = account.Email,
                 SelectedRole = role,
-                Roles = allRoles,
-                ReturnUrl = returnUrl
-            });
+                Roles = allRoles
+            };
+
+            // Generate session ID & store securely (in-memory or Redis)
+            var sessionId = Guid.NewGuid().ToString();
+            _sessionService.Store(sessionId, sessionPayload, TimeSpan.FromMinutes(5)); // You build this service
+
+            // Redirect to frontend with session ID
+            var redirectWithSession = QueryHelpers.AddQueryString(returnUrl, "sessionId", sessionId);
+            return Redirect(redirectWithSession);
         }
+
+
+        [HttpGet("session/{id}")]
+        public IActionResult GetSession(string id)
+        {
+            var sessionData = _sessionService.Retrieve(id);
+            if (sessionData == null)
+                return NotFound("Session expired or invalid");
+
+            return Ok(sessionData);
+        }
+
 
         [HttpPost("login")]
         public async Task<IActionResult> LoginWithEmailPassword([FromBody] RQ_EmailPasswordLogin request)

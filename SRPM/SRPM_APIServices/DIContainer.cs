@@ -83,6 +83,8 @@ public static class DIContainer
         services.AddScoped<IMilestoneService, MilestoneService>();
         services.AddScoped<IMemberTaskService, MemberTaskService>();   
         services.AddScoped<IUserContextService, UserContextService>();
+        services.AddScoped<ISessionService, MemorySessionService>();
+
 
 
         services.AddScoped<IEmailService, EmailService>();
