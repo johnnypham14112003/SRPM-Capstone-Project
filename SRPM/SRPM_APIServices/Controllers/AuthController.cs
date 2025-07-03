@@ -123,9 +123,14 @@ namespace SRPM_APIServices.Controllers
             var sessionId = Guid.NewGuid().ToString();
             _sessionService.Store(sessionId, sessionPayload, TimeSpan.FromMinutes(5)); // You build this service
 
-            // Redirect to frontend with session ID
-            var redirectWithSession = QueryHelpers.AddQueryString(returnUrl, "sessionId", sessionId);
-            return Redirect(redirectWithSession);
+            Response.Cookies.Append("sessionId", sessionId, new CookieOptions
+            {
+                HttpOnly = true,
+                Secure = true,
+                SameSite = SameSiteMode.Strict,
+                Expires = DateTime.UtcNow.AddMinutes(10)
+            });
+            return Redirect(returnUrl);
         }
 
 
