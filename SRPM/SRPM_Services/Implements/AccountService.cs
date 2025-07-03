@@ -54,7 +54,11 @@ namespace SRPM_Services.Implements
 
                 string expectedDomain = "@" + _allowedEmailDomain;
                 if (!request.Email.EndsWith(expectedDomain, StringComparison.OrdinalIgnoreCase))
-                    throw new UnauthorizedAccessException($"Email must end with {expectedDomain}.");
+                {
+                    var errorRedirect = _configuration["ErrorRedirectUrl"];
+                    throw new RedirectException($"{errorRedirect}?reason=invalid_domain", "Invalid email domain.");
+                }
+
 
                 var account = await _unitOfWork.GetAccountRepository()
                     .GetOneAsync(a => a.Email == request.Email, hasTrackings: false);

@@ -86,52 +86,60 @@ namespace SRPM_APIServices.Controllers
                 SelectedRole = role
             };
 
-            var account = await _accountService.LoginWithGoogleAsync(loginRequest);
-            if (account == null)
-                throw new NotFoundException("Account not found during Google login flow.");
-
-            if (role != null)
+            try
             {
-                var isAuthorized = await _roleService.UserHasRoleAsync(account.Id, role);
-                if (!isAuthorized)
-                    return Forbid("Selected role is not assigned to this user.");
+                var account = await _accountService.LoginWithGoogleAsync(loginRequest);
+
+                if (account == null)
+                    throw new NotFoundException("Account not found during Google login flow.");
+
+                if (role != null)
+                {
+                    var isAuthorized = await _roleService.UserHasRoleAsync(account.Id, role);
+                    if (!isAuthorized)
+                        return Forbid("Selected role is not assigned to this user.");
+                }
+
+                var allRoles = await _roleService.GetAllUserRole(account.Id);
+
+                var claims = new List<Claim>
+        {
+            new Claim(ClaimTypes.NameIdentifier, account.Id.ToString()),
+            new Claim("Id", account.Id.ToString()),
+            new Claim(ClaimTypes.Role, role ?? string.Empty)
+        };
+
+                var token = _tokenService.GenerateJwtToken(claims);
+
+                var sessionPayload = new
+                {
+                    Token = token,
+                    FullName = account.FullName,
+                    AvatarUrl = account.AvatarURL,
+                    Email = account.Email,
+                    SelectedRole = role,
+                    Roles = allRoles
+                };
+
+                var sessionId = Guid.NewGuid().ToString();
+                _sessionService.Store(sessionId, sessionPayload, TimeSpan.FromMinutes(5));
+
+                Response.Cookies.Append("sessionId", sessionId, new CookieOptions
+                {
+                    HttpOnly = true,
+                    Secure = true,
+                    SameSite = SameSiteMode.Strict,
+                    Expires = DateTime.UtcNow.AddMinutes(10)
+                });
+
+                return Redirect(returnUrl);
             }
-
-            var allRoles = await _roleService.GetAllUserRole(account.Id);
-
-            var claims = new List<Claim>
-    {
-        new Claim(ClaimTypes.NameIdentifier, account.Id.ToString()),
-        new Claim("Id", account.Id.ToString()),
-        new Claim(ClaimTypes.Role, role ?? string.Empty)
-    };
-
-            var token = _tokenService.GenerateJwtToken(claims);
-
-            // Prepare session data
-            var sessionPayload = new
+            catch (RedirectException redirectEx)
             {
-                Token = token,
-                FullName = account.FullName,
-                AvatarUrl = account.AvatarURL,
-                Email = account.Email,
-                SelectedRole = role,
-                Roles = allRoles
-            };
-
-            // Generate session ID & store securely (in-memory or Redis)
-            var sessionId = Guid.NewGuid().ToString();
-            _sessionService.Store(sessionId, sessionPayload, TimeSpan.FromMinutes(5)); // You build this service
-
-            Response.Cookies.Append("sessionId", sessionId, new CookieOptions
-            {
-                HttpOnly = true,
-                Secure = true,
-                SameSite = SameSiteMode.Strict,
-                Expires = DateTime.UtcNow.AddMinutes(10)
-            });
-            return Redirect(returnUrl);
+                return Redirect(redirectEx.RedirectUrl);
+            }
         }
+
 
 
         [HttpGet("session/{id}")]

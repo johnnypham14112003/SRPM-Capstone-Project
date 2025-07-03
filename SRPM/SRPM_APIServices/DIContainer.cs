@@ -469,7 +469,8 @@ public static class DIContainer
                 var emailClaim = context.Identity.FindFirst(ClaimTypes.Email);
                 if (emailClaim is null)
                 {
-                    throw new Exception("Email claim not found.");
+                    context.Response.Redirect("/error?message=Email+claim+not+found");
+                    return;
                 }
 
                 var allowedDomain = config["AllowedEmailDomain"] ?? "fe.edu.vn";
@@ -477,9 +478,10 @@ public static class DIContainer
 
                 if (!emailClaim.Value.EndsWith(expectedDomain, StringComparison.OrdinalIgnoreCase))
                 {
-                    throw new UnauthorizedAccessException($"Email must end with {expectedDomain}.");
+                    var errorUrl = config["Authentication:ErrorRedirectUrl"];
+                    context.Response.Redirect($"{errorUrl}?reason=invalid_domain");
+                    return;
                 }
-
                 var pictureClaim = context.Identity.FindFirst("picture")?.Value;
                 var nameClaim = context.Identity.FindFirst(ClaimTypes.Name)?.Value;
 
@@ -492,6 +494,17 @@ public static class DIContainer
                     context.Identity.AddClaim(new Claim("FullName", nameClaim));
                 }
             };
+            googleOptions.Events.OnRemoteFailure = context =>
+            {
+                var config = context.HttpContext.RequestServices.GetRequiredService<IConfiguration>();
+                var errorRedirectUrl = config["Authentication:ErrorRedirectUrl"] ?? "/error";
+
+                // Optional: You can add the error message or code to the query string
+                context.Response.Redirect($"{errorRedirectUrl}?reason=correlation_failed");
+                context.HandleResponse(); // Stops default exception flow
+                return System.Threading.Tasks.Task.CompletedTask;
+            };
+
         });
 
         return services;
