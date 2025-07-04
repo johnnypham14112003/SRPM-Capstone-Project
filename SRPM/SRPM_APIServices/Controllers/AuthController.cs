@@ -128,7 +128,7 @@ namespace SRPM_APIServices.Controllers
                 {
                     HttpOnly = true,
                     Secure = true,
-                    SameSite = SameSiteMode.Strict,
+                    SameSite = SameSiteMode.None,
                     Expires = DateTime.UtcNow.AddMinutes(10)
                 });
 
@@ -142,15 +142,20 @@ namespace SRPM_APIServices.Controllers
 
 
 
-        [HttpGet("session/{id}")]
-        public IActionResult GetSession(string id)
+        [HttpGet("session")]
+        public IActionResult GetSessionFromCookie()
         {
-            var sessionData = _sessionService.Retrieve(id);
+            var sessionId = Request.Cookies["sessionId"];
+            if (string.IsNullOrEmpty(sessionId))
+                return BadRequest("Session cookie not found.");
+
+            var sessionData = _sessionService.Retrieve(sessionId);
             if (sessionData == null)
                 return NotFound("Session expired or invalid");
 
             return Ok(sessionData);
         }
+
 
 
         [HttpPost("login")]
