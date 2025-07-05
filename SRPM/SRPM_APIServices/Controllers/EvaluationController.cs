@@ -35,6 +35,19 @@ namespace SRPM_APIServices.Controllers
             return Ok(evaluation);
         }
 
+        public class inputString
+        {
+            public string inputText { get; set; }
+            public IEnumerable<string> inputSource { get; set; }
+        }
+
+        [HttpPost("ai-checking")]
+        public async Task<ActionResult<RS_Evaluation>> checking([FromBody] inputString i)
+        {
+            var created = await _evaluationService.CheckPlagiarism(i.inputText, i.inputSource);
+            return Ok(created);
+        }
+
         // POST: api/evaluation
         [HttpPost]
         public async Task<ActionResult<RS_Evaluation>> Create(RQ_Evaluation request)
