@@ -162,16 +162,21 @@ namespace SRPM_APIServices.Controllers
         [HttpPost]
         [Route("google-authentication")]
         [AllowAnonymous]
-        public async Task<IActionResult> GoogleLogin([FromQuery] string Platform, string Token, string role = null)
+        public async Task<IActionResult> GoogleLogin([FromQuery] string Token)
         {
-            var account = await _accountService.HandleGoogleAsync(Token, Platform);
+            var account = await _accountService.HandleGoogleAsync(Token);
             if (account == null)
                 throw new NotFoundException("Account not found during Google login flow.");
 
             var allRoles = await _roleService.GetAllUserRole(account.Id);
-            if (role != null)
+
+            var selectedRole = allRoles.Contains("Researcher")
+                ? "Researcher"
+                : allRoles.FirstOrDefault();
+
+            if (!string.IsNullOrEmpty(selectedRole))
             {
-                var isAuthorized = await _roleService.UserHasRoleAsync(account.Id, role);
+                var isAuthorized = await _roleService.UserHasRoleAsync(account.Id, selectedRole);
                 if (!isAuthorized)
                     return Forbid("Selected role is not assigned to this user.");
             }
@@ -180,7 +185,7 @@ namespace SRPM_APIServices.Controllers
     {
         new Claim(ClaimTypes.NameIdentifier, account.Id.ToString()),
         new Claim("Id", account.Id.ToString()),
-        new Claim(ClaimTypes.Role, role ?? string.Empty)
+        new Claim(ClaimTypes.Role, selectedRole ?? string.Empty)
     };
 
             var jwtToken = _tokenService.GenerateJwtToken(claims);
@@ -193,15 +198,17 @@ namespace SRPM_APIServices.Controllers
                 FullName = account.FullName,
                 AvatarUrl = account.AvatarURL,
                 Email = account.Email,
-                SelectedRole = role,
+                SelectedRole = selectedRole,
                 Roles = allRoles
             });
         }
 
+    }
 
 
 
-        [HttpPost("login")]
+
+    [HttpPost("login")]
         public async Task<IActionResult> LoginWithEmailPassword([FromBody] RQ_EmailPasswordLogin request)
         {
             if (string.IsNullOrWhiteSpace(request.Email) || string.IsNullOrWhiteSpace(request.Password))

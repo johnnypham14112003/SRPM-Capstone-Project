@@ -106,7 +106,7 @@ namespace SRPM_Services.Implements
                 throw;
             }
         }
-        private async Task<GoogleJsonWebSignature.Payload> ValidateGoogleToken(string token, string platform)
+        private async Task<GoogleJsonWebSignature.Payload> ValidateGoogleToken(string token)
         {
             var settings = new GoogleJsonWebSignature.ValidationSettings
             {
@@ -115,10 +115,10 @@ namespace SRPM_Services.Implements
             return await GoogleJsonWebSignature.ValidateAsync(token, settings);
         }
 
-        public async Task<Account> HandleGoogleAsync(string googleToken, string platform)
+        public async Task<Account> HandleGoogleAsync(string googleToken)
         {
             
-            var payload = await ValidateGoogleToken(googleToken, platform);
+            var payload = await ValidateGoogleToken(googleToken);
 
             if (payload == null)
                 throw new UnauthorizedAccessException("Invalid Google token.");
