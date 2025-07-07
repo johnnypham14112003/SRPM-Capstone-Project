@@ -203,12 +203,9 @@ namespace SRPM_APIServices.Controllers
             });
         }
 
-    }
 
 
-
-
-    [HttpPost("login")]
+        [HttpPost("login")]
         public async Task<IActionResult> LoginWithEmailPassword([FromBody] RQ_EmailPasswordLogin request)
         {
             if (string.IsNullOrWhiteSpace(request.Email) || string.IsNullOrWhiteSpace(request.Password))
