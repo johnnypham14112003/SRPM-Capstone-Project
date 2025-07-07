@@ -361,9 +361,14 @@ public static class DIContainer
 
     private static IServiceCollection ConfigCORS(this IServiceCollection services)
     {
-        services.AddCors(options => options.AddPolicy("AllowAll", b => b.AllowAnyHeader().AllowAnyOrigin().AllowAnyMethod()));
+        services.AddCors(options => options.AddPolicy("AllowAll", b =>
+            b.WithOrigins("https://localhost:5173")  // ⬅️ Change this
+             .AllowAnyHeader()
+             .AllowAnyMethod()
+             .AllowCredentials()));
         return services;
     }
+
     public static IServiceCollection InjectSwagger(this IServiceCollection services)
     {
         services.AddSwaggerGen(c =>

@@ -1,7 +1,11 @@
-﻿using Microsoft.AspNetCore.Identity.UI.Services;
+﻿using Azure.Core;
+using Google.Apis.Auth;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using SRPM_Repositories.Models;
+using SRPM_Repositories.Repositories.Implements;
 using SRPM_Repositories.Repositories.Interfaces;
 using SRPM_Services.BusinessModels.Others;
 using SRPM_Services.Extensions.Exceptions;
@@ -101,6 +105,71 @@ namespace SRPM_Services.Implements
                 Debug.WriteLine(ex.ToString());
                 throw;
             }
+        }
+        private async Task<GoogleJsonWebSignature.Payload> ValidateGoogleToken(string token, string platform)
+        {
+            var settings = new GoogleJsonWebSignature.ValidationSettings
+            {
+            };
+
+            return await GoogleJsonWebSignature.ValidateAsync(token, settings);
+        }
+
+        public async Task<Account> HandleGoogleAsync(string googleToken, string platform)
+        {
+            
+            var payload = await ValidateGoogleToken(googleToken, platform);
+
+            if (payload == null)
+                throw new UnauthorizedAccessException("Invalid Google token.");
+
+            if (string.IsNullOrWhiteSpace(payload.Email))
+                throw new ArgumentException("Email is required for Google login.");
+
+            string expectedDomain = "@" + _allowedEmailDomain;
+            if (!payload.Email.EndsWith(expectedDomain, StringComparison.OrdinalIgnoreCase))
+            {
+                var errorRedirect = _configuration["ErrorRedirectUrl"];
+                throw new RedirectException($"{errorRedirect}?reason=invalid_domain", "Invalid email domain.");
+            }
+
+            var existAccount = await _unitOfWork.GetAccountRepository().GetValidEmailAccountAsync(payload.Email);
+            string jwtToken;
+            if (existAccount is null) //null -> create account with that mail
+            {
+                string randomPassword = GenerateRandomPassword(12);
+                string hashedPassword = HashStringSHA256(randomPassword);
+                string identityCode = ExtractIdentityCode(payload.Email);
+                await _unitOfWork.GetAccountRepository().AddAsync(new Account
+                {
+                    Id = Guid.NewGuid(),
+                    Email = payload.Email,
+                    FullName = payload.Name,
+                    AvatarURL = payload.Picture,
+                    IdentityCode = identityCode, // Extracted from email
+                    Password = hashedPassword,
+                    Status = "created",
+                    CreateTime = DateTime.UtcNow
+                }
+                );
+                await _unitOfWork.GetAccountRepository().SaveChangeAsync();
+
+                //then return account object
+                var registered = await _unitOfWork.GetAccountRepository().GetValidEmailAccountAsync(payload.Email)
+                    ?? throw new BadRequestException("There is an error while Signup this email using google!");
+
+
+            }
+            if (existAccount.Status.ToLower() == "deleted")
+            {
+                throw new UnauthorizedException("This existAccount has been deleted. Please contact support for assistance.");
+            }
+            existAccount.FullName = payload.Name;
+            existAccount.AvatarURL = payload.Picture;
+            await _unitOfWork.GetAccountRepository().UpdateAsync(existAccount);
+            await _unitOfWork.SaveChangesAsync();
+
+            return existAccount;
         }
 
         public async Task<Account> LoginWithEmailPasswordAsync(string email, string password)

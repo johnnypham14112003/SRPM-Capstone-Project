@@ -14,5 +14,6 @@ namespace SRPM_Services.Interfaces
         Task<bool> ForgotPasswordAsync(string email);
         Task<bool> ResetPasswordAsync(RQ_ResetPassword request);
         Task<bool> VerifyOtpAsync(string email, string otp);
+        Task<Account> HandleGoogleAsync(string googleToken, string platform);
     }
 }

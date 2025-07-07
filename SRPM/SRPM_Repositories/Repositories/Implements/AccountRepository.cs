@@ -1,5 +1,7 @@
-﻿using SRPM_Repositories.Models;
+﻿using Microsoft.EntityFrameworkCore;
+using SRPM_Repositories.Models;
 using SRPM_Repositories.Repositories.Interfaces;
+using System.Text.RegularExpressions;
 
 namespace SRPM_Repositories.Repositories.Implements;
 
@@ -10,4 +12,15 @@ public class AccountRepository : GenericRepository<Account>, IAccountRepository
     {
         _context = context;
     }
+
+    public async Task<Account> GetValidEmailAccountAsync(string email)
+    {
+        return await _context.Account
+                             .Where(a => !string.IsNullOrEmpty(a.Email)
+                                      && a.Email == email
+                                      && a.Status != "deleted")
+                             .FirstOrDefaultAsync();
+    }
+
+
 }

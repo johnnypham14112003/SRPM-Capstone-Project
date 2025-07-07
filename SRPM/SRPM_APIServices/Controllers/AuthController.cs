@@ -10,6 +10,8 @@ using SRPM_Services.Extensions.Exceptions;
 using SRPM_Services.BusinessModels.Others;
 using SRPM_Services.Extensions;
 using Microsoft.AspNetCore.WebUtilities;
+using Microsoft.AspNetCore.Authorization;
+using Newtonsoft.Json.Linq;
 
 namespace SRPM_APIServices.Controllers
 {
@@ -54,107 +56,148 @@ namespace SRPM_APIServices.Controllers
         //    }
         //}
         // Endpoint to trigger the Google login challenge.
-        [HttpGet("google-login")]
-        public IActionResult GoogleLogin(string returnUrl = "/", string role = null)
+        //[HttpGet("google-login")]
+        //public IActionResult GoogleLogin(string returnUrl = "/", string role = null)
+        //{
+        //    var properties = new AuthenticationProperties
+        //    {
+        //        RedirectUri = Url.Action("GoogleResponse", new { returnUrl, role })
+        //    };
+
+        //    return Challenge(properties, GoogleDefaults.AuthenticationScheme);
+        //}
+
+
+        //[HttpGet("google-response")]
+        //public async Task<IActionResult> GoogleResponse(string returnUrl = "/", string role = null)
+        //{
+        //    var user = HttpContext.User;
+
+        //    var email = user.FindFirst(ClaimTypes.Email)?.Value;
+        //    var name = user.FindFirst(ClaimTypes.Name)?.Value;
+        //    var avatarUrl = user.FindFirst("AvatarUrl")?.Value;
+
+        //    if (string.IsNullOrEmpty(email) || string.IsNullOrEmpty(name))
+        //        return BadRequest("Missing required information from Google account.");
+
+        //    var loginRequest = new RQ_GoogleLogin
+        //    {
+        //        Email = email,
+        //        Name = name,
+        //        AvatarUrl = avatarUrl,
+        //        SelectedRole = role
+        //    };
+
+        //    try
+        //    {
+        //        var account = await _accountService.LoginWithGoogleAsync(loginRequest);
+
+        //        if (account == null)
+        //            throw new NotFoundException("Account not found during Google login flow.");
+
+        //        if (role != null)
+        //        {
+        //            var isAuthorized = await _roleService.UserHasRoleAsync(account.Id, role);
+        //            if (!isAuthorized)
+        //                return Forbid("Selected role is not assigned to this user.");
+        //        }
+
+        //        var allRoles = await _roleService.GetAllUserRole(account.Id);
+
+        //        var claims = new List<Claim>
+        //{
+        //    new Claim(ClaimTypes.NameIdentifier, account.Id.ToString()),
+        //    new Claim("Id", account.Id.ToString()),
+        //    new Claim(ClaimTypes.Role, role ?? string.Empty)
+        //};
+
+        //        var token = _tokenService.GenerateJwtToken(claims);
+
+        //        var sessionPayload = new
+        //        {
+        //            Token = token,
+        //            FullName = account.FullName,
+        //            AvatarUrl = account.AvatarURL,
+        //            Email = account.Email,
+        //            SelectedRole = role,
+        //            Roles = allRoles
+        //        };
+
+        //        var sessionId = Guid.NewGuid().ToString();
+        //        _sessionService.Store(sessionId, sessionPayload, TimeSpan.FromMinutes(5));
+
+        //        Response.Cookies.Append("sessionId", sessionId, new CookieOptions
+        //        {
+        //            HttpOnly = true,
+        //            Secure = true,
+        //            SameSite = SameSiteMode.None,
+        //            Expires = DateTime.UtcNow.AddMinutes(10)
+        //        });
+
+        //        return Redirect(returnUrl);
+        //    }
+        //    catch (RedirectException redirectEx)
+        //    {
+        //        return Redirect(redirectEx.RedirectUrl);
+        //    }
+        //}
+
+
+
+        //[HttpGet("session")]
+        //public IActionResult GetSessionFromCookie()
+        //{
+        //    var sessionId = Request.Cookies["sessionId"];
+        //    if (string.IsNullOrEmpty(sessionId))
+        //        return BadRequest("Session cookie not found.");
+
+        //    var sessionData = _sessionService.Retrieve(sessionId);
+        //    if (sessionData == null)
+        //        return NotFound("Session expired or invalid");
+
+        //    return Ok(sessionData);
+        //}
+
+
+        [HttpPost]
+        [Route("google-authentication")]
+        [AllowAnonymous]
+        public async Task<IActionResult> GoogleLogin([FromQuery] string Platform, string Token, string role = null)
         {
-            var properties = new AuthenticationProperties
+            var account = await _accountService.HandleGoogleAsync(Token, Platform);
+            if (account == null)
+                throw new NotFoundException("Account not found during Google login flow.");
+
+            var allRoles = await _roleService.GetAllUserRole(account.Id);
+            if (role != null)
             {
-                RedirectUri = Url.Action("GoogleResponse", new { returnUrl, role })
-            };
-
-            return Challenge(properties, GoogleDefaults.AuthenticationScheme);
-        }
-
-
-        [HttpGet("google-response")]
-        public async Task<IActionResult> GoogleResponse(string returnUrl = "/", string role = null)
-        {
-            var user = HttpContext.User;
-
-            var email = user.FindFirst(ClaimTypes.Email)?.Value;
-            var name = user.FindFirst(ClaimTypes.Name)?.Value;
-            var avatarUrl = user.FindFirst("AvatarUrl")?.Value;
-
-            if (string.IsNullOrEmpty(email) || string.IsNullOrEmpty(name))
-                return BadRequest("Missing required information from Google account.");
-
-            var loginRequest = new RQ_GoogleLogin
-            {
-                Email = email,
-                Name = name,
-                AvatarUrl = avatarUrl,
-                SelectedRole = role
-            };
-
-            try
-            {
-                var account = await _accountService.LoginWithGoogleAsync(loginRequest);
-
-                if (account == null)
-                    throw new NotFoundException("Account not found during Google login flow.");
-
-                if (role != null)
-                {
-                    var isAuthorized = await _roleService.UserHasRoleAsync(account.Id, role);
-                    if (!isAuthorized)
-                        return Forbid("Selected role is not assigned to this user.");
-                }
-
-                var allRoles = await _roleService.GetAllUserRole(account.Id);
-
-                var claims = new List<Claim>
-        {
-            new Claim(ClaimTypes.NameIdentifier, account.Id.ToString()),
-            new Claim("Id", account.Id.ToString()),
-            new Claim(ClaimTypes.Role, role ?? string.Empty)
-        };
-
-                var token = _tokenService.GenerateJwtToken(claims);
-
-                var sessionPayload = new
-                {
-                    Token = token,
-                    FullName = account.FullName,
-                    AvatarUrl = account.AvatarURL,
-                    Email = account.Email,
-                    SelectedRole = role,
-                    Roles = allRoles
-                };
-
-                var sessionId = Guid.NewGuid().ToString();
-                _sessionService.Store(sessionId, sessionPayload, TimeSpan.FromMinutes(5));
-
-                Response.Cookies.Append("sessionId", sessionId, new CookieOptions
-                {
-                    HttpOnly = true,
-                    Secure = true,
-                    SameSite = SameSiteMode.None,
-                    Expires = DateTime.UtcNow.AddMinutes(10)
-                });
-
-                return Redirect(returnUrl);
+                var isAuthorized = await _roleService.UserHasRoleAsync(account.Id, role);
+                if (!isAuthorized)
+                    return Forbid("Selected role is not assigned to this user.");
             }
-            catch (RedirectException redirectEx)
+
+            var claims = new List<Claim>
+    {
+        new Claim(ClaimTypes.NameIdentifier, account.Id.ToString()),
+        new Claim("Id", account.Id.ToString()),
+        new Claim(ClaimTypes.Role, role ?? string.Empty)
+    };
+
+            var jwtToken = _tokenService.GenerateJwtToken(claims);
+            if (string.IsNullOrEmpty(jwtToken))
+                return BadRequest("There is an error during generate JWT Token!");
+
+            return Ok(new
             {
-                return Redirect(redirectEx.RedirectUrl);
-            }
+                Token = jwtToken,
+                FullName = account.FullName,
+                AvatarUrl = account.AvatarURL,
+                Email = account.Email,
+                SelectedRole = role,
+                Roles = allRoles
+            });
         }
 
-
-
-        [HttpGet("session")]
-        public IActionResult GetSessionFromCookie()
-        {
-            var sessionId = Request.Cookies["sessionId"];
-            if (string.IsNullOrEmpty(sessionId))
-                return BadRequest("Session cookie not found.");
-
-            var sessionData = _sessionService.Retrieve(sessionId);
-            if (sessionData == null)
-                return NotFound("Session expired or invalid");
-
-            return Ok(sessionData);
-        }
 
 
 
