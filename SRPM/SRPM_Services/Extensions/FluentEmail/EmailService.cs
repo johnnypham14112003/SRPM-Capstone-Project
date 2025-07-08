@@ -10,7 +10,7 @@ public interface IEmailService
 {
     Task<bool> SendEmailAsync(EmailDTO sendEmailDto, bool hasUIBody = true);
 
-    Task<string> RenderPasswordEmail(Notification? notification);
+    Task<string> RenderPasswordEmail(PasswordEmailModel model);
 }
 
 public class EmailService : IEmailService
@@ -53,6 +53,9 @@ public class EmailService : IEmailService
     }
 
     //Render Object Date into UI email
-    public async Task<string> RenderPasswordEmail(Notification? notification)
-    => await _razorTemplateEngine.RenderAsync("/PasswordEmail.cshtml", notification);
+    public async Task<string> RenderPasswordEmail(PasswordEmailModel model)
+    {
+        return await _razorTemplateEngine.RenderAsync("/PasswordEmail.cshtml", model);
+    }
+
 }
