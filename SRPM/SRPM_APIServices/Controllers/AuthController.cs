@@ -225,22 +225,35 @@ namespace SRPM_APIServices.Controllers
             }
         }
 
-        // ✅ Verify OTP
+
         [HttpPost("verify-otp")]
-        public async Task<IActionResult> VerifyOtp([FromBody] string email, string otp)
+        public async Task<IActionResult> VerifyOtp([FromBody]  string Email, string Otp)
         {
-            if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(otp))
-                return BadRequest("Email and OTP are required.");
+            if (string.IsNullOrWhiteSpace(Email) || string.IsNullOrWhiteSpace(Otp))
+                return BadRequest(new { Message = "Email and OTP are required." });
 
-            var isValid = await _accountService.VerifyOtpAsync(email, otp);
+            var (isVerified, attempt, expiration) = await _accountService.VerifyOtpAsync(Email, Otp);
 
-            if (!isValid)
-                return Unauthorized("OTP is invalid, expired, or maximum attempts exceeded.");
+            if (!isVerified)
+            {
+                return Unauthorized(new
+                {
+                    Message = "OTP is invalid, expired, or maximum attempts exceeded.",
+                    Attempt = attempt,
+                    ExpirationTime = expiration
+                });
+            }
 
-            return Ok(new { Message = "OTP is valid." });
+            return Ok(new
+            {
+                Message = "OTP is valid.",
+                Attempt = attempt,
+                ExpirationTime = expiration
+            });
         }
 
-        // 🔄 Reset Password
+
+
         [HttpPost("reset-password")]
         public async Task<IActionResult> ResetPassword([FromBody] RQ_ResetPassword request)
         {
