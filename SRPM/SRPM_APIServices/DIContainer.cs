@@ -3,16 +3,23 @@ using Microsoft.AspNetCore.Mvc.ApplicationModels;
 using Microsoft.AspNetCore.Mvc.Razor.RuntimeCompilation;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.FileProviders;
+using Microsoft.OpenApi.Models;
+using Newtonsoft.Json.Converters;
 using Newtonsoft.Json.Serialization;
+using OpenAI;
+using OpenAI.Embeddings;
 using SRPM_Repositories;
 using SRPM_Repositories.Models;
+using SRPM_Repositories.Repositories.Implements;
 using SRPM_Repositories.Repositories.Interfaces;
+using SRPM_Services.BusinessModels.Others;
 using SRPM_Services.BusinessModels.RequestModels;
 using SRPM_Services.BusinessModels.ResponseModels;
 using SRPM_Services.Extensions;
+using SRPM_Services.Extensions.Enumerables;
 using SRPM_Services.Extensions.FluentEmail;
 using SRPM_Services.Extensions.Mapster;
-using SRPM_Services.Interfaces;
+using SRPM_Services.Extensions.OpenAI;
 using SRPM_Services.Implements;
 using SRPM_Repositories.Repositories.Implements;
 using Microsoft.OpenApi.Models;
@@ -26,6 +33,9 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.IdentityModel.Tokens;
 using System.Security.Claims;
 using System.Text;
+using SRPM_Services.Interfaces;
+
+namespace SRPM_APIServices;
 
 public static class DIContainer
 {
@@ -37,7 +47,7 @@ public static class DIContainer
         services.InjectRepository();
         services.ConfigCORS();
         services.ConfigKebabCase();
-        services.ConfigMapster();
+        services.ConfigEnumMember();
         services.ConfigJsonLoopDeserielize();
         services.AddCustomAuthentication(configuration);
         services.AddHttpContextAccessor();
@@ -45,8 +55,10 @@ public static class DIContainer
 
 
         //Third Party Services
+        services.ConfigMapster();
         services.ConfigFluentEmail(configuration);
         services.ConfigRazorTemplate(configuration, env);
+        services.ConfigOpenAI(configuration);
         //...
 
         return services;
@@ -64,30 +76,32 @@ public static class DIContainer
     private static IServiceCollection InjectBusinessServices(this IServiceCollection services)
     {
         services.AddScoped<IAccountService, AccountService>();
-        services.AddScoped<ISystemConfigurationService, SystemConfigurationService>();
-        services.AddScoped<INotificationService, NotificationService>();
-        services.AddScoped<ITokenService, TokenService>();
+        services.AddScoped<IAppraisalCouncilService, AppraisalCouncilService>();
+        services.AddScoped<IDocumentService, DocumentService>();
+        services.AddScoped<IDocumentSectionService, DocumentSectionService>();
         services.AddScoped<IEvaluationService, EvaluationService>();
         services.AddScoped<IEvaluationStageService, EvaluationStageService>();
+        services.AddScoped<IIndividualEvaluationService, IndividualEvaluationService>();
+        services.AddScoped<IMajorService, MajorService>();
+        services.AddScoped<IMemberTaskService, MemberTaskService>();
+        services.AddScoped<IMilestoneService, MilestoneService>();
+        services.AddScoped<INotificationService, NotificationService>();
         services.AddScoped<IProjectService, ProjectService>();
         services.AddScoped<IProjectMajorService, ProjectMajorService>();
-        services.AddScoped<IMajorService, MajorService>();
         services.AddScoped<IProjectTagService, ProjectTagService>();
         services.AddScoped<IRoleService, RoleService>();
-        services.AddScoped<IUserRoleService, UserRoleService>();
-        services.AddScoped<IIndividualEvaluationService, IndividualEvaluationService>();
-        services.AddScoped<IAppraisalCouncilService, AppraisalCouncilService>();
-        services.AddScoped<ITransactionService, TransactionService>();
-        services.AddScoped<IDocumentService, DocumentService>();
+        services.AddScoped<ISystemConfigurationService, SystemConfigurationService>();
+        services.AddScoped<ITokenService, TokenService>();
         services.AddScoped<ITaskService, TaskService>();
-        services.AddScoped<IMilestoneService, MilestoneService>();
-        services.AddScoped<IMemberTaskService, MemberTaskService>();   
+        services.AddScoped<IUserRoleService, UserRoleService>();
         services.AddScoped<IUserContextService, UserContextService>();
         services.AddScoped<ISessionService, MemorySessionService>();
+        services.AddScoped<ITransactionService, TransactionService>();
 
-
-
+        //Extensions Services
         services.AddScoped<IEmailService, EmailService>();
+        services.AddScoped<IOpenAIService, OpenAIService>();
+
         //Add other BusinessServices here...
 
         return services;
@@ -98,27 +112,32 @@ public static class DIContainer
         services.AddScoped<IUnitOfWork, UnitOfWork>();
         services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
         //---------------------------------------------------------------------------
-        services.AddScoped<IAccountRepository, AccountRepository>();
-        services.AddScoped<ISystemConfigurationRepository, SystemConfigurationRepository>();
-        services.AddScoped<INotificationRepository, NotificationRepository>();
         services.AddScoped<IAccountNotificationRepository, AccountNotificationRepository>();
+        services.AddScoped<IAccountRepository, AccountRepository>();
+        services.AddScoped<IAppraisalCouncilRepository, AppraisalCouncilRepository>();
         services.AddScoped<IDocumentRepository, DocumentRepository>();
+        services.AddScoped<IDocumentSectionRepository, DocumentSectionRepository>();
         services.AddScoped<IEvaluationRepository, EvaluationRepository>();
         services.AddScoped<IEvaluationStageRepository, EvaluationStageRepository>();
         services.AddScoped<IIndividualEvaluationRepository, IndividualEvaluationRepository>();
-        services.AddScoped<IMemberTaskRepository, MemberTaskRepository>();
-        services.AddScoped<ITaskRepository, TaskRepository>();
-        services.AddScoped<ITransactionRepository, TransactionRepository>();
-        services.AddScoped<IUserRoleRepository, UserRoleRepository>();
         services.AddScoped<IMajorRepository, MajorRepository>();
+        services.AddScoped<IMemberTaskRepository, MemberTaskRepository>();
         services.AddScoped<IMilestoneRepository, MilestoneRepository>();
+        services.AddScoped<INotificationRepository, NotificationRepository>();
         services.AddScoped<IOTPCodeRepository, OTPCodeRepository>();
         services.AddScoped<IProjectRepository, ProjectRepository>();
         services.AddScoped<IProjectMajorRepository, ProjectMajorRepository>();
         services.AddScoped<IProjectTagRepository, ProjectTagRepository>();
         services.AddScoped<IResearchPaperRepository, ResearchPaperRepository>();
         services.AddScoped<IRoleRepository, RoleRepository>();
+        services.AddScoped<ISectionContentRepository, SectionContentRepository>();
         services.AddScoped<ISignatureRepository, SignatureRepository>();
+        services.AddScoped<ISystemConfigurationRepository, SystemConfigurationRepository>();
+        services.AddScoped<ITableRowRepository, TableRowRepository>();
+        services.AddScoped<ITableStructureRepository, TableStructureRepository>();
+        services.AddScoped<ITaskRepository, TaskRepository>();
+        services.AddScoped<ITransactionRepository, TransactionRepository>();
+        services.AddScoped<IUserRoleRepository, UserRoleRepository>();
 
         //Add other repository here...
 
@@ -203,10 +222,6 @@ public static class DIContainer
             .Map(dest => dest.Freelancer, src => new Account { Id = src.FreeLancerId });
         */
 
-        //Skip null data (suitable for Patch API)
-        TypeAdapterConfig<RQ_AppraisalCouncil, AppraisalCouncil>.NewConfig().IgnoreNullValues(true);
-        TypeAdapterConfig<RQ_SystemConfiguration, SystemConfiguration>.NewConfig().IgnoreNullValues(true);
-
         // Config NotificationWithReadStatus -> RS_AccountNotification
         TypeAdapterConfig<NotificationWithReadStatus, RS_AccountNotification>.NewConfig()
             .Map(dest => dest.Id, src => src.Notification.Id)
@@ -239,7 +254,7 @@ public static class DIContainer
             .Ignore(dest => dest.Evaluation)
             .IgnoreNullValues(true);
 
-        
+
         TypeAdapterConfig<EvaluationStage, RS_EvaluationStage>.NewConfig();
 
         TypeAdapterConfig<RQ_IndividualEvaluation, IndividualEvaluation>.NewConfig()
@@ -251,10 +266,10 @@ public static class DIContainer
             .Ignore(dest => dest.Milestone)
             .Ignore(dest => dest.Reviewer)
             .Ignore(dest => dest.EvaluationStage)
-            .IgnoreNullValues(true); 
+            .IgnoreNullValues(true);
 
         TypeAdapterConfig<IndividualEvaluation, RS_IndividualEvaluation>.NewConfig();
-        
+
         TypeAdapterConfig<RQ_Project, Project>.NewConfig()
             .Ignore(dest => dest.Id)
             .Ignore(dest => dest.CreatedAt)
@@ -294,27 +309,27 @@ public static class DIContainer
         TypeAdapterConfig<Role, RS_Role>.NewConfig()
             .Map(dest => dest.Status, src => src.Status.ToStatus());
 
-            TypeAdapterConfig<RQ_UserRole, UserRole>.NewConfig()
-                .Ignore(dest => dest.Id)
-                .Ignore(dest => dest.CreatedAt)
-                .Ignore(dest => dest.Account)
-                .Ignore(dest => dest.Role)
-                .Ignore(dest => dest.Project)
-                .Ignore(dest => dest.AppraisalCouncil)
-                .Ignore(dest => dest.UploadedDocuments)
-                .Ignore(dest => dest.Signatures)
-                .Ignore(dest => dest.ResearchPapers)
-                .Ignore(dest => dest.IndividualEvaluations)
-                .Ignore(dest => dest.CreatedProjects)
-                .Ignore(dest => dest.CreatedMilestones)
-                .Ignore(dest => dest.CreatedTasks)
-                .Ignore(dest => dest.MemberTasks)
-                .Ignore(dest => dest.RequestTransactions)
-                .Ignore(dest => dest.HandleTransactions)
-                .Ignore(dest => dest.Notifications)
-                .IgnoreNullValues(true);
+        TypeAdapterConfig<RQ_UserRole, UserRole>.NewConfig()
+            .Ignore(dest => dest.Id)
+            .Ignore(dest => dest.CreatedAt)
+            .Ignore(dest => dest.Account)
+            .Ignore(dest => dest.Role)
+            .Ignore(dest => dest.Project)
+            .Ignore(dest => dest.AppraisalCouncil)
+            .Ignore(dest => dest.UploadedDocuments)
+            .Ignore(dest => dest.Signatures)
+            .Ignore(dest => dest.ResearchPapers)
+            .Ignore(dest => dest.IndividualEvaluations)
+            .Ignore(dest => dest.CreatedProjects)
+            .Ignore(dest => dest.CreatedMilestones)
+            .Ignore(dest => dest.CreatedTasks)
+            .Ignore(dest => dest.MemberTasks)
+            .Ignore(dest => dest.RequestTransactions)
+            .Ignore(dest => dest.HandleTransactions)
+            .Ignore(dest => dest.Notifications)
+            .IgnoreNullValues(true);
 
-            TypeAdapterConfig<UserRole, RS_UserRole>.NewConfig();
+        TypeAdapterConfig<UserRole, RS_UserRole>.NewConfig();
         TypeAdapterConfig<RQ_Task, SRPM_Repositories.Models.Task>.NewConfig()
             .Ignore(dest => dest.Id)
             .Ignore(dest => dest.Milestone)
@@ -349,6 +364,14 @@ public static class DIContainer
         return services;
     }
 
+    private static IServiceCollection ConfigEnumMember(this IServiceCollection services)
+    {
+        services.AddControllers().AddNewtonsoftJson(options =>
+        {
+            options.SerializerSettings.Converters.Add(new StringEnumConverter());
+        });
+        return services;
+    }
 
     private static IServiceCollection ConfigJsonLoopDeserielize(this IServiceCollection services)
     {
@@ -409,23 +432,25 @@ public static class DIContainer
         return services;
     }
 
-
     private static IServiceCollection ConfigFluentEmail(this IServiceCollection services, IConfiguration configuration)
     {
-        string defaultFromEmail = configuration["FluentEmail:Address"]!;
+        //strong-typed config
+        /*prevent compile error if missing appsettings vars*/
+        var feOpts = new FluentEmailOptionModel();
+        configuration.GetSection("FluentEmail").Bind(feOpts);
 
-        string host = configuration["FluentEmail:Host"]!;
-        int port = int.Parse(configuration["FluentEmail:Port"]!);
-        string username = configuration["FluentEmail:Address"]!;
-        string password = configuration["FluentEmail:AppPassword"]!;
-        services.AddFluentEmail(defaultFromEmail).AddSmtpSender(host, port, username, password);
+        services.AddFluentEmail(feOpts.Address).AddSmtpSender(feOpts.Host, feOpts.Port, feOpts.Address, feOpts.AppPassword);
         return services;
     }
+
     private static IServiceCollection ConfigRazorTemplate(this IServiceCollection services, IConfiguration configuration, IWebHostEnvironment env)
     {
+        //This path work only when run projectWeb.exe in the built folder
         var templatePath = Path.Combine(env.ContentRootPath, "Extensions/FluentEmail/UIEmail");
+
+        //This will prevent compile error if it doesn't exist in projectWeb folder.
         if (!Directory.Exists(templatePath))
-            Directory.CreateDirectory(templatePath);
+            Directory.CreateDirectory(templatePath);//Still empty, must copy files from "bin/Debug/...templatePath" after compile
 
         services.AddMvcCore().AddRazorRuntimeCompilation();
         services.Configure<MvcRazorRuntimeCompilationOptions>(opts =>
@@ -547,4 +572,25 @@ public static class DIContainer
         return app;
     }
 
+
+    private static IServiceCollection ConfigOpenAI(this IServiceCollection services, IConfiguration configuration)
+    {
+        //strong-typed config
+        /*prevent compile error if missing appsettings vars*/
+        var oaiOpts = new OpenAIOptionModel();
+        configuration.GetSection("OpenAI").Bind(oaiOpts);
+
+        //new instance OpenAIOptionModel
+        services.AddSingleton(oaiOpts);
+
+        //new instance OpenAIClient
+        services.AddSingleton(new OpenAIClient(oaiOpts.ApiKey));
+        //new instance EmbeddingClient
+        services.AddSingleton(new EmbeddingClient(oaiOpts.EmbeddingModel,oaiOpts.ApiKey));
+
+        //new instance TokenizerProvider
+        services.AddSingleton<ITokenizerProvider, TokenizerProvider>();
+
+        return services;
+    }
 }

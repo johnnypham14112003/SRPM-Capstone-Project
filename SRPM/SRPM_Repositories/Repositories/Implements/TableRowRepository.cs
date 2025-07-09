@@ -3,10 +3,10 @@ using SRPM_Repositories.Repositories.Interfaces;
 
 namespace SRPM_Repositories.Repositories.Implements;
 
-public class FieldContentRepository : GenericRepository<FieldContent>, IFieldContentRepository
+public class TableRowRepository : GenericRepository<TableRow>, ITableRowRepository
 {
     private readonly SRPMDbContext _context;
-    public FieldContentRepository(SRPMDbContext context) : base(context)
+    public TableRowRepository(SRPMDbContext context) : base(context)
     {
         _context = context;
     }

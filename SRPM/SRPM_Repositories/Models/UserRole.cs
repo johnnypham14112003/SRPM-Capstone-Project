@@ -24,6 +24,7 @@ public class UserRole
     public virtual Project? Project { get; set; }//This user is a member of which project
     public virtual AppraisalCouncil? AppraisalCouncil { get; set; }
     public virtual ICollection<Document>? UploadedDocuments { get; set; }
+    public virtual ICollection<Document>? ModifiedDocuments { get; set; }
     public virtual ICollection<Signature>? Signatures { get; set; }
     public virtual ICollection<ResearchPaper>? ResearchPapers { get; set; }
     public virtual ICollection<IndividualEvaluation>? IndividualEvaluations { get; set; }

@@ -32,7 +32,7 @@ public class NotificationController : Controller
         return Ok(result);
     }
 
-    [HttpPatch]
+    [HttpPut]
     public async Task<IActionResult> Update([FromBody] RQ_Notification inputData)
     {
         bool result = await _notificationService.UpdateNotification(inputData);

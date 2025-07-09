@@ -7,28 +7,29 @@ public interface IUnitOfWork
     IAccountNotificationRepository GetAccountNotificationRepository();
     IAccountRepository GetAccountRepository();
     IAppraisalCouncilRepository GetAppraisalCouncilRepository();
-    IContentTableRepository GetContentTableRepository();
-    IDocumentFieldRepository GetDocumentFieldRepository();
     IDocumentRepository GetDocumentRepository();
+    IDocumentSectionRepository GetDocumentSectionRepository();
     IEvaluationRepository GetEvaluationRepository();
     IEvaluationStageRepository GetEvaluationStageRepository();
-    IFieldContentRepository GetFieldContentRepository();
     IIndividualEvaluationRepository GetIndividualEvaluationRepository();
-    IMemberTaskRepository GetMemberTaskRepository();
-    INotificationRepository GetNotificationRepository();
-    ISystemConfigurationRepository GetSystemConfigurationRepository();
-    ITaskRepository GetTaskRepository();
-    ITransactionRepository GetTransactionRepository();
-    IUserRoleRepository GetUserRoleRepository();
     IMajorRepository GetMajorRepository();
+    IMemberTaskRepository GetMemberTaskRepository();
     IMilestoneRepository GetMilestoneRepository();
+    INotificationRepository GetNotificationRepository();
     IOTPCodeRepository GetOTPCodeRepository();
     IProjectRepository GetProjectRepository();
     IProjectMajorRepository GetProjectMajorRepository();
     IProjectTagRepository GetProjectTagRepository();
     IResearchPaperRepository GetResearchPaperRepository();
     IRoleRepository GetRoleRepository();
+    ISectionContentRepository GetSectionContentRepository();
     ISignatureRepository GetSignatureRepository();
+    ISystemConfigurationRepository GetSystemConfigurationRepository();
+    ITableRowRepository GetTableRowRepository();
+    ITableStructureRepository GetTableStructureRepository();
+    ITaskRepository GetTaskRepository();
+    ITransactionRepository GetTransactionRepository();
+    IUserRoleRepository GetUserRoleRepository();
 
 
     // Add other repositories...

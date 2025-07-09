@@ -39,7 +39,7 @@ public class DocumentController : Controller
         return Ok(result);
     }
 
-    [HttpPatch]
+    [HttpPut]
     public async Task<IActionResult> Update([FromBody] RQ_Document inputData)
     {
         bool result = await _documentService.UpdateDocumentInfo(inputData);
