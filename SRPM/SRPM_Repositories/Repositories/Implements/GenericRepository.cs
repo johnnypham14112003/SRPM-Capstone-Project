@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using SRPM_Repositories.Repositories.Interfaces;
 using System.Linq.Expressions;
+using Task = System.Threading.Tasks.Task;
 
 namespace SRPM_Repositories.Repositories.Implements;
 
@@ -27,6 +28,15 @@ public class GenericRepository<T> : IGenericRepository<T> where T : class
     {
         return hasTrackings ? await _context.Set<T>().Where(expression).ToListAsync()
                             : await _context.Set<T>().Where(expression).AsNoTracking().ToListAsync();
+    }
+
+    public async Task<List<TResult>?> GetListAdvanceAsync<TResult>(
+        Expression<Func<T, bool>> whereLinQ,
+        Expression<Func<T, TResult>> selectLinQ,
+        bool hasTrackings = true)
+    {
+        return hasTrackings ? await _context.Set<T>().Where(whereLinQ).Select(selectLinQ).ToListAsync()
+                            : await _context.Set<T>().Where(whereLinQ).AsNoTracking().Select(selectLinQ).ToListAsync();
     }
 
     public async Task<T?> GetOneAsync(Expression<Func<T, bool>> expression, bool hasTrackings = true)
