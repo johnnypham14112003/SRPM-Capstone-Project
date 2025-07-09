@@ -16,6 +16,7 @@ using SRPM_Services.BusinessModels.Others;
 using SRPM_Services.BusinessModels.RequestModels;
 using SRPM_Services.BusinessModels.ResponseModels;
 using SRPM_Services.Extensions;
+using SRPM_Services.Extensions.BackgroundService;
 using SRPM_Services.Extensions.Enumerables;
 using SRPM_Services.Extensions.FluentEmail;
 using SRPM_Services.Extensions.Mapster;
@@ -37,6 +38,7 @@ public static class DIContainer
         services.ConfigKebabCase();
         services.ConfigEnumMember();
         services.ConfigJsonLoopDeserielize();
+        services.ConfigBackgroundService();
         services.InjectSwagger();
 
 
@@ -374,6 +376,13 @@ public static class DIContainer
         return services;
     }
 
+    private static IServiceCollection ConfigBackgroundService(this IServiceCollection services)
+    {
+        services.AddSingleton<ITaskQueueHandler, TaskQueueHandler>();
+        services.AddHostedService<BackgroundServiceProvider>();
+        return services;
+    }
+
     public static IServiceCollection InjectSwagger(this IServiceCollection services)
     {
         services.AddSwaggerGen(c =>
@@ -454,7 +463,7 @@ public static class DIContainer
 
         //new instance OpenAIOptionModel
         services.AddSingleton(oaiOpts);
-
+        
         //new instance OpenAIClient
         services.AddSingleton(new OpenAIClient(oaiOpts.ApiKey));
         //new instance EmbeddingClient

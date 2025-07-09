@@ -1,15 +1,21 @@
 ﻿//https://github.com/openai/openai-dotnet?tab=readme-ov-file
 using OpenAI;
 using OpenAI.Embeddings;
+using SRPM_Repositories.Models;
 using SRPM_Services.BusinessModels.Others;
+using SRPM_Services.BusinessModels.ResponseModels;
+using System.Text.Json;
 
 namespace SRPM_Services.Extensions.OpenAI;
 
 public interface IOpenAIService
 {
     int CountToken(string model, string? inputText);
+    Task<float[]?> EmbedTextAsync(string inputText, CancellationToken cancellationToken = default);
     Task<Dictionary<string, double>> CompareWithSourceAsync(
         string inputText, IEnumerable<string> inputSource, CancellationToken cancellationToken = default);
+    Task<Dictionary<string, double>> CompareWithSourceAsync(
+        float[] inputVector, IEnumerable<float[]> vectorSource, CancellationToken cancellationToken = default);
 }
 
 public class OpenAIService : IOpenAIService
@@ -39,7 +45,7 @@ public class OpenAIService : IOpenAIService
     }
 
     //Convert human language into vector (machine language)
-    public async Task<float[]> EmbedTextAsync(string inputText, CancellationToken cancellationToken = default)
+    public async Task<float[]?> EmbedTextAsync(string inputText, CancellationToken cancellationToken = default)
     {
         var modelName = _openAIOption.EmbeddingModel;
         int maxTokens = 8100; //https://platform.openai.com/docs/guides/embeddings
@@ -68,7 +74,6 @@ public class OpenAIService : IOpenAIService
         return AverageVectors(allVectors);
     }
 
-
     public async Task<Dictionary<string, double>> CompareWithSourceAsync(
         string inputText, IEnumerable<string> inputSource, CancellationToken cancellationToken = default)
     {
@@ -76,14 +81,49 @@ public class OpenAIService : IOpenAIService
         var embInput = await EmbedTextAsync(inputText, cancellationToken);
         var results = new Dictionary<string, double>();
 
-        //Encode 
+        //Encode List Source
         foreach (var input in inputSource)
         {
             var embDoc = await EmbedTextAsync(input, cancellationToken);
+
+            //Check Plagiarism
             results[input] = CosineSimilarity(embInput, embDoc);
         }
 
         return results;
+    }
+
+    public async Task<List<RS_ProjectSimilarityResult>> CompareWithSourceAsync(
+        float[] inputVector, IEnumerable<RS_ProjectSimilarityResult> projectSource, CancellationToken cancellationToken = default)
+    {
+        var results = new List<RS_ProjectSimilarityResult>();
+
+        foreach (var project in projectSource)
+        {
+            if (string.IsNullOrWhiteSpace(project.EncodedDescription))
+                continue;
+
+            // Parse EncodedDescription string to float[]
+            var vector = JsonSerializer.Deserialize<float[]>(project.EncodedDescription);
+            if (vector is null || vector.Length == 0)
+                continue;
+
+            //compare
+            var similarity = CosineSimilarity(inputVector, vector);
+
+            //Add to list
+            results.Add(new RS_ProjectSimilarityResult
+            {
+                Id = project.Id,
+                EnglishTitle = project.EnglishTitle ?? "",
+                Description = project.Description,
+                EncodedDescription = project.EncodedDescription,
+                OnlineUrl = project.OnlineUrl,
+                Similarity = similarity
+            });
+        }
+
+        return results.OrderByDescending(r => r.Similarity).ToList();
     }
 
     //Calculate the difference
@@ -100,7 +140,7 @@ public class OpenAIService : IOpenAIService
     }
 
     //Calculate summary of many vectors
-    private static float[] AverageVectors(List<float[]> vectors)
+    private static float[]? AverageVectors(List<float[]> vectors)
     {
         if (vectors.Count == 0) return Array.Empty<float>();
 
