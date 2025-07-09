@@ -19,9 +19,19 @@ namespace SRPM_Services.BusinessModels.ResponseModels
         public string Type { get; set; } = "normal";
         public DateTime CreatedAt { get; set; }
         public string Status { get; set; } = null!;
+
         public Guid ProjectId { get; set; }
         public Guid CreatorId { get; set; }
+
+        // 🌐 Related Models
+
+        public RS_Project? Project { get; set; }
+        public RS_UserRole? Creator { get; set; }
+        public List<RS_Evaluation>? Evaluations { get; set; }
+        public List<RS_IndividualEvaluation>? IndividualEvaluations { get; set; }
+        public List<RS_Task>? Tasks { get; set; }
     }
+
 
 
 }

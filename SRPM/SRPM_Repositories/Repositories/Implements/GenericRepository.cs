@@ -24,11 +24,22 @@ public class GenericRepository<T> : IGenericRepository<T> where T : class
         return await _context.Set<T>().CountAsync(expression);
     }
 
-    public async Task<List<T>?> GetListAsync(Expression<Func<T, bool>> expression, bool hasTrackings = true)
+    public async Task<List<T>?> GetListAsync(
+        Expression<Func<T, bool>> expression,
+        Func<IQueryable<T>, IQueryable<T>>? include = null,
+        bool hasTrackings = true)
     {
-        return hasTrackings ? await _context.Set<T>().Where(expression).ToListAsync()
-                            : await _context.Set<T>().Where(expression).AsNoTracking().ToListAsync();
+        IQueryable<T> query = _context.Set<T>().Where(expression);
+
+        if (include != null)
+            query = include(query);
+
+        if (!hasTrackings)
+            query = query.AsNoTracking();
+
+        return await query.ToListAsync();
     }
+
 
     public async Task<List<TResult>?> GetListAdvanceAsync<TResult>(
         Expression<Func<T, bool>> whereLinQ,

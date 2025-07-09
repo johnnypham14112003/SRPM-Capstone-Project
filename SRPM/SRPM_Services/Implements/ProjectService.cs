@@ -1,8 +1,10 @@
 ﻿using Mapster;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.EntityFrameworkCore;
 using SRPM_Repositories.Models;
 using SRPM_Repositories.Repositories.Interfaces;
 using SRPM_Services.BusinessModels;
+using SRPM_Services.BusinessModels.Others;
 using SRPM_Services.BusinessModels.RequestModels;
 using SRPM_Services.BusinessModels.ResponseModels;
 using SRPM_Services.Extensions.Enumerables;
@@ -38,22 +40,57 @@ namespace SRPM_Services.Implements
             query.PageIndex = query.PageIndex < 1 ? 1 : query.PageIndex;
             query.PageSize = query.PageSize < 1 ? 10 : query.PageSize;
 
-            var list = await _unitOfWork.GetProjectRepository().GetListAsync(p =>
-                (string.IsNullOrWhiteSpace(query.Code) || p.Code == query.Code) &&
-                (string.IsNullOrWhiteSpace(query.EnglishTitle) || p.EnglishTitle.Contains(query.EnglishTitle)) &&
-                (string.IsNullOrWhiteSpace(query.VietnameseTitle) || p.VietnameseTitle.Contains(query.VietnameseTitle)) &&
-                (string.IsNullOrWhiteSpace(query.Category) || p.Category == query.Category) &&
-                (string.IsNullOrWhiteSpace(query.Type) || p.Type == query.Type) &&
-                (string.IsNullOrWhiteSpace(query.Genre) || p.Genre == query.Genre) &&
-                (string.IsNullOrWhiteSpace(query.Status) || p.Status == query.Status) &&
-                (query.CreatorId == null || p.CreatorId == query.CreatorId),
-                hasTrackings: false);
+            var projects = await _unitOfWork.GetProjectRepository().GetListAsync(
+                p =>
+                    (string.IsNullOrWhiteSpace(query.Code) || p.Code == query.Code) &&
+                    (string.IsNullOrWhiteSpace(query.EnglishTitle) || p.EnglishTitle.Contains(query.EnglishTitle)) &&
+                    (string.IsNullOrWhiteSpace(query.VietnameseTitle) || p.VietnameseTitle.Contains(query.VietnameseTitle)) &&
+                    (string.IsNullOrWhiteSpace(query.Category) || p.Category == query.Category) &&
+                    (string.IsNullOrWhiteSpace(query.Type) || p.Type == query.Type) &&
+                    (string.IsNullOrWhiteSpace(query.Genre) || p.Genre == query.Genre) &&
+                    (string.IsNullOrWhiteSpace(query.Language) || p.Language == query.Language) &&
+                    (string.IsNullOrWhiteSpace(query.Status) || p.Status == query.Status) &&
+                    (!query.Duration.HasValue || p.Duration == query.Duration.Value) &&
+                    (!query.StartDate.HasValue || p.StartDate >= query.StartDate.Value) &&
+                    (!query.EndDate.HasValue || p.EndDate <= query.EndDate.Value) &&
+                    (!query.MinBudget.HasValue || p.Budget >= query.MinBudget.Value) &&
+                    (!query.MaxBudget.HasValue || p.Budget <= query.MaxBudget.Value) &&
+                    (!query.Progress.HasValue || p.Progress == query.Progress.Value) &&
+                    (!query.CreatorId.HasValue || p.CreatorId == query.CreatorId.Value),
+                include: q =>
+                {
+                    if (query.IncludeCreator)
+                        q = q.Include(p => p.Creator).ThenInclude(c => c.Role);
+                    if (query.IncludeResearchPaper)
+                        q = q.Include(p => p.ResearchPaper);
+                    if (query.IncludeMembers)
+                        q = q.Include(p => p.Members).ThenInclude(m => m.Account);
+                    if (query.IncludeMilestones)
+                        q = q.Include(p => p.Milestones);
+                    return q;
+                },
+                hasTrackings: false
+            );
 
-            var total = list.Count;
-            if (total == 0)
-                throw new NotFoundException("No matching projects found.");
+            // 🔃 Sorting
+            projects = query.SortBy?.ToLower() switch
+            {
+                "englishtitle" => query.Desc ? projects.OrderByDescending(p => p.EnglishTitle).ToList() : projects.OrderBy(p => p.EnglishTitle).ToList(),
+                "vietnamesetitle" => query.Desc ? projects.OrderByDescending(p => p.VietnameseTitle).ToList() : projects.OrderBy(p => p.VietnameseTitle).ToList(),
+                "duration" => query.Desc ? projects.OrderByDescending(p => p.Duration).ToList() : projects.OrderBy(p => p.Duration).ToList(),
+                "startdate" => query.Desc ? projects.OrderByDescending(p => p.StartDate).ToList() : projects.OrderBy(p => p.StartDate).ToList(),
+                "enddate" => query.Desc ? projects.OrderByDescending(p => p.EndDate).ToList() : projects.OrderBy(p => p.EndDate).ToList(),
+                "budget" => query.Desc ? projects.OrderByDescending(p => p.Budget).ToList() : projects.OrderBy(p => p.Budget).ToList(),
+                "progress" => query.Desc ? projects.OrderByDescending(p => p.Progress).ToList() : projects.OrderBy(p => p.Progress).ToList(),
+                "createdat" => query.Desc ? projects.OrderByDescending(p => p.CreatedAt).ToList() : projects.OrderBy(p => p.CreatedAt).ToList(),
+                "category" => query.Desc ? projects.OrderByDescending(p => p.Category).ToList() : projects.OrderBy(p => p.Category).ToList(),
+                "type" => query.Desc ? projects.OrderByDescending(p => p.Type).ToList() : projects.OrderBy(p => p.Type).ToList(),
+                "genre" => query.Desc ? projects.OrderByDescending(p => p.Genre).ToList() : projects.OrderBy(p => p.Genre).ToList(),
+                _ => projects.OrderBy(p => p.CreatedAt).ToList()
+            };
 
-            var page = list
+            var total = projects.Count;
+            var page = projects
                 .Skip((query.PageIndex - 1) * query.PageSize)
                 .Take(query.PageSize)
                 .ToList();
@@ -66,6 +103,7 @@ namespace SRPM_Services.Implements
                 DataList = page.Adapt<List<RS_Project>>()
             };
         }
+
 
         public async Task<RS_Project> CreateAsync(RQ_Project request)
         {

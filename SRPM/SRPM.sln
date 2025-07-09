@@ -5,9 +5,9 @@ VisualStudioVersion = 17.11.35222.181
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SRPM_APIServices", "SRPM_APIServices\SRPM_APIServices.csproj", "{696B704F-E799-48F5-B53D-7FFD6C1F3496}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SRPM_Services", "SRPM_Services\SRPM_Services.csproj", "{25BE17A7-A75A-48D0-978E-35095F16FFD9}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SRPM_Services", "SRPM_Services\SRPM_Services.csproj", "{25BE17A7-A75A-48D0-978E-35095F16FFD9}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SRPM_Repositories", "SRPM_Repositories\SRPM_Repositories.csproj", "{603041A9-3467-4F41-8836-1174559F8512}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SRPM_Repositories", "SRPM_Repositories\SRPM_Repositories.csproj", "{603041A9-3467-4F41-8836-1174559F8512}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

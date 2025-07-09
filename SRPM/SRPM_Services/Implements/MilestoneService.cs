@@ -12,6 +12,8 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Mapster;
+using SRPM_Services.BusinessModels.Others;
+using Microsoft.EntityFrameworkCore;
 
 namespace SRPM_Services.Implements
 {
@@ -51,8 +53,27 @@ namespace SRPM_Services.Implements
                     (string.IsNullOrWhiteSpace(query.Status) || m.Status == query.Status) &&
                     (!query.ProjectId.HasValue || m.ProjectId == query.ProjectId.Value) &&
                     (!query.CreatorId.HasValue || m.CreatorId == query.CreatorId.Value),
+                include: q => q
+                    .Include(m => m.Project)
+                    .Include(m => m.Creator).ThenInclude(c => c.Role)
+                    .Include(m => m.Evaluations)
+                    .Include(m => m.IndividualEvaluations)
+                    .Include(m => m.Tasks),
                 hasTrackings: false
             );
+
+
+            // 🔄 Apply Sorting
+            list = query.SortBy?.ToLower() switch
+            {
+                "title" => query.Desc ? list.OrderByDescending(x => x.Title).ToList() : list.OrderBy(x => x.Title).ToList(),
+                "objective" => query.Desc ? list.OrderByDescending(x => x.Objective).ToList() : list.OrderBy(x => x.Objective).ToList(),
+                "cost" => query.Desc ? list.OrderByDescending(x => x.Cost).ToList() : list.OrderBy(x => x.Cost).ToList(),
+                "type" => query.Desc ? list.OrderByDescending(x => x.Type).ToList() : list.OrderBy(x => x.Type).ToList(),
+                "startdate" => query.Desc ? list.OrderByDescending(x => x.StartDate).ToList() : list.OrderBy(x => x.StartDate).ToList(),
+                "enddate" => query.Desc ? list.OrderByDescending(x => x.EndDate).ToList() : list.OrderBy(x => x.EndDate).ToList(),
+                _ => list.OrderBy(x => x.Title).ToList() // Default
+            };
 
             var total = list.Count;
             var paged = list
@@ -68,6 +89,7 @@ namespace SRPM_Services.Implements
                 DataList = paged.Adapt<List<RS_Milestone>>()
             };
         }
+
 
 
         public async Task<RS_Milestone> CreateAsync(RQ_Milestone request)

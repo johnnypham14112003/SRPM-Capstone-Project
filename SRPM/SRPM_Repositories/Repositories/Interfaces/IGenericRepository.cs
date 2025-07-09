@@ -8,7 +8,10 @@ public interface IGenericRepository<T> where T : class
     Task<bool> AnyAsync(Expression<Func<T, bool>> expression);
     Task<int> CountAsync(Expression<Func<T, bool>> expression);
 
-    Task<List<T>?> GetListAsync(Expression<Func<T, bool>> expression, bool hasTrackings = true);
+    Task<List<T>?> GetListAsync(
+        Expression<Func<T, bool>> expression,
+        Func<IQueryable<T>, IQueryable<T>>? include = null,
+        bool hasTrackings = true);
 
     Task<List<TResult>?> GetListAdvanceAsync<TResult>(
         Expression<Func<T, bool>> whereLinQ,

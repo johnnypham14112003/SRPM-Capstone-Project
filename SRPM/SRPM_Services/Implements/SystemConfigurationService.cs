@@ -53,8 +53,8 @@ public class SystemConfigurationService : ISystemConfigurationService
     public async Task<List<RQ_SystemConfiguration>> ListConfig(string typeData, string? keyData)
     {
         var listConfig = string.IsNullOrWhiteSpace(keyData) ?
-            await _unitOfWork.GetSystemConfigurationRepository().GetListAsync(sys => sys.ConfigType.Equals(typeData), false) :
-            await _unitOfWork.GetSystemConfigurationRepository().GetListAsync(sys => sys.ConfigType.Equals(typeData) && sys.ConfigKey.Equals(keyData), false);
+            await _unitOfWork.GetSystemConfigurationRepository().GetListAsync(sys => sys.ConfigType.Equals(typeData), hasTrackings: false) :
+            await _unitOfWork.GetSystemConfigurationRepository().GetListAsync(sys => sys.ConfigType.Equals(typeData) && sys.ConfigKey.Equals(keyData), hasTrackings : false);
 
         if (listConfig is null) throw new NotFoundException("Not found any config!");
         return listConfig.Adapt<List<RQ_SystemConfiguration>>();

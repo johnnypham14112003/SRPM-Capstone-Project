@@ -1,5 +1,6 @@
 ﻿using Azure.Core;
 using Google.Apis.Auth;
+using Mapster;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.Extensions.Configuration;
@@ -8,7 +9,11 @@ using Newtonsoft.Json;
 using SRPM_Repositories.Models;
 using SRPM_Repositories.Repositories.Implements;
 using SRPM_Repositories.Repositories.Interfaces;
+using SRPM_Services.BusinessModels;
 using SRPM_Services.BusinessModels.Others;
+using SRPM_Services.BusinessModels.RequestModels;
+using SRPM_Services.BusinessModels.ResponseModels;
+using SRPM_Services.Extensions.Enumerables;
 using SRPM_Services.Extensions.Exceptions;
 using SRPM_Services.Extensions.FluentEmail;
 using SRPM_Services.Interfaces;
@@ -26,14 +31,16 @@ namespace SRPM_Services.Implements
         private readonly string _allowedEmailDomain;
         private readonly IConfiguration _configuration;
         private readonly IEmailService _emailService;
+        private readonly IUserContextService _userContextService;
 
-        public AccountService(IUnitOfWork unitOfWork, IConfiguration configuration, IEmailService emailService)
+        public AccountService(IUnitOfWork unitOfWork, IConfiguration configuration, IEmailService emailService, IUserContextService userContextService)
         {
             _unitOfWork = unitOfWork;
             // Read the allowed domain from configuration or default to "fe.edu.vn"
             _allowedEmailDomain = configuration["AllowedEmailDomain"] ?? "fe.edu.vn";
             _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
             _emailService = emailService ?? throw new ArgumentNullException(nameof(emailService));
+            _userContextService = userContextService ?? throw new ArgumentNullException(nameof(userContextService));
 
         }
 
@@ -378,6 +385,116 @@ namespace SRPM_Services.Implements
             }
             return builder.ToString();
         }
+        public async Task<PagingResult<RS_Account>> GetListAsync(RQ_AccountQuery query)
+        {
+            var list = await _unitOfWork.GetAccountRepository().GetListAsync(
+                a =>
+                    (string.IsNullOrWhiteSpace(query.IdentityCode) || a.IdentityCode.Contains(query.IdentityCode)) &&
+                    (string.IsNullOrWhiteSpace(query.FullName) || a.FullName.Contains(query.FullName)) &&
+                    (string.IsNullOrWhiteSpace(query.Email) || a.Email.Contains(query.Email)) &&
+                    (string.IsNullOrWhiteSpace(query.PhoneNumber) || (a.PhoneNumber ?? "").Contains(query.PhoneNumber)) &&
+                    (string.IsNullOrWhiteSpace(query.Status) || a.Status == query.Status),
+                hasTrackings: false
+            );
+
+            // Apply sorting
+            list = query.SortBy?.ToLower() switch
+            {
+                "fullname" => query.Desc ? list.OrderByDescending(x => x.FullName).ToList() : list.OrderBy(x => x.FullName).ToList(),
+                "email" => query.Desc ? list.OrderByDescending(x => x.Email).ToList() : list.OrderBy(x => x.Email).ToList(),
+                "identitycode" => query.Desc ? list.OrderByDescending(x => x.IdentityCode).ToList() : list.OrderBy(x => x.IdentityCode).ToList(),
+                _ => list.OrderBy(x => x.FullName).ToList() // Default sort
+            };
+
+            var total = list.Count;
+            var paged = list
+                .Skip((query.PageIndex - 1) * query.PageSize)
+                .Take(query.PageSize)
+                .ToList();
+
+            return new PagingResult<RS_Account>
+            {
+                PageIndex = query.PageIndex,
+                PageSize = query.PageSize,
+                TotalCount = total,
+                DataList = paged.Adapt<List<RS_Account>>()
+            };
+        }
+
+
+        public async Task<RS_Account> CreateAsync(RQ_Account request)
+        {
+            var entity = request.Adapt<Account>();
+            entity.Id = Guid.NewGuid();
+            entity.CreateTime = DateTime.UtcNow;
+
+            // Extract identity code from email — everything before '@'
+            var identity = request.Email.Split('@')[0].Trim().ToLowerInvariant();
+            entity.IdentityCode = identity;
+
+            // Status conversion
+            entity.Status = request.Status.ToStatus().ToString().ToLowerInvariant();
+
+            await _unitOfWork.GetAccountRepository().AddAsync(entity);
+            await _unitOfWork.SaveChangesAsync();
+
+            return entity.Adapt<RS_Account>();
+        }
+        public async Task<RS_Account?> GetByIdAsync(Guid id)
+        {
+            var entity = await _unitOfWork.GetAccountRepository().GetByIdAsync<Guid>(id);
+            return entity?.Adapt<RS_Account>();
+        }
+        public async Task<RS_Account?> GetOnlineUserInfoAsync()
+        {
+            var id = _userContextService.GetCurrentUserId();
+            var entity = await _unitOfWork.GetAccountRepository().GetByIdAsync<Guid>(Guid.Parse(id));
+            return entity?.Adapt<RS_Account>();
+        }
+
+        public async Task<RS_Account?> UpdateAsync(Guid id, RQ_Account request)
+        {
+            var repo = _unitOfWork.GetAccountRepository();
+            var entity = await repo.GetByIdAsync<Guid>(id);
+            if (entity == null) return null;
+
+            entity.Status = request.Status.ToStatus().ToString().ToLowerInvariant();
+            request.Adapt(entity);
+
+            await repo.UpdateAsync(entity);
+            await _unitOfWork.SaveChangesAsync();
+
+            return entity.Adapt<RS_Account>();
+        }
+
+        public async Task<RS_Account?> ToggleStatusAsync(Guid id)
+        {
+            var repo = _unitOfWork.GetAccountRepository();
+            var entity = await repo.GetByIdAsync<Guid>(id);
+            if (entity == null) return null;
+
+            var current = entity.Status.ToStatus();
+            entity.Status = current == Status.Created
+                ? Status.Deleted.ToString().ToLower()
+                : Status.Created.ToString().ToLower();
+
+            await repo.UpdateAsync(entity);
+            await _unitOfWork.SaveChangesAsync();
+
+            return entity.Adapt<RS_Account>();
+        }
+
+        public async Task<bool> DeleteAsync(Guid id)
+        {
+            var entity = await _unitOfWork.GetAccountRepository().GetByIdAsync<Guid>(id);
+            if (entity == null) return false;
+
+            await _unitOfWork.GetAccountRepository().DeleteAsync(entity);
+            await _unitOfWork.SaveChangesAsync();
+            return true;
+        }
+
+
     }
 
 }

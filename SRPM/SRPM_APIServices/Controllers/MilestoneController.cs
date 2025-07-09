@@ -6,6 +6,8 @@ using SRPM_Services.BusinessModels;
 using SRPM_Services.Interfaces;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
+using SRPM_Services.BusinessModels.Others;
+using SRPM_Repositories.Models;
 
 namespace SRPM_APIServices.Controllers
 {

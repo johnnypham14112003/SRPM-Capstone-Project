@@ -6,6 +6,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using SRPM_Services.BusinessModels.Others;
+using SRPM_Repositories.Models;
 
 namespace SRPM_Services.Interfaces
 {

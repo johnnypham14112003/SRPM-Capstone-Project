@@ -2,6 +2,7 @@
 using SRPM_Repositories.Models;
 using SRPM_Repositories.Repositories.Interfaces;
 using SRPM_Services.BusinessModels;
+using SRPM_Services.BusinessModels.Others;
 using SRPM_Services.BusinessModels.RequestModels;
 using SRPM_Services.BusinessModels.ResponseModels;
 using SRPM_Services.Interfaces;
@@ -37,6 +38,13 @@ namespace SRPM_Services.Implements
                 hasTrackings: false
             );
 
+            // Apply sorting
+            majors = query.SortBy?.ToLower() switch
+            {
+                "name" => query.Desc ? majors.OrderByDescending(m => m.Name).ToList() : majors.OrderBy(m => m.Name).ToList(),
+                _ => majors.OrderBy(m => m.Name).ToList() // fallback
+            };
+
             var total = majors.Count;
             var paged = majors
                 .Skip((query.PageIndex - 1) * query.PageSize)
@@ -51,6 +59,7 @@ namespace SRPM_Services.Implements
                 DataList = paged.Adapt<List<RS_Major>>()
             };
         }
+
 
 
 

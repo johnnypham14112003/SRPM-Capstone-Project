@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace SRPM_Services.BusinessModels.RequestModels
+namespace SRPM_Services.BusinessModels.Others
 {
     public class RQ_MilestoneQuery
     {
@@ -20,9 +20,13 @@ namespace SRPM_Services.BusinessModels.RequestModels
         public Guid? ProjectId { get; set; }
         public Guid? CreatorId { get; set; }
 
+        public string? SortBy { get; set; } // title, objective, cost, type, startDate, endDate
+        public bool Desc { get; set; } = false;
+
         public int PageIndex { get; set; } = 1;
         public int PageSize { get; set; } = 10;
     }
+
 
 
 }

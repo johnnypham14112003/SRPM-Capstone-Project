@@ -362,6 +362,13 @@ public static class DIContainer
             .IgnoreNullValues(true);
 
         TypeAdapterConfig<MemberTask, RS_MemberTask>.NewConfig();
+        TypeAdapterConfig<RQ_Account, Account>.NewConfig()
+            .Ignore(dest => dest.Id)
+            .Ignore(dest => dest.CreateTime)
+            .Ignore(dest => dest.DeleteTime)
+            .IgnoreNullValues(true);
+
+        TypeAdapterConfig<Account, RS_Account>.NewConfig();
 
         return services;
     }
