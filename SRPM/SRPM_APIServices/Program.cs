@@ -2,17 +2,10 @@
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using SRPM_APIServices;
-using SRPM_Repositories;
-using SRPM_Repositories.Repositories.Interfaces;
-using SRPM_Repositories.Repositories.Implements;
 using System.Security.Claims;
 using System.Text;
-using SRPM_Services.Interfaces;
-using SRPM_Services.Implements;
 
 var builder = WebApplication.CreateBuilder(args);
 var config = builder.Configuration;

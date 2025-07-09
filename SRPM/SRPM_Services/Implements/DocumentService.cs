@@ -56,7 +56,7 @@ public class DocumentService : IDocumentService
         };
     }
 
-    public async Task<RS_Document> ViewDetailDocument(Guid id)
+    public async Task<RS_Document?> ViewDetailDocument(Guid id)
     {
         if (id == Guid.Empty) throw new BadRequestException("Cannot view a null Document Id!");
         var existCouncil = await _unitOfWork.GetDocumentRepository().GetFullDetailDocument(id)
