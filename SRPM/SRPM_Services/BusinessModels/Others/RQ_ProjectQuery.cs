@@ -9,13 +9,12 @@ namespace SRPM_Services.BusinessModels.Others
     public class RQ_ProjectQuery
     {
         public string? Code { get; set; }
-        public string? EnglishTitle { get; set; }
-        public string? VietnameseTitle { get; set; }
+        public string? Title { get; set; } 
         public string? Category { get; set; }
         public string? Type { get; set; }
         public string? Genre { get; set; }
         public string? Language { get; set; }
-        public string? Status { get; set; }
+        public string? Status { get; set; } 
 
         public Guid? CreatorId { get; set; }
 

@@ -43,8 +43,8 @@ namespace SRPM_Services.Implements
             var projects = await _unitOfWork.GetProjectRepository().GetListAsync(
                 p =>
                     (string.IsNullOrWhiteSpace(query.Code) || p.Code == query.Code) &&
-                    (string.IsNullOrWhiteSpace(query.EnglishTitle) || p.EnglishTitle.Contains(query.EnglishTitle)) &&
-                    (string.IsNullOrWhiteSpace(query.VietnameseTitle) || p.VietnameseTitle.Contains(query.VietnameseTitle)) &&
+                    (string.IsNullOrWhiteSpace(query.Title) || p.EnglishTitle.Contains(query.Title)) &&
+                    (string.IsNullOrWhiteSpace(query.Title) || p.VietnameseTitle.Contains(query.Title)) &&
                     (string.IsNullOrWhiteSpace(query.Category) || p.Category == query.Category) &&
                     (string.IsNullOrWhiteSpace(query.Type) || p.Type == query.Type) &&
                     (string.IsNullOrWhiteSpace(query.Genre) || p.Genre == query.Genre) &&
