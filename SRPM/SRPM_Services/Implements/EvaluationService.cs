@@ -5,11 +5,6 @@ using SRPM_Services.BusinessModels.RequestModels;
 using SRPM_Services.BusinessModels.ResponseModels;
 using SRPM_Services.Extensions.Enumerables;
 using SRPM_Services.Interfaces;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace SRPM_Services.Implements
 {
@@ -72,6 +67,11 @@ namespace SRPM_Services.Implements
             await repo.DeleteAsync(evaluation);
             await _unitOfWork.SaveChangesAsync();
             return true;
+        }
+
+        public Task<Dictionary<string, double>?> CheckPlagiarism(string inputText, IEnumerable<string> inputSource)
+        {
+            throw new NotImplementedException();
         }
     }
 

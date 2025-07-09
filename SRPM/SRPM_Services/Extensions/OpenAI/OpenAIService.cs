@@ -14,8 +14,8 @@ public interface IOpenAIService
     Task<float[]?> EmbedTextAsync(string inputText, CancellationToken cancellationToken = default);
     Task<Dictionary<string, double>> CompareWithSourceAsync(
         string inputText, IEnumerable<string> inputSource, CancellationToken cancellationToken = default);
-    Task<Dictionary<string, double>> CompareWithSourceAsync(
-        float[] inputVector, IEnumerable<float[]> vectorSource, CancellationToken cancellationToken = default);
+    Task<List<RS_ProjectSimilarityResult>> CompareWithSourceAsync(
+        float[] inputVector, IEnumerable<RS_ProjectSimilarityResult> projectSource, CancellationToken cancellationToken = default);
 }
 
 public class OpenAIService : IOpenAIService
