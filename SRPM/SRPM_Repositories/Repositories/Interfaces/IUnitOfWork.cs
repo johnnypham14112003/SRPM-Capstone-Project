@@ -8,7 +8,6 @@ public interface IUnitOfWork
     IAccountRepository GetAccountRepository();
     IAppraisalCouncilRepository GetAppraisalCouncilRepository();
     IDocumentRepository GetDocumentRepository();
-    IDocumentSectionRepository GetDocumentSectionRepository();
     IEvaluationRepository GetEvaluationRepository();
     IEvaluationStageRepository GetEvaluationStageRepository();
     IIndividualEvaluationRepository GetIndividualEvaluationRepository();
@@ -22,11 +21,8 @@ public interface IUnitOfWork
     IProjectTagRepository GetProjectTagRepository();
     IResearchPaperRepository GetResearchPaperRepository();
     IRoleRepository GetRoleRepository();
-    ISectionContentRepository GetSectionContentRepository();
     ISignatureRepository GetSignatureRepository();
     ISystemConfigurationRepository GetSystemConfigurationRepository();
-    ITableRowRepository GetTableRowRepository();
-    ITableStructureRepository GetTableStructureRepository();
     ITaskRepository GetTaskRepository();
     ITransactionRepository GetTransactionRepository();
     IUserRoleRepository GetUserRoleRepository();

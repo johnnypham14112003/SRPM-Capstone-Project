@@ -12,7 +12,6 @@ public class UnitOfWork : IUnitOfWork
     private readonly Lazy<IAccountRepository> _accountRepository;
     private readonly Lazy<IAppraisalCouncilRepository> _appraisalCouncilRepository;
     private readonly Lazy<IDocumentRepository> _documentRepository;
-    private readonly Lazy<IDocumentSectionRepository> _documentSectionRepository;
     private readonly Lazy<IEvaluationRepository> _evaluationRepository;
     private readonly Lazy<IEvaluationStageRepository> _evaluationStageRepository;
     private readonly Lazy<IIndividualEvaluationRepository> _individualEvaluationRepository;
@@ -26,11 +25,8 @@ public class UnitOfWork : IUnitOfWork
     private readonly Lazy<IProjectTagRepository> _projectTagRepository;
     private readonly Lazy<IResearchPaperRepository> _researchPaperRepository;
     private readonly Lazy<IRoleRepository> _roleRepository;
-    private readonly Lazy<ISectionContentRepository> _sectionContentRepository;
     private readonly Lazy<ISignatureRepository> _signatureRepository;
     private readonly Lazy<ISystemConfigurationRepository> _systemConfigurationRepository;
-    private readonly Lazy<ITableRowRepository> _tableRowRepository;
-    private readonly Lazy<ITableStructureRepository> _tableStructureRepository;
     private readonly Lazy<ITaskRepository> _taskRepository;
     private readonly Lazy<ITransactionRepository> _transactionRepository;
     private readonly Lazy<IUserRoleRepository> _userRoleRepository;
@@ -52,9 +48,6 @@ public class UnitOfWork : IUnitOfWork
 
         _documentRepository = new Lazy<IDocumentRepository>
             (() => new DocumentRepository(context));
-
-        _documentSectionRepository = new Lazy<IDocumentSectionRepository>
-            (() => new DocumentSectionRepository(context));
 
         _evaluationRepository = new Lazy<IEvaluationRepository>
             (() => new EvaluationRepository(context));
@@ -95,20 +88,11 @@ public class UnitOfWork : IUnitOfWork
         _roleRepository = new Lazy<IRoleRepository>
             (() => new RoleRepository(context));
 
-        _sectionContentRepository = new Lazy<ISectionContentRepository>
-            (() => new SectionContentRepository(context));
-
         _signatureRepository = new Lazy<ISignatureRepository>
             (() => new SignatureRepository(context));
 
         _systemConfigurationRepository = new Lazy<ISystemConfigurationRepository>
             (() => new SystemConfigurationRepository(context));
-
-        _tableRowRepository = new Lazy<ITableRowRepository>
-            (() => new TableRowRepository(context));
-
-        _tableStructureRepository = new Lazy<ITableStructureRepository>
-            (() => new TableStructureRepository(context));
 
         _taskRepository = new Lazy<ITaskRepository>
             (() => new TaskRepository(context));
@@ -134,8 +118,6 @@ public class UnitOfWork : IUnitOfWork
         => _appraisalCouncilRepository.Value;
     public IDocumentRepository GetDocumentRepository()
         => _documentRepository.Value;
-    public IDocumentSectionRepository GetDocumentSectionRepository()
-        => _documentSectionRepository.Value;
     public IEvaluationRepository GetEvaluationRepository()
         => _evaluationRepository.Value;
     public IEvaluationStageRepository GetEvaluationStageRepository()
@@ -162,16 +144,10 @@ public class UnitOfWork : IUnitOfWork
         => _researchPaperRepository.Value;
     public IRoleRepository GetRoleRepository()
         => _roleRepository.Value;
-    public ISectionContentRepository GetSectionContentRepository()
-        => _sectionContentRepository.Value;
     public ISignatureRepository GetSignatureRepository()
         => _signatureRepository.Value;
     public ISystemConfigurationRepository GetSystemConfigurationRepository()
         => _systemConfigurationRepository.Value;
-    public ITableRowRepository GetTableRowRepository()
-        => _tableRowRepository.Value;
-    public ITableStructureRepository GetTableStructureRepository()
-        => _tableStructureRepository.Value;
     public ITaskRepository GetTaskRepository()
         => _taskRepository.Value;
     public ITransactionRepository GetTransactionRepository()

@@ -6,7 +6,6 @@ using Microsoft.Extensions.FileProviders;
 using Microsoft.OpenApi.Models;
 using Newtonsoft.Json.Converters;
 using Newtonsoft.Json.Serialization;
-using OpenAI;
 using OpenAI.Embeddings;
 using SRPM_Repositories;
 using SRPM_Repositories.Models;
@@ -22,11 +21,6 @@ using SRPM_Services.Extensions.FluentEmail;
 using SRPM_Services.Extensions.Mapster;
 using SRPM_Services.Extensions.OpenAI;
 using SRPM_Services.Implements;
-using SRPM_Repositories.Repositories.Implements;
-using Microsoft.OpenApi.Models;
-using SRPM_Repositories.Models;
-using SRPM_Services.BusinessModels.RequestModels;
-using SRPM_Services.Extensions.Enumerables;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -35,6 +29,7 @@ using Microsoft.IdentityModel.Tokens;
 using System.Security.Claims;
 using System.Text;
 using SRPM_Services.Interfaces;
+using OpenAI.Chat;
 
 namespace SRPM_APIServices;
 
@@ -80,7 +75,6 @@ public static class DIContainer
         services.AddScoped<IAccountService, AccountService>();
         services.AddScoped<IAppraisalCouncilService, AppraisalCouncilService>();
         services.AddScoped<IDocumentService, DocumentService>();
-        services.AddScoped<IDocumentSectionService, DocumentSectionService>();
         services.AddScoped<IEvaluationService, EvaluationService>();
         services.AddScoped<IEvaluationStageService, EvaluationStageService>();
         services.AddScoped<IIndividualEvaluationService, IndividualEvaluationService>();
@@ -118,7 +112,6 @@ public static class DIContainer
         services.AddScoped<IAccountRepository, AccountRepository>();
         services.AddScoped<IAppraisalCouncilRepository, AppraisalCouncilRepository>();
         services.AddScoped<IDocumentRepository, DocumentRepository>();
-        services.AddScoped<IDocumentSectionRepository, DocumentSectionRepository>();
         services.AddScoped<IEvaluationRepository, EvaluationRepository>();
         services.AddScoped<IEvaluationStageRepository, EvaluationStageRepository>();
         services.AddScoped<IIndividualEvaluationRepository, IndividualEvaluationRepository>();
@@ -132,11 +125,8 @@ public static class DIContainer
         services.AddScoped<IProjectTagRepository, ProjectTagRepository>();
         services.AddScoped<IResearchPaperRepository, ResearchPaperRepository>();
         services.AddScoped<IRoleRepository, RoleRepository>();
-        services.AddScoped<ISectionContentRepository, SectionContentRepository>();
         services.AddScoped<ISignatureRepository, SignatureRepository>();
         services.AddScoped<ISystemConfigurationRepository, SystemConfigurationRepository>();
-        services.AddScoped<ITableRowRepository, TableRowRepository>();
-        services.AddScoped<ITableStructureRepository, TableStructureRepository>();
         services.AddScoped<ITaskRepository, TaskRepository>();
         services.AddScoped<ITransactionRepository, TransactionRepository>();
         services.AddScoped<IUserRoleRepository, UserRoleRepository>();
@@ -591,9 +581,9 @@ public static class DIContainer
 
         //new instance OpenAIOptionModel
         services.AddSingleton(oaiOpts);
-        
-        //new instance OpenAIClient
-        services.AddSingleton(new OpenAIClient(oaiOpts.ApiKey));
+
+        //new instance ChatClient
+        services.AddSingleton(new ChatClient(oaiOpts.ChatModel ,oaiOpts.ApiKey));
         //new instance EmbeddingClient
         services.AddSingleton(new EmbeddingClient(oaiOpts.EmbeddingModel,oaiOpts.ApiKey));
 

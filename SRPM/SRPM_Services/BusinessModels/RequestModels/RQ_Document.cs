@@ -8,7 +8,8 @@ public class RQ_Document
 
     public string? Name { get; set; }
     [MaxLength(30)] public string? Type { get; set; } //System | Final E-Doc | Ly lich khoa hoc
-    public DateTime? DateInDoc { get; set; }
+    public bool IsTemplate { get; set; } = false;
+    public string? ContentHTML { get; set; }
     [Required] public DateTime UpdatedAt { get; set; } = DateTime.Now;
     [Required] public DateTime UploadAt { get; set; } = DateTime.Now;
     [MaxLength(30)] public string Status { get; set; } = "created";
@@ -20,5 +21,5 @@ public class RQ_Document
     public Guid? IndividualEvaluationId { get; set; }
     public Guid? TransactionId { get; set; }
 
-    public virtual ICollection<RQ_DocumentSection>? DocumentFields { get; set; }
+    //public virtual ICollection<RQ_Signature>? Signatures { get; set; }
 }
