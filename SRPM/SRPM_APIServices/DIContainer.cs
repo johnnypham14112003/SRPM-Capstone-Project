@@ -99,6 +99,7 @@ public static class DIContainer
         services.AddScoped<IUserContextService, UserContextService>();
         services.AddScoped<ISessionService, MemorySessionService>();
         services.AddScoped<ITransactionService, TransactionService>();
+        services.AddScoped<IFieldService, FieldService>();
 
         //Extensions Services
         services.AddScoped<IEmailService, EmailService>();
@@ -140,6 +141,7 @@ public static class DIContainer
         services.AddScoped<ITaskRepository, TaskRepository>();
         services.AddScoped<ITransactionRepository, TransactionRepository>();
         services.AddScoped<IUserRoleRepository, UserRoleRepository>();
+        services.AddScoped<IFieldRepository, FieldRepository>();
 
         //Add other repository here...
 
@@ -288,7 +290,17 @@ public static class DIContainer
             .Ignore(dest => dest.Transactions)
             .IgnoreNullValues(true);
 
-        TypeAdapterConfig<Project, RS_Project>.NewConfig();
+        TypeAdapterConfig<Project, RS_Project>.NewConfig()
+        .Map(dest => dest.Majors, src =>
+        src.ProjectMajors.Select(pm => new RS_MajorBrief
+        {
+            Name = pm.Major.Name,
+            Field = new RS_FieldBrief
+            {
+                Name = pm.Major.Field.Name
+            }
+        }).ToList());
+
         TypeAdapterConfig<RQ_ProjectMajor, ProjectMajor>.NewConfig()
             .Ignore(dest => dest.Project)
             .Ignore(dest => dest.Major);

@@ -1,4 +1,5 @@
 ﻿using Mapster;
+using Microsoft.EntityFrameworkCore;
 using SRPM_Repositories.Models;
 using SRPM_Repositories.Repositories.Interfaces;
 using SRPM_Services.BusinessModels;
@@ -35,15 +36,11 @@ namespace SRPM_Services.Implements
                 m =>
                     (!query.FieldId.HasValue || m.FieldId == query.FieldId.Value) &&
                     (string.IsNullOrWhiteSpace(query.Name) || m.Name.Contains(query.Name)),
+                include: q => q.Include(m => m.Field),
                 hasTrackings: false
             );
 
-            // Apply sorting
-            majors = query.SortBy?.ToLower() switch
-            {
-                "name" => query.Desc ? majors.OrderByDescending(m => m.Name).ToList() : majors.OrderBy(m => m.Name).ToList(),
-                _ => majors.OrderBy(m => m.Name).ToList() // fallback
-            };
+            majors = query.Desc ? majors.OrderByDescending(m => m.Name).ToList() : majors.OrderBy(m => m.Name).ToList();
 
             var total = majors.Count;
             var paged = majors
@@ -56,9 +53,10 @@ namespace SRPM_Services.Implements
                 PageIndex = query.PageIndex,
                 PageSize = query.PageSize,
                 TotalCount = total,
-                DataList = paged.Adapt<List<RS_Major>>()
+                DataList = paged.Adapt<List<RS_Major>>() 
             };
         }
+
 
 
 

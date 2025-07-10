@@ -28,13 +28,11 @@ namespace SRPM_Services.Implements
             _unitOfWork = unitOfWork;
             _userContextService = userContextService;
         }
-
         public async Task<RS_Project?> GetByIdAsync(Guid id)
         {
             var entity = await _unitOfWork.GetProjectRepository().GetByIdAsync<Guid>(id);
             return entity?.Adapt<RS_Project>();
         }
-
         public async Task<PagingResult<RS_Project>> GetListAsync(RQ_ProjectQuery query)
         {
             query.PageIndex = query.PageIndex < 1 ? 1 : query.PageIndex;
@@ -42,50 +40,60 @@ namespace SRPM_Services.Implements
 
             var projects = await _unitOfWork.GetProjectRepository().GetListAsync(
                 p =>
-                    (string.IsNullOrWhiteSpace(query.Code) || p.Code == query.Code) &&
-                    (string.IsNullOrWhiteSpace(query.Title) || p.EnglishTitle.Contains(query.Title)) &&
-                    (string.IsNullOrWhiteSpace(query.Title) || p.VietnameseTitle.Contains(query.Title)) &&
+                    (string.IsNullOrWhiteSpace(query.Title) ||
+                        p.EnglishTitle.Contains(query.Title) ||
+                        p.VietnameseTitle.Contains(query.Title)) &&
                     (string.IsNullOrWhiteSpace(query.Category) || p.Category == query.Category) &&
                     (string.IsNullOrWhiteSpace(query.Type) || p.Type == query.Type) &&
                     (string.IsNullOrWhiteSpace(query.Genre) || p.Genre == query.Genre) &&
                     (string.IsNullOrWhiteSpace(query.Language) || p.Language == query.Language) &&
                     (string.IsNullOrWhiteSpace(query.Status) || p.Status == query.Status) &&
-                    (!query.Duration.HasValue || p.Duration == query.Duration.Value) &&
-                    (!query.StartDate.HasValue || p.StartDate >= query.StartDate.Value) &&
-                    (!query.EndDate.HasValue || p.EndDate <= query.EndDate.Value) &&
-                    (!query.MinBudget.HasValue || p.Budget >= query.MinBudget.Value) &&
-                    (!query.MaxBudget.HasValue || p.Budget <= query.MaxBudget.Value) &&
-                    (!query.Progress.HasValue || p.Progress == query.Progress.Value) &&
-                    (!query.CreatorId.HasValue || p.CreatorId == query.CreatorId.Value),
+                    (string.IsNullOrWhiteSpace(query.MajorName) ||
+                        p.ProjectMajors.Any(pm => pm.Major.Name.Contains(query.MajorName))) &&
+                    (string.IsNullOrWhiteSpace(query.FieldName) ||
+                        p.ProjectMajors.Any(pm => pm.Major.Field.Name.Contains(query.FieldName))) &&
+                    (query.TagNames == null || query.TagNames.Count == 0 ||
+                        p.ProjectTags.Any(t => query.TagNames.Contains(t.Name))),
                 include: q =>
                 {
+                    q = q.Include(p => p.ProjectMajors)
+                            .ThenInclude(pm => pm.Major)
+                                .ThenInclude(m => m.Field);
+
+                    q = q.Include(p => p.ProjectTags); // always included — adjust if needed
+
                     if (query.IncludeCreator)
                         q = q.Include(p => p.Creator).ThenInclude(c => c.Role);
-                    if (query.IncludeResearchPaper)
-                        q = q.Include(p => p.ResearchPaper);
+
                     if (query.IncludeMembers)
                         q = q.Include(p => p.Members).ThenInclude(m => m.Account);
+
                     if (query.IncludeMilestones)
                         q = q.Include(p => p.Milestones);
+
+                    if (query.IncludeEvaluations)
+                        q = q.Include(p => p.Evaluations);
+
+                    if (query.IncludeIndividualEvaluations)
+                        q = q.Include(p => p.IndividualEvaluations);
+
+                    if (query.IncludeDocuments)
+                        q = q.Include(p => p.Documents);
+
+                    if (query.IncludeTransactions)
+                        q = q.Include(p => p.Transactions);
+
                     return q;
                 },
+
                 hasTrackings: false
             );
 
-            // 🔃 Sorting
             projects = query.SortBy?.ToLower() switch
             {
                 "englishtitle" => query.Desc ? projects.OrderByDescending(p => p.EnglishTitle).ToList() : projects.OrderBy(p => p.EnglishTitle).ToList(),
                 "vietnamesetitle" => query.Desc ? projects.OrderByDescending(p => p.VietnameseTitle).ToList() : projects.OrderBy(p => p.VietnameseTitle).ToList(),
-                "duration" => query.Desc ? projects.OrderByDescending(p => p.Duration).ToList() : projects.OrderBy(p => p.Duration).ToList(),
-                "startdate" => query.Desc ? projects.OrderByDescending(p => p.StartDate).ToList() : projects.OrderBy(p => p.StartDate).ToList(),
-                "enddate" => query.Desc ? projects.OrderByDescending(p => p.EndDate).ToList() : projects.OrderBy(p => p.EndDate).ToList(),
-                "budget" => query.Desc ? projects.OrderByDescending(p => p.Budget).ToList() : projects.OrderBy(p => p.Budget).ToList(),
-                "progress" => query.Desc ? projects.OrderByDescending(p => p.Progress).ToList() : projects.OrderBy(p => p.Progress).ToList(),
                 "createdat" => query.Desc ? projects.OrderByDescending(p => p.CreatedAt).ToList() : projects.OrderBy(p => p.CreatedAt).ToList(),
-                "category" => query.Desc ? projects.OrderByDescending(p => p.Category).ToList() : projects.OrderBy(p => p.Category).ToList(),
-                "type" => query.Desc ? projects.OrderByDescending(p => p.Type).ToList() : projects.OrderBy(p => p.Type).ToList(),
-                "genre" => query.Desc ? projects.OrderByDescending(p => p.Genre).ToList() : projects.OrderBy(p => p.Genre).ToList(),
                 _ => projects.OrderBy(p => p.CreatedAt).ToList()
             };
 
@@ -103,6 +111,7 @@ namespace SRPM_Services.Implements
                 DataList = page.Adapt<List<RS_Project>>()
             };
         }
+
 
 
         public async Task<RS_Project> CreateAsync(RQ_Project request)

@@ -32,6 +32,7 @@ namespace SRPM_Services.BusinessModels.ResponseModels
         public string Status { get; set; } = null!;
         public Guid CreatorId { get; set; }
 
+
         // 🧠 Related Entities
         public RS_UserRole? Creator { get; set; }
         //public RS_ResearchPaper? ResearchPaper { get; set; }
@@ -39,10 +40,24 @@ namespace SRPM_Services.BusinessModels.ResponseModels
         public List<RS_Milestone>? Milestones { get; set; }
         public List<RS_Evaluation>? Evaluations { get; set; }
         public List<RS_IndividualEvaluation>? IndividualEvaluations { get; set; }
-        public List<RS_ProjectMajor>? ProjectMajors { get; set; }
-        public List<RS_ProjectTag>? ProjectTags { get; set; }
+        public List<RS_MajorBrief>? Majors { get; set; }
+        public List<RS_TagBrief>? ProjectTags { get; set; }
         public List<RS_Document>? Documents { get; set; }
         public List<RS_Transaction>? Transactions { get; set; }
+    }
+    public class RS_TagBrief
+    {
+        public string Name { get; set; } = null!;
+    }
+        public class RS_MajorBrief
+    {
+        public string Name { get; set; } = null!;
+        public RS_FieldBrief? Field { get; set; }
+    }
+
+    public class RS_FieldBrief
+    {
+        public string Name { get; set; } = null!;
     }
 
 

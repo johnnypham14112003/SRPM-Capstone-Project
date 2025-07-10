@@ -34,6 +34,7 @@ public class UnitOfWork : IUnitOfWork
     private readonly Lazy<ITaskRepository> _taskRepository;
     private readonly Lazy<ITransactionRepository> _transactionRepository;
     private readonly Lazy<IUserRoleRepository> _userRoleRepository;
+    private readonly Lazy<IFieldRepository> _fieldRepository;
 
 
     //======================================================================================
@@ -118,6 +119,8 @@ public class UnitOfWork : IUnitOfWork
 
         _userRoleRepository = new Lazy<IUserRoleRepository>
             (() => new UserRoleRepository(context));
+        _fieldRepository = new Lazy<IFieldRepository>
+            (() => new FieldRepository(context));
 
     }
 
@@ -178,5 +181,7 @@ public class UnitOfWork : IUnitOfWork
         => _transactionRepository.Value;
     public IUserRoleRepository GetUserRoleRepository()
         => _userRoleRepository.Value;
+    public IFieldRepository GetFieldRepository()
+        => _fieldRepository.Value;
 
 }

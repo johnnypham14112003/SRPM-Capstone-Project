@@ -30,6 +30,7 @@ public interface IUnitOfWork
     ITaskRepository GetTaskRepository();
     ITransactionRepository GetTransactionRepository();
     IUserRoleRepository GetUserRoleRepository();
+    IFieldRepository GetFieldRepository();
 
 
     // Add other repositories...

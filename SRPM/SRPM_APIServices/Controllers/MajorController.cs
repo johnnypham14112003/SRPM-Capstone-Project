@@ -23,7 +23,7 @@ namespace SRPM_APIServices.Controllers
 
         // GET: api/major/filter
         [HttpGet("filter")]
-        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+        
         public async Task<ActionResult<PagingResult<RS_Major>>> GetList([FromQuery] RQ_MajorQuery query)
         {
             var result = await _service.GetListAsync(query);

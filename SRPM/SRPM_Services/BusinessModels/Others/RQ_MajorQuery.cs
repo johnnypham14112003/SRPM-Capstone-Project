@@ -11,7 +11,6 @@ namespace SRPM_Services.BusinessModels.Others
         public Guid? FieldId { get; set; }
         public string? Name { get; set; }
 
-        public string? SortBy { get; set; } = "name"; // default sorting field
         public bool Desc { get; set; } = false; // descending toggle
 
         public int PageIndex { get; set; } = 1;
