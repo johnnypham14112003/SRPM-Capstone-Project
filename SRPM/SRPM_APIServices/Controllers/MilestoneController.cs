@@ -43,9 +43,9 @@ namespace SRPM_APIServices.Controllers
         }
 
         // GET: api/milestone/filter
-        [HttpGet("filter")]
+        [HttpPost("filter")]
         //[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "Staff")]
-        public async Task<ActionResult<PagingResult<RS_Milestone>>> GetList([FromQuery] RQ_MilestoneQuery query)
+        public async Task<ActionResult<PagingResult<RS_Milestone>>> GetList([FromBody] RQ_MilestoneQuery query)
         {
             var result = await _service.GetListAsync(query);
             return Ok(result);

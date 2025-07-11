@@ -305,7 +305,20 @@ public static class DIContainer
             .Ignore(dest => dest.Project)
             .Ignore(dest => dest.Major);
 
-        TypeAdapterConfig<ProjectMajor, RS_ProjectMajor>.NewConfig();
+        TypeAdapterConfig<ProjectMajor, RS_ProjectMajor>.NewConfig()
+            .Map(dest => dest.MajorId, src => src.MajorId)
+            .Map(dest => dest.Major, src => src.Major == null ? null : new RS_MajorBrief
+            {
+                Name = src.Major.Name,
+                Field = src.Major.Field == null ? null : new RS_FieldBrief
+                {
+                    Name = src.Major.Field.Name
+                }
+            });
+
+
+
+
         TypeAdapterConfig<RQ_Major, Major>.NewConfig()
             .Ignore(dest => dest.Id)
             .Ignore(dest => dest.Field)

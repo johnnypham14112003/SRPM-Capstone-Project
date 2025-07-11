@@ -28,9 +28,9 @@ namespace SRPM_APIServices.Controllers
             return Ok(roles);
         }
         // GET: api/userrole/filter
-        [HttpGet("filter")]
+        [HttpPost("filter")]
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
-        public async Task<ActionResult<PagingResult<RS_UserRole>>> GetList([FromQuery] RQ_UserRoleQuery query)
+        public async Task<ActionResult<PagingResult<RS_UserRole>>> GetList([FromBody] RQ_UserRoleQuery query)
         {
             var result = await _service.GetListAsync(query);
             return Ok(result);

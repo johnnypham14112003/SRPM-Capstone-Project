@@ -30,7 +30,7 @@ namespace SRPM_Services.Implements
         }
         public async Task<RS_Project?> GetByIdAsync(Guid id)
         {
-            var entity = await _unitOfWork.GetProjectRepository().GetByIdAsync<Guid>(id);
+            var entity = await _unitOfWork.GetProjectRepository().GetByIdAsync(id, hasTrackings: false);
             return entity?.Adapt<RS_Project>();
         }
         public async Task<PagingResult<RS_Project>> GetListAsync(RQ_ProjectQuery query)
@@ -52,8 +52,10 @@ namespace SRPM_Services.Implements
                         p.ProjectMajors.Any(pm => pm.Major.Name.Contains(query.MajorName))) &&
                     (string.IsNullOrWhiteSpace(query.FieldName) ||
                         p.ProjectMajors.Any(pm => pm.Major.Field.Name.Contains(query.FieldName))) &&
-                    (query.TagNames == null || query.TagNames.Count == 0 ||
-                        p.ProjectTags.Any(t => query.TagNames.Contains(t.Name))),
+                    (query.TagNames == null ||
+                     query.TagNames.Count == 0 ||
+                     !query.TagNames.Any(tag => !string.IsNullOrWhiteSpace(tag)) ||
+                     p.ProjectTags.Any(t => query.TagNames.Any(tag => tag == t.Name && !string.IsNullOrWhiteSpace(tag)))),
                 include: q =>
                 {
                     q = q.Include(p => p.ProjectMajors)

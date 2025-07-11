@@ -22,9 +22,9 @@ namespace SRPM_APIServices.Controllers
         }
 
         // GET: api/major/filter
-        [HttpGet("filter")]
+        [HttpPost("filter")]
         
-        public async Task<ActionResult<PagingResult<RS_Major>>> GetList([FromQuery] RQ_MajorQuery query)
+        public async Task<ActionResult<PagingResult<RS_Major>>> GetList([FromBody] RQ_MajorQuery query)
         {
             var result = await _service.GetListAsync(query);
             return Ok(result);

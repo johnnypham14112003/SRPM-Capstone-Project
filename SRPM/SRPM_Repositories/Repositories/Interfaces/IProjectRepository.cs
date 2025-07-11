@@ -9,5 +9,7 @@ namespace SRPM_Repositories.Repositories.Interfaces
 {
     public interface IProjectRepository : IGenericRepository<Project>
     {
+        Task<Project?> GetByIdAsync(Guid id, bool hasTrackings = false);
     }
+
 }

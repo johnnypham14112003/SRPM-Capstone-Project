@@ -22,7 +22,7 @@ namespace SRPM_APIServices.Controllers
 
         // GET: api/projectmajor/filter
         [HttpGet("filter")]
-        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+        //[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
         public async Task<ActionResult<PagingResult<RS_ProjectMajor>>> GetList([FromQuery] RQ_ProjectMajorQuery query)
         {
             var result = await _service.GetListAsync(query);
@@ -33,7 +33,7 @@ namespace SRPM_APIServices.Controllers
 
         // POST: api/projectmajor
         [HttpPost]
-        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+        //[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
         public async Task<ActionResult<RS_ProjectMajor>> Create([FromBody] RQ_ProjectMajor request)
         {
             var created = await _service.CreateAsync(request);

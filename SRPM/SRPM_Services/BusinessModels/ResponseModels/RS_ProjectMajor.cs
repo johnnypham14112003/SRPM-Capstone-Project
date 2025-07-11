@@ -10,5 +10,27 @@ namespace SRPM_Services.BusinessModels.ResponseModels
     {
         public Guid ProjectId { get; set; }
         public Guid MajorId { get; set; }
+
+        public RS_ProjectBrief? Project { get; set; }
+        public RS_MajorBrief? Major { get; set; }
     }
+
+    public class RS_ProjectBrief
+    {
+        public string Code { get; set; } = null!;
+        public string EnglishTitle { get; set; } = null!;
+        public string VietnameseTitle { get; set; } = null!;
+    }
+
+    public class RS_MajorBrief
+    {
+        public string Name { get; set; } = null!;
+        public RS_FieldBrief? Field { get; set; }
+    }
+
+    public class RS_FieldBrief
+    {
+        public string Name { get; set; } = null!;
+    }
+
 }

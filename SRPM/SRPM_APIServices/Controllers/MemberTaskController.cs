@@ -29,8 +29,8 @@ namespace SRPM_APIServices.Controllers
         }
 
         // GET: api/membertask/filter
-        [HttpGet("filter")]
-        public async Task<ActionResult<PagingResult<RS_MemberTask>>> GetList([FromQuery] RQ_MemberTaskQuery query)
+        [HttpPost("filter")]
+        public async Task<ActionResult<PagingResult<RS_MemberTask>>> GetList([FromBody] RQ_MemberTaskQuery query)
         {
             var result = await _service.GetListAsync(query);
             return Ok(result);

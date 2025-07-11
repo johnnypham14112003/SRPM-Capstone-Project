@@ -17,7 +17,8 @@ public class ProjectMajorRepository : GenericRepository<ProjectMajor>, IProjectM
     {
         IQueryable<ProjectMajor> query = _context.Set<ProjectMajor>()
             .Include(pm => pm.Project)
-            .Include(pm => pm.Major);
+            .Include(pm => pm.Major)
+            .ThenInclude(m => m.Field);
 
         if (projectId.HasValue)
             query = query.Where(pm => pm.ProjectId == projectId.Value);

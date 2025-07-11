@@ -23,9 +23,9 @@ namespace SRPM_APIServices.Controllers
         }
 
         // GET: api/project/filter
-        [HttpGet("filter")]
+        [HttpPost("filter")]
         ////[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "Member, Host Institution, Staff")]
-        public async Task<ActionResult<PagingResult<RS_Project>>> GetList([FromQuery] RQ_ProjectQuery query)
+        public async Task<ActionResult<PagingResult<RS_Project>>> GetList([FromBody] RQ_ProjectQuery query)
         {
             var result = await _service.GetListAsync(query);
             return Ok(result);

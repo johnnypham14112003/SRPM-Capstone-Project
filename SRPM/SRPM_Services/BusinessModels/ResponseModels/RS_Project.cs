@@ -49,16 +49,6 @@ namespace SRPM_Services.BusinessModels.ResponseModels
     {
         public string Name { get; set; } = null!;
     }
-        public class RS_MajorBrief
-    {
-        public string Name { get; set; } = null!;
-        public RS_FieldBrief? Field { get; set; }
-    }
-
-    public class RS_FieldBrief
-    {
-        public string Name { get; set; } = null!;
-    }
 
 
 
