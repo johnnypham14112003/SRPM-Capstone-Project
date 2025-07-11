@@ -16,9 +16,9 @@ namespace SRPM_Services.BusinessModels.ResponseModels
         public string? Description { get; set; }
 
         [Required]
-        public DateTime LastUpdate { get; set; } = DateTime.UtcNow;
+        public DateTime LastUpdate { get; set; } = DateTime.Now;
 
         [Required]
-        public DateTime CreateDate { get; set; } = DateTime.UtcNow;
+        public DateTime CreateDate { get; set; } = DateTime.Now;
     }
 }

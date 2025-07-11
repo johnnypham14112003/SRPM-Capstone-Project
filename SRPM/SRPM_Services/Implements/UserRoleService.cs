@@ -99,7 +99,7 @@ namespace SRPM_Services.Implements
         {
             var entity = request.Adapt<UserRole>();
             entity.Id = Guid.NewGuid();
-            entity.CreatedAt = DateTime.UtcNow;
+            entity.CreatedAt = DateTime.Now;
 
             // Generate a short UID fragment — e.g. UR-X9TZ3B
             string fragment = Convert.ToBase64String(Guid.NewGuid().ToByteArray())

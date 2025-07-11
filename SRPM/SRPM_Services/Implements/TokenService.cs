@@ -27,7 +27,7 @@ namespace SRPM_Services.Implements
                 issuer: _config["Jwt:Issuer"],
                 audience: _config["Jwt:Audience"],
                 claims: claims,
-                expires: DateTime.UtcNow.AddDays(1), 
+                expires: DateTime.Now.AddDays(1), 
                 signingCredentials: credentials);
 
             return new JwtSecurityTokenHandler().WriteToken(token);

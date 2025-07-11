@@ -60,7 +60,7 @@ namespace SRPM_Services.Implements
         {
             var entity = request.Adapt<MemberTask>();
             entity.Id = Guid.NewGuid();
-            entity.JoinedAt = DateTime.UtcNow;
+            entity.JoinedAt = DateTime.Now;
             entity.Status = Status.Created.ToString().ToLowerInvariant();
 
             await _unitOfWork.GetMemberTaskRepository().AddAsync(entity);

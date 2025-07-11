@@ -37,7 +37,7 @@ namespace SRPM_Services.Implements
             var evaluation = request.Adapt<Evaluation>();
             evaluation.Id = Guid.NewGuid();
             evaluation.Code = code;
-            evaluation.CreateDate = DateTime.UtcNow;
+            evaluation.CreateDate = DateTime.Now;
             evaluation.Status = Status.Created.ToString().ToLowerInvariant();
 
             await _unitOfWork.GetEvaluationRepository().AddAsync(evaluation);

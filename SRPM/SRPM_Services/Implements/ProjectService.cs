@@ -120,13 +120,13 @@ namespace SRPM_Services.Implements
         {
             var entity = request.Adapt<Project>();
             entity.Id = Guid.NewGuid();
-            entity.CreatedAt = DateTime.UtcNow;
-            entity.UpdatedAt = DateTime.UtcNow;
+            entity.CreatedAt = DateTime.Now;
+            entity.UpdatedAt = DateTime.Now;
             // Ensure abbreviation is safe and trimmed
             var sanitizedAbbr = (entity.Abbreviations ?? "XXX").Trim().ToUpperInvariant();
 
             // Format: RP2025_06_ABC
-            entity.Code = $"RP-{DateTime.UtcNow:yyyy_MM}{sanitizedAbbr}";
+            entity.Code = $"RP-{DateTime.Now:yyyy_MM}{sanitizedAbbr}";
 
             var accountId = Guid.Parse(_userContextService.GetCurrentUserId());
 
@@ -161,7 +161,7 @@ namespace SRPM_Services.Implements
             var repo = _unitOfWork.GetProjectRepository();
             var entity = await repo.GetByIdAsync<Guid>(id);
             if (entity == null) return null;
-            entity.UpdatedAt = DateTime.UtcNow;
+            entity.UpdatedAt = DateTime.Now;
             request.Adapt(entity);
 
             await repo.UpdateAsync(entity);

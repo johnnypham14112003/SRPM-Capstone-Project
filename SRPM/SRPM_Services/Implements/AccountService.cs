@@ -90,7 +90,7 @@ namespace SRPM_Services.Implements
                         IdentityCode = identityCode, // Extracted from email
                         Password = hashedPassword,
                         Status = "created",
-                        CreateTime = DateTime.UtcNow
+                        CreateTime = DateTime.Now
                     };
 
                     await _unitOfWork.GetAccountRepository().AddAsync(account);
@@ -177,7 +177,7 @@ namespace SRPM_Services.Implements
                 IdentityCode = identityCode,
                 Password = hashedPassword,
                 Status = "created",
-                CreateTime = DateTime.UtcNow
+                CreateTime = DateTime.Now
             };
 
             var repo = _unitOfWork.GetAccountRepository();
@@ -241,19 +241,20 @@ namespace SRPM_Services.Implements
             var lastOtp = await _unitOfWork.GetOTPCodeRepository()
                 .GetListAsync(o => o.AccountId == account.Id);
 
-            var recentExpiredOtp = lastOtp
-                .Where(o => o.ExpiresAt.HasValue && DateTime.UtcNow < o.ExpiresAt.Value.AddHours(1))
+            var recentOtp = lastOtp
                 .OrderByDescending(o => o.ExpiresAt)
                 .FirstOrDefault();
 
-            if (recentExpiredOtp != null)
+            if (recentOtp?.ExpiresAt != null && DateTime.Now < recentOtp.ExpiresAt.Value.AddHours(1))
+            {
                 throw new InvalidOperationException("You must wait 1 hour after the last OTP expired to request a new one.");
+            }
 
             var otpCode = new OTPCode
             {
                 AccountId = account.Id,
                 Code = GenerateOtp(),
-                ExpiresAt = DateTime.UtcNow.AddMinutes(10),
+                ExpiresAt = DateTime.Now.AddMinutes(10),
                 Attempt = 0
             };
 
@@ -285,48 +286,51 @@ namespace SRPM_Services.Implements
 
 
 
-        public async Task<(bool IsVerified, int Attempt, DateTime Expiration)> VerifyOtpAsync(string email, string otp)
+        public async Task<(bool IsVerified, int Attempt, DateTime? Expiration)> VerifyOtpAsync(string email, string inputOtp)
         {
+            // Step 1: Get the account
             var account = await _unitOfWork.GetAccountRepository()
                 .GetOneAsync(a => a.Email == email && a.Status.ToLower() != "deleted");
 
             if (account == null)
                 throw new NotFoundException("Account not found.");
 
-            var allOtpCode = await _unitOfWork.GetOTPCodeRepository()
-                .GetListAsync(o => o.AccountId == account.Id && o.Code == otp);
+            // Step 2: Get latest OTP for the account
+            var otpCodes = await _unitOfWork.GetOTPCodeRepository()
+                .GetListAsync(o => o.AccountId == account.Id);
 
-            var otpCode = allOtpCode
+            var otpCode = otpCodes
                 .OrderByDescending(o => o.ExpiresAt)
                 .FirstOrDefault();
 
             if (otpCode == null)
-                return (false, 0, DateTime.UtcNow);
+                return (false, 0, DateTime.UtcNow); // No OTP issued
 
-            var extendedExpiration = otpCode.ExpiresAt.Value.AddHours(1);
+            // Step 3: Check expiration
+            if (DateTime.Now < otpCode.ExpiresAt)
+                return (false, otpCode.Attempt, otpCode.ExpiresAt); // Expired
 
-            // OTP expired beyond extended window — deny
-            if (extendedExpiration < DateTime.UtcNow)
-                return (false, otpCode.Attempt, extendedExpiration);
-
-            // OTP matches and is valid — success (do not increment attempt)
-            if (otpCode.Code == otp && otpCode.Attempt < 3)
-                return (true, otpCode.Attempt, extendedExpiration);
-
-            // OTP invalid — increment attempt
-            otpCode.Attempt++;
-
-            // If max attempts reached, expire it instantly
+            // Step 4: Lockout check
             if (otpCode.Attempt >= 3)
             {
-                otpCode.ExpiresAt = DateTime.UtcNow; // Force expiry
+                otpCode.ExpiresAt = DateTime.UtcNow; // Force expire on max attempts
+                return (false, otpCode.Attempt, otpCode.ExpiresAt); // Max attempts reached — no retry
             }
+
+            // Step 5: Verify OTP
+            if (otpCode.Code == inputOtp)
+                return (true, otpCode.Attempt, otpCode.ExpiresAt); // Correct and valid
+
+            // Step 6: Increment only if still under limit
+            otpCode.Attempt++;
 
             await _unitOfWork.GetOTPCodeRepository().UpdateAsync(otpCode);
             await _unitOfWork.SaveChangesAsync();
 
-            return (false, otpCode.Attempt, extendedExpiration);
+            return (false, otpCode.Attempt, otpCode.ExpiresAt); // Incorrect OTP
         }
+
+
 
 
 
@@ -349,7 +353,7 @@ namespace SRPM_Services.Implements
             if (otp == null)
                 throw new UnauthorizedAccessException("Invalid OTP.");
 
-            if (otp.ExpiresAt < DateTime.UtcNow)
+            if (otp.ExpiresAt < DateTime.Now)
                 throw new UnauthorizedAccessException("OTP has expired.");
 
             if (otp.Attempt >= 3)
@@ -357,7 +361,7 @@ namespace SRPM_Services.Implements
 
             // All checks passed — increment attempt (for history) and expire OTP
             otp.Attempt++;
-            otp.ExpiresAt = DateTime.UtcNow; 
+            otp.ExpiresAt = DateTime.Now; 
 
             string hashedPassword = HashStringSHA256(request.NewPassword);
             account.Password = hashedPassword;
@@ -426,7 +430,7 @@ namespace SRPM_Services.Implements
         {
             var entity = request.Adapt<Account>();
             entity.Id = Guid.NewGuid();
-            entity.CreateTime = DateTime.UtcNow;
+            entity.CreateTime = DateTime.Now;
 
             // Extract identity code from email — everything before '@'
             var identity = request.Email.Split('@')[0].Trim().ToLowerInvariant();

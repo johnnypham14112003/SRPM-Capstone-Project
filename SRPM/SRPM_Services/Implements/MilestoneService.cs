@@ -96,10 +96,10 @@ namespace SRPM_Services.Implements
         {
             var entity = request.Adapt<Milestone>();
             entity.Id = Guid.NewGuid();
-            entity.CreatedAt = DateTime.UtcNow;
+            entity.CreatedAt = DateTime.Now;
             entity.Status = Status.Created.ToString().ToLowerInvariant();
             // e.g. MS-202507-001
-            var yyyymm = DateTime.UtcNow.ToString("yyyyMM");
+            var yyyymm = DateTime.Now.ToString("yyyyMM");
             var sequence = new Random().Next(1, 999).ToString("D3");
             entity.Code = $"MS-{yyyymm}-{sequence}";
 

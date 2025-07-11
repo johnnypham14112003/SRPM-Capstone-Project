@@ -40,7 +40,7 @@ namespace SRPM_Services.Implements
         {
             var entity = request.Adapt<IndividualEvaluation>();
             entity.Id = Guid.NewGuid();
-            entity.SubmittedAt = DateTime.UtcNow;
+            entity.SubmittedAt = DateTime.Now;
             entity.Status = Status.Created.ToString().ToLowerInvariant();
 
             await _unitOfWork.GetIndividualEvaluationRepository().AddAsync(entity);
