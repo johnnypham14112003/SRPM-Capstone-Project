@@ -20,5 +20,5 @@ public class RS_Document
     public Guid? IndividualEvaluationId { get; set; }
     public Guid? TransactionId { get; set; }
 
-    public virtual IEnumerable<RS_DocumentField>? DocumentFields { get; set; }
+    public virtual ICollection<RS_Signature>? DocumentFields { get; set; }
 }

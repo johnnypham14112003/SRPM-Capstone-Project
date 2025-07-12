@@ -1,4 +1,5 @@
 ﻿namespace SRPM_Services.BusinessModels.ResponseModels;
+
 public class RS_ProjectSimilarityResult
 {
     public Guid Id { get; set; }
