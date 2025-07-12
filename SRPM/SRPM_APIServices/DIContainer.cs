@@ -571,7 +571,6 @@ public static class DIContainer
         return app;
     }
 
-
     private static IServiceCollection ConfigOpenAI(this IServiceCollection services, IConfiguration configuration)
     {
         //strong-typed config
@@ -583,9 +582,11 @@ public static class DIContainer
         services.AddSingleton(oaiOpts);
 
         //new instance ChatClient
-        services.AddSingleton(new ChatClient(oaiOpts.ChatModel ,oaiOpts.ApiKey));
+        services.AddSingleton(new ChatClient(oaiOpts.ChatModel, oaiOpts.ApiKey));
         //new instance EmbeddingClient
-        services.AddSingleton(new EmbeddingClient(oaiOpts.EmbeddingModel,oaiOpts.ApiKey));
+        services.AddSingleton(new EmbeddingClient(oaiOpts.EmbeddingModel, oaiOpts.ApiKey));
+
+        services.AddSingleton(new ChatCompletionOptions { Temperature = 0.7f, MaxOutputTokenCount = 8100 });
 
         //new instance TokenizerProvider
         services.AddSingleton<ITokenizerProvider, TokenizerProvider>();
