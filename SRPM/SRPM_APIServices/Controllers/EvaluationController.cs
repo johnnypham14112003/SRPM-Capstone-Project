@@ -1,82 +1,58 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using SRPM_Services.BusinessModels.RequestModels;
+using SRPM_Services.BusinessModels.RequestModels.Query;
 using SRPM_Services.BusinessModels.ResponseModels;
 using SRPM_Services.Interfaces;
 
-namespace SRPM_APIServices.Controllers
+namespace SRPM_APIServices.Controllers;
+
+[ApiController]
+[Route("api/[controller]")]
+public class EvaluationController : ControllerBase
 {
-    [ApiController]
-    [Route("api/[controller]")]
-    public class EvaluationController : ControllerBase
+    //=================================[ Declares ]================================
+    private readonly IEvaluationService _evaluationService;
+
+    public EvaluationController(IEvaluationService evaluationService)
     {
-        private readonly IEvaluationService _evaluationService;
-
-        public EvaluationController(IEvaluationService evaluationService)
-        {
-            _evaluationService = evaluationService;
-        }
-
-        // GET: api/evaluation
-        [HttpGet]
-        public async Task<ActionResult<List<RS_Evaluation>>> GetAll()
-        {
-            var evaluations = await _evaluationService.GetListAsync();
-            return Ok(evaluations);
-        }
-
-        // GET: api/evaluation/{id}
-        [HttpGet("{id}")]
-        public async Task<ActionResult<RS_Evaluation>> GetById(Guid id)
-        {
-            var evaluation = await _evaluationService.GetByIdAsync(id);
-            if (evaluation == null)
-                return NotFound($"No evaluation found with ID {id}");
-
-            return Ok(evaluation);
-        }
-
-        public class inputString
-        {
-            public string inputText { get; set; }
-            public IEnumerable<string> inputSource { get; set; }
-        }
-
-        [HttpPost("ai-checking")]
-        public async Task<ActionResult<RS_Evaluation>> checking([FromBody] inputString i)
-        {
-            var created = await _evaluationService.CheckPlagiarism(i.inputText, i.inputSource);
-            return Ok(created);
-        }
-
-        // POST: api/evaluation
-        [HttpPost]
-        public async Task<ActionResult<RS_Evaluation>> Create(RQ_Evaluation request)
-        {
-            var created = await _evaluationService.CreateAsync(request);
-            return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
-        }
-
-        // PUT: api/evaluation/{id}
-        [HttpPut("{id}")]
-        public async Task<ActionResult<RS_Evaluation>> Update(Guid id, RQ_Evaluation request)
-        {
-            var updated = await _evaluationService.UpdateAsync(id, request);
-            if (updated == null)
-                return NotFound($"No evaluation found with ID {id}");
-
-            return Ok(updated);
-        }
-
-        // DELETE: api/evaluation/{id}
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> Delete(Guid id)
-        {
-            var success = await _evaluationService.DeleteAsync(id);
-            if (!success)
-                return NotFound($"No evaluation found with ID {id}");
-
-            return NoContent();
-        }
+        _evaluationService = evaluationService;
     }
 
+    //=================================[ Endpoints ]================================
+    [HttpPost("list")]
+    public async Task<IActionResult> List([FromBody] Q_Evaluation queryInput)
+    {
+        var result = await _evaluationService.GetListAsync(queryInput);
+        return Ok(result);
+    }
+
+    // api/evaluation/123e4567-e89b-12d3-a456-426614174000?incl=1
+    [HttpGet("{id}")]
+    public async Task<IActionResult> ViewDetailEvaluation([FromRoute] Guid id, [FromQuery] byte incl)
+    {
+        var evaluation = await _evaluationService.ViewDetail(id, incl);
+        return Ok(evaluation);
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> CreateEvaluation([FromBody] RQ_Evaluation request)
+    {
+        var result = await _evaluationService.CreateAsync(request);
+        return result.success ? Created(nameof(CreateEvaluation), "Create Successfully! EvaluationId:" + result.evaluationId)
+            : BadRequest("Create Failed!");
+    }
+
+    [HttpPut]
+    public async Task<ActionResult<RS_Evaluation>> Update([FromBody] RQ_Evaluation newEvaluation)
+    {
+        bool result = await _evaluationService.UpdateAsync(newEvaluation);
+        return result ? Ok("Update Successfully!") : BadRequest("Update Failed!");
+    }
+
+    [HttpDelete("{id}")]
+    public async Task<IActionResult> Delete([FromRoute] Guid id)
+    {
+        bool result = await _evaluationService.DeleteAsync(id);
+        return result ? Ok("Delete Successfully!") : BadRequest("Delete Failed!");
+    }
 }
