@@ -19,12 +19,17 @@ public class DocumentService : IDocumentService
     }
 
     //=============================================================================
-    public async Task<(bool result, Guid DocumentId)> NewDocument(RQ_Document doc)
+    public async Task<Dictionary<string, double>?> CheckPlagiarism(string inputText, IEnumerable<string> inputSource)
+    {
+        return null;
+    }
+
+    public async Task<(bool success, Guid DocumentId)> NewDocument(RQ_Document doc)
     {
         //Check Null Data
-        bool hasInvalidFields = new[] { doc.Name, doc.Type }
+        bool hasInvalidFields = new[] { doc.Name, doc.Type, doc.ContentHTML }
         .Any(string.IsNullOrWhiteSpace);
-        if (hasInvalidFields) throw new BadRequestException("Document Name or Type cannot be empty!");
+        if (hasInvalidFields) throw new BadRequestException("Document Name or Type or Content cannot be empty!");
 
         Document documentDTO = doc.Adapt<Document>();
         await _unitOfWork.GetDocumentRepository().AddAsync(documentDTO);

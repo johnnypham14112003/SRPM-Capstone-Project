@@ -1,6 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
-
-namespace SRPM_Services.BusinessModels.RequestModels.Query;
+﻿namespace SRPM_Services.BusinessModels.RequestModels.Query;
 
 public class Q_Document
 {

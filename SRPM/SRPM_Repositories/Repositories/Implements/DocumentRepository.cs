@@ -16,10 +16,7 @@ public class DocumentRepository : GenericRepository<Document>, IDocumentReposito
     public async Task<Document?> GetFullDetailDocument(Guid id)
     {
         return await _context.Document.AsSplitQuery()
-            .Include(d => d.DocumentSections!.OrderBy(ds => ds.SectionOrder))
-                .ThenInclude(ds => ds.SectionContents!.OrderBy(sc => sc.ContentOrder))
-            .Include(d => d.DocumentSections!.OrderBy(ds => ds.SectionOrder))
-                .ThenInclude(ds => ds.TableStructures!.OrderBy(ct => ct.TableOrder))
+            .Include(d => d.Signatures)
             .FirstOrDefaultAsync(d => d.Id == id);
     }
 
@@ -29,11 +26,7 @@ public class DocumentRepository : GenericRepository<Document>, IDocumentReposito
         byte SortBy, int pageIndex, int pageSize)
     {
         var query = _context.Document
-            .AsSplitQuery()
-            .Include(d => d.DocumentSections!.OrderBy(ds => ds.SectionOrder))
-                .ThenInclude(ds => ds.SectionContents!.OrderBy(sc => sc.ContentOrder))
-            .Include(d => d.DocumentSections!.OrderBy(ds => ds.SectionOrder))
-                .ThenInclude(ds => ds.TableStructures!.OrderBy(ct => ct.TableOrder))
+            .Include(d => d.Signatures)
             .AsNoTracking()
             .AsQueryable();
 

@@ -1,8 +1,9 @@
 ﻿//https://github.com/openai/openai-dotnet?tab=readme-ov-file
-using OpenAI;
+using Microsoft.AspNetCore.Mvc;
+using OpenAI.Chat;
 using OpenAI.Embeddings;
-using SRPM_Repositories.Models;
 using SRPM_Services.BusinessModels.Others;
+using SRPM_Services.BusinessModels.RequestModels;
 using SRPM_Services.BusinessModels.ResponseModels;
 using System.Text.Json;
 
@@ -12,8 +13,8 @@ public interface IOpenAIService
 {
     int CountToken(string model, string? inputText);
     Task<float[]?> EmbedTextAsync(string inputText, CancellationToken cancellationToken = default);
-    Task<Dictionary<string, double>> CompareWithSourceAsync(
-        string inputText, IEnumerable<string> inputSource, CancellationToken cancellationToken = default);
+    Task<string> ReviewProjectAsync([FromBody] RQ_ProjectContentForAI project, CancellationToken cancellationToken = default);
+    //Task<Dictionary<string, double>> CompareWithSourceAsync(string inputText, IEnumerable<string> inputSource, CancellationToken cancellationToken = default);
     Task<List<RS_ProjectSimilarityResult>> CompareWithSourceAsync(
         float[] inputVector, IEnumerable<RS_ProjectSimilarityResult> projectSource, CancellationToken cancellationToken = default);
 }
@@ -21,19 +22,22 @@ public interface IOpenAIService
 public class OpenAIService : IOpenAIService
 {
     private readonly ITokenizerProvider _tokenizerProvider;
-    private readonly OpenAIClient _openAIClient;
+    private readonly ChatClient _chatClient;
+    private readonly ChatCompletionOptions _chatCompletionOptions;
     private readonly EmbeddingClient _embeddingClient;
     private readonly OpenAIOptionModel _openAIOption;
 
     public OpenAIService(
         ITokenizerProvider tokenizerProvider,
-        OpenAIClient openAIClient,
+        ChatClient chatClient,
+        ChatCompletionOptions chatCompletionOptions,
         EmbeddingClient embeddingClient,
         OpenAIOptionModel openAIOption)
     {
         _tokenizerProvider = tokenizerProvider;
-        _openAIClient = openAIClient;
+        _chatClient = chatClient;
         _embeddingClient = embeddingClient;
+        _chatCompletionOptions = chatCompletionOptions;
         _openAIOption = openAIOption;
     }
 
@@ -74,24 +78,45 @@ public class OpenAIService : IOpenAIService
         return AverageVectors(allVectors);
     }
 
-    public async Task<Dictionary<string, double>> CompareWithSourceAsync(
-        string inputText, IEnumerable<string> inputSource, CancellationToken cancellationToken = default)
+    public async Task<string> ReviewProjectAsync([FromBody] RQ_ProjectContentForAI project, CancellationToken cancellationToken = default)
     {
-        //Encode Input Text
-        var embInput = await EmbedTextAsync(inputText, cancellationToken);
-        var results = new Dictionary<string, double>();
+        // Build prompt
+        var systemRolePrompt = new SystemChatMessage(string.Join(" ",
+        [
+            "You are a world-class, adaptive Smart Examiner and analytical expert, combining deep expertise in critical evaluation, meticulous source verification, and comprehensive comparative analysis across digital landscapes.",
+            "Maintain warm, clear, and authoritative communication throughout; write exclusively in idiomatic English, fully natural and polished for expert audiences.",
+            "Ensuring every conclusion is evidence-grounded, precisely sourced."
+        ]));
+        var projectJson = JsonSerializer.Serialize(project, JsonSerializerOptionInstance.Default);
+        var userPrompt = new UserChatMessage("Here is the data:\n" + projectJson);
 
-        //Encode List Source
-        foreach (var input in inputSource)
-        {
-            var embDoc = await EmbedTextAsync(input, cancellationToken);
+        //Merge to final prompt
+        var messages = new List<ChatMessage> { systemRolePrompt, userPrompt };
 
-            //Check Plagiarism
-            results[input] = CosineSimilarity(embInput, embDoc);
-        }
+        //Send Request
+        ChatCompletion response = await _chatClient.CompleteChatAsync(messages, _chatCompletionOptions, cancellationToken);
 
-        return results;
+        return response.Content[0].Text;
     }
+
+    //public async Task<Dictionary<string, double>> CompareWithSourceAsync(
+    //    string inputText, IEnumerable<string> inputSource, CancellationToken cancellationToken = default)
+    //{
+    //    //Encode Input Text
+    //    var embInput = await EmbedTextAsync(inputText, cancellationToken);
+    //    var results = new Dictionary<string, double>();
+
+    //    //Encode List Source
+    //    foreach (var input in inputSource)
+    //    {
+    //        var embDoc = await EmbedTextAsync(input, cancellationToken);
+
+    //        //Check Plagiarism
+    //        results[input] = CosineSimilarity(embInput, embDoc);
+    //    }
+
+    //    return results;
+    //}
 
     public async Task<List<RS_ProjectSimilarityResult>> CompareWithSourceAsync(
         float[] inputVector, IEnumerable<RS_ProjectSimilarityResult> projectSource, CancellationToken cancellationToken = default)
@@ -100,11 +125,19 @@ public class OpenAIService : IOpenAIService
 
         foreach (var project in projectSource)
         {
-            if (string.IsNullOrWhiteSpace(project.EncodedDescription))
+            float[]? vector;
+            //Skip null
+            if (string.IsNullOrWhiteSpace(project.EncodedDescription) && string.IsNullOrWhiteSpace(project.Description))
                 continue;
 
-            // Parse EncodedDescription string to float[]
-            var vector = JsonSerializer.Deserialize<float[]>(project.EncodedDescription);
+            if (string.IsNullOrWhiteSpace(project.EncodedDescription))
+            { vector = await EmbedTextAsync(project.Description!, cancellationToken); }
+            else
+            {
+                // Parse EncodedDescription string to float[]
+                vector = JsonSerializer.Deserialize<float[]>(project.EncodedDescription);
+            }
+            //Skip if still null
             if (vector is null || vector.Length == 0)
                 continue;
 

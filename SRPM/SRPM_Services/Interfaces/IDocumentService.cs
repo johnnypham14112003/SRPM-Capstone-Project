@@ -7,7 +7,7 @@ namespace SRPM_Services.Interfaces;
 
 public interface IDocumentService
 {
-    Task<(bool result, Guid DocumentId)> NewDocument(RQ_Document doc);
+    Task<(bool success, Guid DocumentId)> NewDocument(RQ_Document doc);
     Task<PagingResult<RS_Document>?> ListDocument(Q_Document queryInput);
     Task<RS_Document?> ViewDetailDocument(Guid id);
     Task<bool> UpdateDocumentInfo(RQ_Document newDocument);

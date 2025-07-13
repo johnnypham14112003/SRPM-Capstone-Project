@@ -17,15 +17,7 @@ public class BackgroundServiceProvider : BackgroundService
     {
         while (!stoppingToken.IsCancellationRequested)
         {
-            var task = await _taskQueueHandler.DequeueAsync(stoppingToken);
-            try
-            {
-                await task(stoppingToken);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error occurred executing background task.");
-            }
+            var meta = await _taskQueueHandler.DequeueTrackedAsync(stoppingToken);
         }
     }
 }
