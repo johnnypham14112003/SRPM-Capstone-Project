@@ -16,6 +16,7 @@ public class Project
     public DateTime? StartDate { get; set; }
     public DateTime? EndDate { get; set; }
     public string? Description { get; set; }
+    public string? EncodedDescription { get; set; }
     public string? RequirementNote { get; set; }
     [Required] public decimal Budget { get; set; } = 0m;// decimal suffix
     [Required] public decimal Progress { get; set; } = 0m;//100.00
