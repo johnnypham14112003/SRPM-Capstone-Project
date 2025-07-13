@@ -32,7 +32,7 @@ public class AppraisalCouncilController : Controller
         return Ok(result);
     }
 
-    [HttpGet("list")]
+    [HttpPost("list")]
     public async Task<IActionResult> List([FromBody] Q_AppraisalCouncil queryInput)
     {
         var result = await _appraisalCouncilService.ListCouncil(queryInput);
