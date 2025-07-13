@@ -10,6 +10,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Mapster;
 using SRPM_Repositories.Models;
+using Microsoft.EntityFrameworkCore;
 
 namespace SRPM_Services.Implements
 {
@@ -51,6 +52,18 @@ namespace SRPM_Services.Implements
                 DataList = paged.Adapt<List<RS_Field>>()
             };
         }
+
+        public async Task<List<RS_Field>> GetAllAsync()
+        {
+            var fields = await _unitOfWork.GetFieldRepository().GetListAsync(
+                f => true, 
+                hasTrackings: false
+            );
+
+            return fields.Adapt<List<RS_Field>>();
+        }
+
+
 
         public async Task<RS_Field> CreateAsync(RQ_Field request)
         {

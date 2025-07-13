@@ -14,6 +14,7 @@ namespace SRPM_Services.Interfaces
     {
         Task<RS_Major?> GetByIdAsync(Guid id);
         Task<PagingResult<RS_Major>> GetListAsync(RQ_MajorQuery query);
+        Task<List<RS_Major>> GetMajorsByFieldAsync(Guid fieldId);
         Task<RS_Major> CreateAsync(RQ_Major request);
         Task<RS_Major?> UpdateAsync(Guid id, RQ_Major request);
         Task<bool> DeleteAsync(Guid id);

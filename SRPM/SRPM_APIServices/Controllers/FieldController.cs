@@ -4,6 +4,7 @@ using SRPM_Services.BusinessModels.RequestModels;
 using SRPM_Services.BusinessModels.ResponseModels;
 using SRPM_Services.BusinessModels;
 using SRPM_Services.Interfaces;
+using SRPM_Services.Implements;
 
 namespace SRPM_APIServices.Controllers
 {
@@ -63,6 +64,17 @@ namespace SRPM_APIServices.Controllers
             var success = await _service.DeleteAsync(id);
             if (!success) return NotFound($"Field with ID {id} not found.");
             return NoContent();
+        }
+        // GET: api/field/all?name=engineering
+        [HttpGet("all")]
+        public async Task<ActionResult<List<RS_Field>>> GetAll()
+        {
+            var result = await _service.GetAllAsync();
+
+            if (result == null)
+                return NotFound("No fields found matching the criteria.");
+
+            return Ok(result);
         }
     }
 

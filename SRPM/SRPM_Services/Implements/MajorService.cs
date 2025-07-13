@@ -56,6 +56,15 @@ namespace SRPM_Services.Implements
                 DataList = paged.Adapt<List<RS_Major>>() 
             };
         }
+        public async Task<List<RS_Major>> GetMajorsByFieldAsync(Guid fieldId)
+        {
+            var majors = await _unitOfWork.GetMajorRepository().GetListAsync(
+                m => m.FieldId == fieldId,
+                hasTrackings: false
+            );
+
+            return majors.Adapt<List<RS_Major>>();
+        }
 
 
 

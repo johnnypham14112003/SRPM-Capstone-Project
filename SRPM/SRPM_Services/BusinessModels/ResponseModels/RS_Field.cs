@@ -12,4 +12,5 @@ namespace SRPM_Services.BusinessModels.ResponseModels
         public string Name { get; set; } = null!;
     }
 
+
 }

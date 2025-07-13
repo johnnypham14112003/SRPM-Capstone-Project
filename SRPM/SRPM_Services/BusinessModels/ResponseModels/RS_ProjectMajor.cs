@@ -24,12 +24,14 @@ namespace SRPM_Services.BusinessModels.ResponseModels
 
     public class RS_MajorBrief
     {
+        public Guid Id { get; set; }
         public string Name { get; set; } = null!;
         public RS_FieldBrief? Field { get; set; }
     }
 
     public class RS_FieldBrief
     {
+        public Guid Id { get; set; }
         public string Name { get; set; } = null!;
     }
 

@@ -318,7 +318,6 @@ public static class DIContainer
 
 
 
-
         TypeAdapterConfig<RQ_Major, Major>.NewConfig()
             .Ignore(dest => dest.Id)
             .Ignore(dest => dest.Field)

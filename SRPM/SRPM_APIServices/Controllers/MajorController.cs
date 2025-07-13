@@ -6,6 +6,7 @@ using SRPM_Services.BusinessModels;
 using SRPM_Services.BusinessModels.Others;
 using SRPM_Services.BusinessModels.RequestModels;
 using SRPM_Services.BusinessModels.ResponseModels;
+using SRPM_Services.Implements;
 using SRPM_Services.Interfaces;
 
 namespace SRPM_APIServices.Controllers
@@ -30,6 +31,17 @@ namespace SRPM_APIServices.Controllers
             return Ok(result);
         }
 
+        // GET: api/major/by-field/{fieldId}
+        [HttpGet("by-field/{fieldId}")]
+        public async Task<ActionResult<List<RS_Major>>> GetByField(Guid fieldId)
+        {
+            var majors = await _service.GetMajorsByFieldAsync(fieldId);
+
+            if (majors == null || majors.Count == 0)
+                return NotFound("No majors found for this field.");
+
+            return Ok(majors);
+        }
 
         // GET: api/major/{id}
         [HttpGet("{id}")]
