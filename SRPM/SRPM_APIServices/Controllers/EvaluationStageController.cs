@@ -1,7 +1,8 @@
-﻿using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using SRPM_Services.BusinessModels.RequestModels;
+using SRPM_Services.BusinessModels.RequestModels.Query;
 using SRPM_Services.BusinessModels.ResponseModels;
+using SRPM_Services.Implements;
 using SRPM_Services.Interfaces;
 
 namespace SRPM_APIServices.Controllers
@@ -10,61 +11,51 @@ namespace SRPM_APIServices.Controllers
     [Route("api/[controller]")]
     public class EvaluationStageController : ControllerBase
     {
-        private readonly IEvaluationStageService _service;
+        //=================================[ Declares ]================================
+        private readonly IEvaluationStageService _evaluationStageService;
 
-        public EvaluationStageController(IEvaluationStageService service)
+        public EvaluationStageController(IEvaluationStageService evaluationStageService)
         {
-            _service = service;
+            _evaluationStageService = evaluationStageService;
         }
 
-        // GET: api/evaluationstage/{id}
+        //=================================[ Endpoints ]================================
+        // api/evaluationstage/123e4567-e89b-12d3-a456-426614174000?incl=1
         [HttpGet("{id}")]
-        public async Task<ActionResult<RS_EvaluationStage>> GetById(Guid id)
+        public async Task<IActionResult> ViewDetail([FromRoute] Guid id, [FromQuery] byte incl)
         {
-            var result = await _service.GetByIdAsync(id);
-            if (result == null)
-                return NotFound($"EvaluationStage with ID {id} not found.");
+            var evaluationStage = await _evaluationStageService.ViewDetail(id, incl);
+            return Ok(evaluationStage);
+        }
 
+        [HttpPost("list")]
+        public async Task<IActionResult> List([FromBody] Q_EvaluationStage queryInput)
+        {
+            var result = await _evaluationStageService.GetListPagingAsync(queryInput);
             return Ok(result);
         }
 
-        // GET: api/evaluationstage/by-evaluation/{evaluationId}
-        [HttpGet("by-evaluation/{evaluationId}")]
-        public async Task<ActionResult<List<RS_EvaluationStage>>> GetByEvaluationId(Guid evaluationId)
-        {
-            var results = await _service.GetListByEvaluationIdAsync(evaluationId);
-            return Ok(results);
-        }
-
-        // POST: api/evaluationstage
         [HttpPost]
-        public async Task<ActionResult<RS_EvaluationStage>> Create(RQ_EvaluationStage request)
+        public async Task<IActionResult> CreateEvaluationStage([FromBody] RQ_EvaluationStage newEvaluationStage)
         {
-            var created = await _service.CreateAsync(request);
-            return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
+            var result = await _evaluationStageService.CreateAsync(newEvaluationStage);
+            return result.success ? Created(nameof(CreateEvaluationStage), "Create Successfully! EvaluationStageId:" + result.evaluationStageId)
+                : BadRequest("Create Failed!");
         }
 
-        // PUT: api/evaluationstage/{id}
-        [HttpPut("{id}")]
-        public async Task<ActionResult<RS_EvaluationStage>> Update(Guid id, RQ_EvaluationStage request)
+        [HttpPut]
+        public async Task<IActionResult> Update([FromBody] RQ_EvaluationStage newEvaluationStage)
         {
-            var updated = await _service.UpdateAsync(id, request);
-            if (updated == null)
-                return NotFound($"EvaluationStage with ID {id} not found.");
-
-            return Ok(updated);
+            bool result = await _evaluationStageService.UpdateAsync(newEvaluationStage);
+            return result ? Ok("Update Successfully!") : BadRequest("Update Failed!");
         }
 
-        // DELETE: api/evaluationstage/{id}
         [HttpDelete("{id}")]
-        public async Task<IActionResult> Delete(Guid id)
-        {
-            var success = await _service.DeleteAsync(id);
-            if (!success)
-                return NotFound($"EvaluationStage with ID {id} not found.");
-
-            return NoContent();
-        }
+        public async Task<IActionResult> Delete([FromRoute] Guid id)
+    {
+        bool result = await _evaluationStageService.DeleteAsync(id);
+        return result ? Ok("Delete Successfully!") : BadRequest("Delete Failed!");
+    }
     }
 
 }
