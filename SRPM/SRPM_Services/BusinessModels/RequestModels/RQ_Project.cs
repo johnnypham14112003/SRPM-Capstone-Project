@@ -24,7 +24,7 @@ namespace SRPM_Services.BusinessModels.RequestModels
         // Enum-like fields
         public string Category { get; set; } = null!; // "basic" or "application/implementation"
         public string Type { get; set; } = null!;     // "school level" or "cooperate"
-        public string Genre { get; set; } = null!;    // "normal", "proposal", "propose"
+        public string? Genre { get; set; } = null!;    // "normal", "proposal", "propose"
     }
 
 
