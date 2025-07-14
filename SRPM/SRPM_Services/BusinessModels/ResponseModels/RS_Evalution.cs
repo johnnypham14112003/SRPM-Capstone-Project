@@ -1,5 +1,4 @@
-﻿using SRPM_Repositories.Models;
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 
 namespace SRPM_Services.BusinessModels.ResponseModels;
 
@@ -22,6 +21,6 @@ public class RS_Evaluation
     public Guid? AppraisalCouncilId { get; set; }
 
     // Navigation properties
-    public virtual ICollection<Document>? Documents { get; set; }
-    public virtual ICollection<EvaluationStage>? EvaluationStages { get; set; }
+    public virtual ICollection<RS_Document>? Documents { get; set; }
+    public virtual ICollection<RS_EvaluationStage>? EvaluationStages { get; set; }
 }

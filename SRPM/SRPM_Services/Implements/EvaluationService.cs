@@ -39,6 +39,7 @@ public class EvaluationService : IEvaluationService
         var dataResult = await _unitOfWork.GetEvaluationRepository().ListPaging
             (queryInput.KeyWord, queryInput.Phrase,queryInput.Type, queryInput.Status,
             queryInput.FromDate, queryInput.ToDate, queryInput.Rating,
+            queryInput.ProjectId, queryInput.MilestoneId, queryInput.AppraisalCouncilId,
             queryInput.SortBy, queryInput.PageIndex, queryInput.PageSize);
 
         // Checking Result

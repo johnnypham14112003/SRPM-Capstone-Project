@@ -19,12 +19,12 @@ public class EvaluationRepository : GenericRepository<Evaluation>, IEvaluationRe
             case 1://EvaluationStages
                 return await _context.Evaluation
                     .Include(e => e.EvaluationStages)
-                    .FirstOrDefaultAsync(ac => ac.Id == id);
+                    .FirstOrDefaultAsync(e => e.Id == id);
 
             case 2://Documents
                 return await _context.Evaluation
                     .Include(e => e.Documents)
-                    .FirstOrDefaultAsync(ac => ac.Id == id);
+                    .FirstOrDefaultAsync(e => e.Id == id);
 
             default://Include All
                 return await _context.Evaluation
@@ -32,13 +32,14 @@ public class EvaluationRepository : GenericRepository<Evaluation>, IEvaluationRe
                     .Include(e => e.EvaluationStages)
                     .AsSplitQuery()
                     .AsNoTracking()
-                    .FirstOrDefaultAsync(ac => ac.Id == id);
+                    .FirstOrDefaultAsync(e => e.Id == id);
         }
     }
 
     public async Task<(List<Evaluation>? listEvaluation, int totalFound)> ListPaging
         (string? keyWord, string? evaPhrase, string? evaType, string? status,
-        DateTime? fromDate, DateTime? toDate, byte Rating,
+        DateTime? fromDate, DateTime? toDate, byte? rating,
+        Guid? projectId,Guid? milestoneId, Guid? appraisalCouncilId,
         byte sortBy, int pageIndex, int pageSize)
     {
         var query = _context.Evaluation
@@ -55,7 +56,7 @@ public class EvaluationRepository : GenericRepository<Evaluation>, IEvaluationRe
 
         //Phrase Filter
         if (!string.IsNullOrWhiteSpace(evaPhrase))
-            query = query.Where(e => e.Type.Equals(evaPhrase, StringComparison.OrdinalIgnoreCase));
+            query = query.Where(e => e.Phrase.Equals(evaPhrase, StringComparison.OrdinalIgnoreCase));
 
         //Type Filter
         if (!string.IsNullOrWhiteSpace(evaType))
@@ -76,11 +77,27 @@ public class EvaluationRepository : GenericRepository<Evaluation>, IEvaluationRe
             query = query.Where(e => e.CreateDate <= toDate.Value);
         }
 
+        // Rating Filter
+        if (rating.HasValue)
+            query = query.Where(e => e.TotalRate.HasValue && e.TotalRate.Value == rating.Value);
+
+        //By ProjectId
+        if (projectId.HasValue)
+            query = query.Where(e => e.ProjectId == projectId.Value);
+
+        //By milestoneId
+        if (milestoneId.HasValue)
+            query = query.Where(es => es.MilestoneId == milestoneId.Value);
+
+        //By appraisalId
+        if (appraisalCouncilId.HasValue)
+            query = query.Where(es => es.AppraisalCouncilId == appraisalCouncilId.Value);
+
         // Sort By (Newer come first)(A-Z)
         switch (sortBy)
         {
             default://Name
-                query = query.OrderBy(d => d.Title);
+                query = query.OrderBy(e => e.Title);
                 break;
             case 2: // Rating
                 query = query.OrderByDescending(e => e.TotalRate);
@@ -89,7 +106,7 @@ public class EvaluationRepository : GenericRepository<Evaluation>, IEvaluationRe
                 query = query.OrderByDescending(e => e.CreateDate);
                 break;
             case 4: // Phrase
-                query = query.OrderBy(e => e.Type);
+                query = query.OrderBy(e => e.Phrase);
                 break;
             case 5: // Type
                 query = query.OrderBy(e => e.Type);

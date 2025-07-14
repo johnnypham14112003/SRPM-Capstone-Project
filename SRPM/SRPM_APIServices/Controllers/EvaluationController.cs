@@ -35,9 +35,9 @@ public class EvaluationController : ControllerBase
     }
 
     [HttpPost]
-    public async Task<IActionResult> CreateEvaluation([FromBody] RQ_Evaluation request)
+    public async Task<IActionResult> CreateEvaluation([FromBody] RQ_Evaluation newEvaluation)
     {
-        var result = await _evaluationService.CreateAsync(request);
+        var result = await _evaluationService.CreateAsync(newEvaluation);
         return result.success ? Created(nameof(CreateEvaluation), "Create Successfully! EvaluationId:" + result.evaluationId)
             : BadRequest("Create Failed!");
     }

@@ -1,14 +1,16 @@
-﻿
+﻿using System.ComponentModel.DataAnnotations;
 
-namespace SRPM_Services.BusinessModels.RequestModels
+namespace SRPM_Services.BusinessModels.RequestModels;
+
+public class RQ_EvaluationStage
 {
-    public class RQ_EvaluationStage
-    {
-        public string? Name { get; set; }
-        public int StageOrder { get; set; } = 1;
-        public string? Status { get; set; } // optional override
-        public Guid EvaluationId { get; set; }
-        public Guid? AppraisalCouncilId { get; set; }
-    }
+    public Guid? Id { get; set; }
 
+    [MaxLength(255)] public string? Name { get; set; }
+    public int StageOrder { get; set; } = 1;
+    [MaxLength(30)] public string Status { get; set; } = "created";
+
+    // Foreign keys
+    public Guid EvaluationId { get; set; }
+    public Guid? AppraisalCouncilId { get; set; }
 }
