@@ -128,41 +128,55 @@ namespace SRPM_Services.Implements
         }
 
 
-
         public async Task<RS_Project> CreateAsync(RQ_Project request)
         {
             var entity = request.Adapt<Project>();
             entity.Id = Guid.NewGuid();
             entity.CreatedAt = DateTime.Now;
             entity.UpdatedAt = DateTime.Now;
-            // Ensure abbreviation is safe and trimmed
-            var sanitizedAbbr = (entity.Abbreviations ?? "XXX").Trim().ToUpperInvariant();
 
-            // Format: RP2025_06_ABC
-            entity.Code = $"RP-{DateTime.Now:yyyy_MM}{sanitizedAbbr}";
+            var sanitizedAbbr = (entity.Abbreviations ?? "XXX").Trim().ToUpperInvariant();
+            entity.Code = $"RP-{DateTime.Now:yyyy_MM}_{sanitizedAbbr}";
+
+            // Assign defaults if needed
+            entity.Budget = entity.Budget <= 0 ? 0m : entity.Budget;
+            entity.Progress = entity.Progress <= 0 ? 0m : entity.Progress;
+            entity.MaximumMember = entity.MaximumMember <= 0 ? 5 : entity.MaximumMember;
+            entity.Language = string.IsNullOrWhiteSpace(entity.Language) ? "English" : entity.Language;
 
             var accountId = Guid.Parse(_userContextService.GetCurrentUserId());
 
+            // Fetch all roles tied to the user
             var userRoles = await _unitOfWork.GetUserRoleRepository().GetListByFilterAsync(
                 accountId: accountId,
                 roleId: null,
                 projectId: null,
                 appraisalCouncilId: null,
-                status: Status.Created.ToString().ToLower(),
+                status: Status.Created.ToString().ToLowerInvariant(),
                 isOfficial: null
             );
 
-            // Filter for the correct role name (Role is already included)
-            var hostInstitutionUserRole = userRoles
-                .FirstOrDefault(ur => ur.Role != null && ur.Role.Name == "Host Institution");
+            // Validate role and assign genre + creator
+            var hostRole = userRoles.FirstOrDefault(r => r.Role?.Name == "Host Institution");
+            var staffRole = userRoles.FirstOrDefault(r => r.Role?.Name == "Staff");
 
-            if (hostInstitutionUserRole == null)
-                throw new UnauthorizedException("Not authorized");
-
-            entity.CreatorId = hostInstitutionUserRole.Id;
-
+            if (hostRole != null)
+            {
+                entity.Genre = "normal";
+                entity.CreatorId = hostRole.Id;
+            }
+            else if (staffRole != null)
+            {
+                entity.Genre = "propose";
+                entity.CreatorId = staffRole.Id;
+            }
+            else
+            {
+                throw new UnauthorizedException("User must be either Host Institution or Staff to create a project.");
+            }
 
             entity.Status = Status.Created.ToString().ToLowerInvariant();
+
             await _unitOfWork.GetProjectRepository().AddAsync(entity);
             await _unitOfWork.SaveChangesAsync();
 

@@ -16,10 +16,10 @@ namespace SRPM_Services.BusinessModels.RequestModels
         public DateTime? EndDate { get; set; }
         public string? Description { get; set; }
         public string? RequirementNote { get; set; }
-        public decimal Budget { get; set; }
-        public decimal Progress { get; set; }
-        public int MaximumMember { get; set; }
-        public string Language { get; set; } = null!;
+        public decimal? Budget { get; set; }
+        public decimal? Progress { get; set; }
+        public int? MaximumMember { get; set; }
+        public string? Language { get; set; } = null!;
 
         // Enum-like fields
         public string Category { get; set; } = null!; // "basic" or "application/implementation"
