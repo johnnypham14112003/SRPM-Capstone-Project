@@ -228,42 +228,6 @@ public static class DIContainer
             .Map(dest => dest.AccountId, src => src.AccountId)
             .Map(dest => dest.TypeObjectId, src => MapsterConfigMethods.GetTypeObjectIdByType(src.Notification));
 
-        TypeAdapterConfig<RQ_Evaluation, Evaluation>.NewConfig()
-            .Ignore(dest => dest.Id)
-            .Ignore(dest => dest.Code)
-            .Ignore(dest => dest.CreateDate)
-            .Ignore(dest => dest.Status)
-            .Ignore(dest => dest.Documents)
-            .Ignore(dest => dest.EvaluationStages)
-            .Ignore(dest => dest.Notifications)
-            .IgnoreNullValues(true);
-        TypeAdapterConfig<Evaluation, RS_Evaluation>.NewConfig();
-
-        TypeAdapterConfig<RQ_EvaluationStage, EvaluationStage>.NewConfig()
-            .Ignore(dest => dest.Id)
-            .Ignore(dest => dest.Transactions)
-            .Ignore(dest => dest.IndividualEvaluations)
-            .Ignore(dest => dest.Notifications)
-            .Ignore(dest => dest.AppraisalCouncil)
-            .Ignore(dest => dest.Evaluation)
-            .IgnoreNullValues(true);
-
-
-        TypeAdapterConfig<EvaluationStage, RS_EvaluationStage>.NewConfig();
-
-        TypeAdapterConfig<RQ_IndividualEvaluation, IndividualEvaluation>.NewConfig()
-            .Ignore(dest => dest.Id)
-            .Ignore(dest => dest.SubmittedAt)
-            .Ignore(dest => dest.Notifications)
-            .Ignore(dest => dest.Documents)
-            .Ignore(dest => dest.Project)
-            .Ignore(dest => dest.Milestone)
-            .Ignore(dest => dest.Reviewer)
-            .Ignore(dest => dest.EvaluationStage)
-            .IgnoreNullValues(true);
-
-        TypeAdapterConfig<IndividualEvaluation, RS_IndividualEvaluation>.NewConfig();
-
         TypeAdapterConfig<RQ_Project, Project>.NewConfig()
             .Ignore(dest => dest.Id)
             .Ignore(dest => dest.CreatedAt)
