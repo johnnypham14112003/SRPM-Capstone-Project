@@ -5,4 +5,5 @@ namespace SRPM_Repositories.Repositories.Interfaces;
 public interface IAccountRepository : IGenericRepository<Account>
 {
     Task<Account> GetValidEmailAccountAsync(string email);
+    Task<Account> GetByIdAsync(Guid id);
 }

@@ -23,11 +23,11 @@ public class ProjectRepository : GenericRepository<Project>, IProjectRepository
             .Include(p => p.Creator).ThenInclude(c => c.Role)
             .Include(p => p.ProjectMajors).ThenInclude(pm => pm.Major).ThenInclude(m => m.Field)
             .Include(p => p.Members).ThenInclude(m => m.Account)
-            //.Include(p => p.Milestones)
+            .Include(p => p.Milestones)
             .Include(p => p.Evaluations)
             .Include(p => p.IndividualEvaluations)
             .Include(p => p.ProjectTags)
-            //.Include(p => p.Documents)
+            .Include(p => p.Documents)
             .Include(p => p.Transactions)
             .Include(p => p.ResearchPaper);
 

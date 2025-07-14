@@ -5,7 +5,12 @@ namespace SRPM_Services.Extensions.Enumerables
 {
     public enum Status
     {
+        Draft,
         Created,
+        Submitted,
+        Approved,
+        InProgress,
+        Done,
         Deleted
     }
 

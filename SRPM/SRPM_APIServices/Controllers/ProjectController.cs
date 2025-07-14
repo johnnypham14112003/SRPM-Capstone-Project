@@ -5,6 +5,7 @@ using SRPM_Services.BusinessModels;
 using SRPM_Services.BusinessModels.Others;
 using SRPM_Services.BusinessModels.RequestModels;
 using SRPM_Services.BusinessModels.ResponseModels;
+using SRPM_Services.Implements;
 using SRPM_Services.Interfaces;
 
 // For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
@@ -74,6 +75,14 @@ namespace SRPM_APIServices.Controllers
                 return NotFound($"Project with ID {id} not found.");
             return NoContent();
         }
+
+        [HttpGet("overview")]
+        public async Task<ActionResult<List<RS_ProjectOverview>>> GetOverview()
+        {
+            var result = await _service.GetAllOverviewsAsync();
+            return result?.Count > 0 ? Ok(result) : NoContent();
+        }
+
     }
 
 }

@@ -21,6 +21,16 @@ public class AccountRepository : GenericRepository<Account>, IAccountRepository
                                       && a.Status != "deleted")
                              .FirstOrDefaultAsync();
     }
-
+    public async Task<Account> GetByIdAsync(Guid Id)
+    {
+        return await _context.Account
+                             .Where(a => !string.IsNullOrEmpty(a.Email)
+                                      && a.Id == Id
+                                      && a.Status != "deleted")
+                             .Include(a => a.UserRoles)
+                             .ThenInclude(a => a.Role)
+                             .Include(a => a.Major)
+                             .FirstOrDefaultAsync();
+    }
 
 }

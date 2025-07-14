@@ -30,6 +30,7 @@ using System.Security.Claims;
 using System.Text;
 using SRPM_Services.Interfaces;
 using OpenAI.Chat;
+using System.Collections.Generic;
 
 namespace SRPM_APIServices;
 
@@ -281,15 +282,17 @@ public static class DIContainer
             .IgnoreNullValues(true);
 
         TypeAdapterConfig<Project, RS_Project>.NewConfig()
-        .Map(dest => dest.Majors, src =>
-        src.ProjectMajors.Select(pm => new RS_MajorBrief
-        {
-            Name = pm.Major.Name,
-            Field = new RS_FieldBrief
-            {
-                Name = pm.Major.Field.Name
-            }
-        }).ToList());
+            .Map(dest => dest.Majors, src =>
+                src.ProjectMajors.Select(pm => new RS_MajorBrief
+                {
+                    Name = pm.Major.Name,
+                    Field = new RS_FieldBrief
+                    {
+                        Name = pm.Major.Field.Name
+                    }
+                }).ToList()
+            );
+
 
         TypeAdapterConfig<RQ_ProjectMajor, ProjectMajor>.NewConfig()
             .Ignore(dest => dest.Project)
@@ -365,7 +368,11 @@ public static class DIContainer
             .Ignore(dest => dest.Tasks)
             .IgnoreNullValues(true);
 
-        TypeAdapterConfig<Milestone, RS_Milestone>.NewConfig();
+        TypeAdapterConfig<Milestone, RS_Milestone>.NewConfig()
+            .Ignore(m => m.Project) // prevents recursive loop
+            .IgnoreNullValues(true);
+
+
 
         TypeAdapterConfig<RQ_MemberTask, MemberTask>.NewConfig()
             .Ignore(dest => dest.Id)
@@ -497,9 +504,9 @@ public static class DIContainer
         services.AddAuthentication(options =>
         {
             options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
-            options.DefaultAuthenticateScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+            options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
             options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-            options.DefaultSignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+            options.DefaultSignInScheme = JwtBearerDefaults.AuthenticationScheme;
         })
         .AddJwtBearer(options =>
         {
@@ -514,59 +521,7 @@ public static class DIContainer
                     Encoding.UTF8.GetBytes(config["Jwt:Key"])),
                 RoleClaimType = ClaimTypes.Role
             };
-        })
-        .AddCookie("Cookies")
-        .AddGoogle(GoogleDefaults.AuthenticationScheme, googleOptions =>
-        {
-            googleOptions.ClientId = config["Authentication:Google:ClientId"];
-            googleOptions.ClientSecret = config["Authentication:Google:ClientSecret"];
-            googleOptions.Scope.Add("profile");
-            googleOptions.Scope.Add("email");
-            googleOptions.ClaimActions.MapJsonKey("AvatarUrl", "picture");
-
-            googleOptions.Events.OnCreatingTicket = async context =>
-            {
-                var emailClaim = context.Identity.FindFirst(ClaimTypes.Email);
-                if (emailClaim is null)
-                {
-                    context.Response.Redirect("/error?message=Email+claim+not+found");
-                    return;
-                }
-
-                var allowedDomain = config["AllowedEmailDomain"] ?? "fe.edu.vn";
-                var expectedDomain = "@" + allowedDomain;
-
-                if (!emailClaim.Value.EndsWith(expectedDomain, StringComparison.OrdinalIgnoreCase))
-                {
-                    var errorUrl = config["Authentication:ErrorRedirectUrl"];
-                    context.Response.Redirect($"{errorUrl}?reason=invalid_domain");
-                    return;
-                }
-                var pictureClaim = context.Identity.FindFirst("picture")?.Value;
-                var nameClaim = context.Identity.FindFirst(ClaimTypes.Name)?.Value;
-
-                if (pictureClaim != null)
-                {
-                    context.Identity.AddClaim(new Claim("AvatarUrl", pictureClaim));
-                }
-                if (nameClaim != null)
-                {
-                    context.Identity.AddClaim(new Claim("FullName", nameClaim));
-                }
-            };
-            googleOptions.Events.OnRemoteFailure = context =>
-            {
-                var config = context.HttpContext.RequestServices.GetRequiredService<IConfiguration>();
-                var errorRedirectUrl = config["Authentication:ErrorRedirectUrl"] ?? "/error";
-
-                // Optional: You can add the error message or code to the query string
-                context.Response.Redirect($"{errorRedirectUrl}?reason=correlation_failed");
-                context.HandleResponse(); // Stops default exception flow
-                return System.Threading.Tasks.Task.CompletedTask;
-            };
-
         });
-
         return services;
     }
     public static IApplicationBuilder UseCustomCors(this IApplicationBuilder app)
