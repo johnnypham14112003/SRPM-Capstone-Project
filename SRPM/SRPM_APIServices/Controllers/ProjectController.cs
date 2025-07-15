@@ -1,4 +1,6 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using SRPM_Services.BusinessModels;
 using SRPM_Services.BusinessModels.Others;
 using SRPM_Services.BusinessModels.RequestModels;
@@ -23,62 +25,139 @@ public class ProjectController : ControllerBase
 
     // GET: api/project/filter
     [HttpPost("filter")]
-    ////[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "Member, Host Institution, Staff")]
+    [Authorize]
     public async Task<ActionResult<PagingResult<RS_Project>>> GetList([FromBody] RQ_ProjectQuery query)
     {
-        var result = await _service.GetListAsync(query);
-        return Ok(result);
+        try
+        {
+            var result = await _service.GetListAsync(query);
+            return Ok(result);
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(ex.Message);
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return Unauthorized(ex.Message);
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, $"Unexpected error: {ex.Message}");
+        }
     }
 
-
     // GET: api/project/{id}
-    //[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "Member, Host Institution, Staff")]
     [HttpGet("{id}")]
+    [Authorize]
     public async Task<ActionResult<RS_Project>> GetById(Guid id)
     {
-        var result = await _service.GetByIdAsync(id);
-        if (result == null)
-            return NotFound($"Project with ID {id} not found.");
-        return Ok(result);
+        try
+        {
+            var result = await _service.GetByIdAsync(id);
+            if (result == null)
+                return NotFound($"Project with ID {id} not found.");
+
+            return Ok(result);
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return Forbid(ex.Message);
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, $"Unexpected error: {ex.Message}");
+        }
     }
 
     // POST: api/project
     [HttpPost]
-    //[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "Host Institution, Staff")]
+    [Authorize]
     public async Task<ActionResult<RS_Project>> Create(RQ_Project request)
     {
-        var created = await _service.CreateAsync(request);
-        return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
+        try
+        {
+            var created = await _service.CreateAsync(request);
+            return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return Unauthorized(ex.Message);
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(ex.Message);
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, $"Unexpected error: {ex.Message}");
+        }
     }
-
 
     // PUT: api/project/{id}
     [HttpPut("{id}")]
-    //[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "Host Institution, Staff")]
+    [Authorize]
     public async Task<ActionResult<RS_Project>> Update(Guid id, RQ_Project request)
     {
-        var updated = await _service.UpdateAsync(id, request);
-        if (updated == null)
-            return NotFound($"Project with ID {id} not found.");
-        return Ok(updated);
+        try
+        {
+            var updated = await _service.UpdateAsync(id, request);
+            if (updated == null)
+                return NotFound($"Project with ID {id} not found.");
+
+            return Ok(updated);
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return Unauthorized(ex.Message);
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(ex.Message);
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, $"Unexpected error: {ex.Message}");
+        }
     }
 
     // DELETE: api/project/{id}
     [HttpDelete("{id}")]
-    //[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "Admin, Staff")]
+    [Authorize]
     public async Task<IActionResult> Delete(Guid id)
     {
-        var deleted = await _service.DeleteAsync(id);
-        if (!deleted)
-            return NotFound($"Project with ID {id} not found.");
-        return NoContent();
+        try
+        {
+            var deleted = await _service.DeleteAsync(id);
+            if (!deleted)
+                return NotFound($"Project with ID {id} not found.");
+
+            return NoContent();
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return Unauthorized(ex.Message);
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, $"Unexpected error: {ex.Message}");
+        }
     }
 
+    // GET: api/project/overview
     [HttpGet("overview")]
+    [Authorize]
     public async Task<ActionResult<List<RS_ProjectOverview>>> GetOverview()
     {
-        var result = await _service.GetAllOverviewsAsync();
-        return result?.Count > 0 ? Ok(result) : NoContent();
+        try
+        {
+            var result = await _service.GetAllOverviewsAsync();
+            return result?.Count > 0 ? Ok(result) : NoContent();
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, $"Unexpected error: {ex.Message}");
+        }
     }
 
 }

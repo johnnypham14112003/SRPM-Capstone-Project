@@ -249,9 +249,11 @@ public static class DIContainer
             .Map(dest => dest.Majors, src =>
                 src.ProjectMajors.Select(pm => new RS_MajorBrief
                 {
+                    Id = pm.Major.Id,
                     Name = pm.Major.Name,
                     Field = new RS_FieldBrief
                     {
+                        Id = pm.Major.Field.Id,
                         Name = pm.Major.Field.Name
                     }
                 }).ToList()
@@ -266,9 +268,11 @@ public static class DIContainer
             .Map(dest => dest.MajorId, src => src.MajorId)
             .Map(dest => dest.Major, src => src.Major == null ? null : new RS_MajorBrief
             {
+                Id = src.MajorId,
                 Name = src.Major.Name,
                 Field = src.Major.Field == null ? null : new RS_FieldBrief
                 {
+                    Id = src.Major.FieldId,
                     Name = src.Major.Field.Name
                 }
             });
