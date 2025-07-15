@@ -7,6 +7,7 @@ using SRPM_Services.Extensions.Exceptions;
 using SRPM_Services.Interfaces;
 
 namespace SRPM_Services.Implements;
+
 public class SystemConfigurationService : ISystemConfigurationService
 {
     private readonly IUnitOfWork _unitOfWork;
@@ -25,7 +26,7 @@ public class SystemConfigurationService : ISystemConfigurationService
         sys.ConfigType.Equals(inputData.ConfigType) &&
         sys.ConfigKey.Equals(inputData.ConfigKey) &&
         sys.ConfigValue.Equals(inputData.ConfigValue)
-        , false);
+        , null, false);
 
         if (existConfig is not null) throw new ConflictException("This Config is existed!");
 

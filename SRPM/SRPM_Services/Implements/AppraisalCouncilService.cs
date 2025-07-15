@@ -27,7 +27,7 @@ public class AppraisalCouncilService : IAppraisalCouncilService
         if (hasInvalidFields) throw new BadRequestException("Council code,name cannot be empty!");
 
         var existCouncil = await _unitOfWork.GetAppraisalCouncilRepository().GetOneAsync
-            (apc => apc.Code.Equals(inputData.Code), false);
+            (apc => apc.Code.Equals(inputData.Code), null, false);
 
         if (existCouncil is not null)
             throw new ConflictException("This Council Code is existed!");

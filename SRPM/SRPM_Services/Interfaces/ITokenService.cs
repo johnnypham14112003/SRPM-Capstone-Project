@@ -1,9 +1,8 @@
 ﻿using System.Security.Claims;
 
-namespace SRPM_Services.Interfaces
+namespace SRPM_Services.Interfaces;
+
+public interface ITokenService
 {
-    public interface ITokenService
-    {
-        string GenerateJwtToken(IEnumerable<Claim> claims);
-    }
+    string GenerateJwtToken(IEnumerable<Claim> claims);
 }
