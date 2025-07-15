@@ -4,6 +4,7 @@ using SRPM_Services.BusinessModels.RequestModels.Query;
 using SRPM_Services.BusinessModels.ResponseModels;
 
 namespace SRPM_Services.Interfaces;
+
 public interface INotificationService
 {
     Task<(bool, Guid)> CreateNew(RQ_Notification newNotification);//Return NotificationId

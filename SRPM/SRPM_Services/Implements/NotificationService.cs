@@ -52,47 +52,47 @@ public class NotificationService : INotificationService
         switch (notificationDTO.Type.ToLower())
         {
             case "transaction":
-                var existTr = await _unitOfWork.GetTransactionRepository().GetOneAsync(tr => tr.Id == newNotification.ObjecNotificationId, false)
+                var existTr = await _unitOfWork.GetTransactionRepository().GetOneAsync(tr => tr.Id == newNotification.ObjecNotificationId, null, false)
                     ?? throw new NotFoundException("Create Notification Faild: Not found any Transaction relate to this Id"); ;
                 notificationDTO.TransactionId = newNotification.ObjecNotificationId;
                 break;
             case "individualevaluation":
-                var existIE = await _unitOfWork.GetIndividualEvaluationRepository().GetOneAsync(ie => ie.Id == newNotification.ObjecNotificationId, false)
+                var existIE = await _unitOfWork.GetIndividualEvaluationRepository().GetOneAsync(ie => ie.Id == newNotification.ObjecNotificationId, null, false)
                     ?? throw new NotFoundException("Create Notification Faild: Not found any IndividualEvaluation relate to this Id"); ;
                 notificationDTO.IndividualEvaluationId = newNotification.ObjecNotificationId;
                 break;
             case "evaluationstage":
-                var existES = await _unitOfWork.GetEvaluationStageRepository().GetOneAsync(es => es.Id == newNotification.ObjecNotificationId, false)
+                var existES = await _unitOfWork.GetEvaluationStageRepository().GetOneAsync(es => es.Id == newNotification.ObjecNotificationId, null, false)
                     ?? throw new NotFoundException("Create Notification Faild: Not found any EvaluationStage relate to this Id"); ;
                 notificationDTO.EvaluationStageId = newNotification.ObjecNotificationId;
                 break;
             case "evaluation":
-                var existE = await _unitOfWork.GetEvaluationRepository().GetOneAsync(e => e.Id == newNotification.ObjecNotificationId, false)
+                var existE = await _unitOfWork.GetEvaluationRepository().GetOneAsync(e => e.Id == newNotification.ObjecNotificationId, null, false)
                     ?? throw new NotFoundException("Create Notification Faild: Not found any Evaluation relate to this Id"); ;
                 notificationDTO.EvaluationId = newNotification.ObjecNotificationId;
                 break;
             case "userrole":
-                var existUR = await _unitOfWork.GetUserRoleRepository().GetOneAsync(ur => ur.Id == newNotification.ObjecNotificationId, false)
+                var existUR = await _unitOfWork.GetUserRoleRepository().GetOneAsync(ur => ur.Id == newNotification.ObjecNotificationId, null, false)
                     ?? throw new NotFoundException("Create Notification Faild: Not found any GroupUser relate to this Id"); ;
                 notificationDTO.UserRoleId = newNotification.ObjecNotificationId;
                 break;
             case "document":
-                var existD = await _unitOfWork.GetDocumentRepository().GetOneAsync(d => d.Id == newNotification.ObjecNotificationId, false)
+                var existD = await _unitOfWork.GetDocumentRepository().GetOneAsync(d => d.Id == newNotification.ObjecNotificationId, null, false)
                     ?? throw new NotFoundException("Create Notification Faild: Not found any Document relate to this Id"); ;
                 notificationDTO.DocumentId = newNotification.ObjecNotificationId;
                 break;
             case "membertask":
-                var existMT = await _unitOfWork.GetMemberTaskRepository().GetOneAsync(mt => mt.Id == newNotification.ObjecNotificationId, false)
+                var existMT = await _unitOfWork.GetMemberTaskRepository().GetOneAsync(mt => mt.Id == newNotification.ObjecNotificationId, null, false)
                     ?? throw new NotFoundException("Create Notification Faild: Not found any MemberTask relate to this Id"); ;
                 notificationDTO.MemberTaskId = newNotification.ObjecNotificationId;
                 break;
             case "task":
-                var existTa = await _unitOfWork.GetTaskRepository().GetOneAsync(ta => ta.Id == newNotification.ObjecNotificationId, false)
+                var existTa = await _unitOfWork.GetTaskRepository().GetOneAsync(ta => ta.Id == newNotification.ObjecNotificationId, null, false)
                     ?? throw new NotFoundException("Create Notification Faild: Not found any Task relate to this Id"); ;
                 notificationDTO.TaskId = newNotification.ObjecNotificationId;
                 break;
             default: //"systemconfiguration"
-                var existSC = await _unitOfWork.GetSystemConfigurationRepository().GetOneAsync(sc => sc.Id == newNotification.ObjecNotificationId, false)
+                var existSC = await _unitOfWork.GetSystemConfigurationRepository().GetOneAsync(sc => sc.Id == newNotification.ObjecNotificationId, null, false)
                     ?? throw new NotFoundException("Create Notification Faild: Not found any SystemConfiguration relate to this Id");
                 notificationDTO.SystemConfigurationId = newNotification.ObjecNotificationId;
                 break;
@@ -108,7 +108,7 @@ public class NotificationService : INotificationService
 
     public async Task<bool> NotificateToUser(List<Guid>? ListAccountId, Guid notificationId)
     {
-        var existNoti = await _unitOfWork.GetNotificationRepository().GetOneAsync(n => n.Id == notificationId, false)
+        var existNoti = await _unitOfWork.GetNotificationRepository().GetOneAsync(n => n.Id == notificationId, null, false)
                     ?? throw new NotFoundException("Not found any Notification match the Id");
 
         //Handle if list null -> get all user
@@ -171,7 +171,7 @@ public class NotificationService : INotificationService
 
     public async Task<bool> DeleteNotification(Guid id)
     {
-        var existNoti = await _unitOfWork.GetNotificationRepository().GetOneAsync(n => n.Id == id, false)
+        var existNoti = await _unitOfWork.GetNotificationRepository().GetOneAsync(n => n.Id == id, null, false)
                     ?? throw new NotFoundException("Not found any Notification match the Id");
 
         await _unitOfWork.GetNotificationRepository().DeleteAsync(existNoti);
