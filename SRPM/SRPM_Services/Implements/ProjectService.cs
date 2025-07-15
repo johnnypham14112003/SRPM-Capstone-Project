@@ -52,24 +52,24 @@ namespace SRPM_Services.Implements
             query.PageSize = query.PageSize < 1 ? 10 : query.PageSize;
 
             var projects = await _unitOfWork.GetProjectRepository().GetListAsync(
-                p =>
-                    (string.IsNullOrWhiteSpace(query.Title) ||
-                        p.EnglishTitle.Contains(query.Title) ||
-                        p.VietnameseTitle.Contains(query.Title)) &&
-                    (string.IsNullOrWhiteSpace(query.Category) || p.Category == query.Category) &&
-                    (string.IsNullOrWhiteSpace(query.Type) || p.Type == query.Type) &&
-                    (string.IsNullOrWhiteSpace(query.Genre) || p.Genre == query.Genre) &&
-                    (string.IsNullOrWhiteSpace(query.Language) || p.Language == query.Language) &&
-                    (string.IsNullOrWhiteSpace(query.Status) || p.Status == query.Status) &&
-                    (string.IsNullOrWhiteSpace(query.MajorName) ||
-                        p.ProjectMajors.Any(pm => pm.Major.Name.Contains(query.MajorName))) &&
-                    (string.IsNullOrWhiteSpace(query.FieldName) ||
-                        p.ProjectMajors.Any(pm => pm.Major.Field.Name.Contains(query.FieldName))) &&
-                    (query.TagNames == null ||
-                     query.TagNames.Count == 0 ||
-                     !query.TagNames.Any(tag => !string.IsNullOrWhiteSpace(tag)) ||
-                     p.ProjectTags.Any(t => query.TagNames.Any(tag => tag == t.Name && !string.IsNullOrWhiteSpace(tag)))),
-                include: q =>
+               p =>
+                   (string.IsNullOrWhiteSpace(query.Title) ||
+                       p.EnglishTitle.Contains(query.Title) ||
+                       p.VietnameseTitle.Contains(query.Title)) &&
+                   (string.IsNullOrWhiteSpace(query.Category) || p.Category == query.Category) &&
+                   (string.IsNullOrWhiteSpace(query.Type) || p.Type == query.Type) &&
+                   (string.IsNullOrWhiteSpace(query.Genre) || p.Genre == query.Genre) &&
+                   (string.IsNullOrWhiteSpace(query.Language) || p.Language == query.Language) &&
+                   (string.IsNullOrWhiteSpace(query.Status) || p.Status == query.Status) &&
+                   (!query.MajorId.HasValue ||
+                       p.ProjectMajors.Any(pm => pm.MajorId == query.MajorId)) &&
+                   (!query.FieldId.HasValue ||
+                       p.ProjectMajors.Any(pm => pm.Major.FieldId == query.FieldId)) &&
+                   (query.TagNames == null ||
+                    query.TagNames.Count == 0 ||
+                    !query.TagNames.Any(tag => !string.IsNullOrWhiteSpace(tag)) ||
+                    p.ProjectTags.Any(t => query.TagNames.Any(tag => tag == t.Name && !string.IsNullOrWhiteSpace(tag)))),
+        include: q =>
                 {
                     q = q.Include(p => p.ProjectMajors)
                             .ThenInclude(pm => pm.Major)
@@ -238,137 +238,121 @@ namespace SRPM_Services.Implements
 
             return overviewList;
         }
-        //public async Task<RS_Project> SubmitProposalAsync(Guid sourceProjectId, RQ_ProposalSubmission request)
-        //{
-        //    // Step 1: Validate principal and source
-        //    Guid principalId = Guid.Parse(_userContextService.GetCurrentUserId());
-        //    var sourceProject = await _unitOfWork.GetProjectRepository().GetByIdAsync(sourceProjectId, hasTrackings:false );
-        //    if (sourceProject == null)
-        //        throw new NotFoundException("Source project not found.");
+        public async Task<RS_Project> SubmitProposalAsync(Guid sourceProjectId, RQ_ProposalSubmission request)
+        {
+            // Step 1: Validate principal and source
+            Guid principalId = Guid.Parse(_userContextService.GetCurrentUserId());
+            var sourceProject = await _unitOfWork.GetProjectRepository().GetByIdAsync(sourceProjectId, hasTrackings: false);
+            if (sourceProject == null)
+                throw new NotFoundException("Source project not found.");
 
-        //    var principal = await _unitOfWork.GetAccountRepository()
-        //        .GetByIdAsync(principalId);
+            var principal = await _unitOfWork.GetAccountRepository()
+                .GetByIdAsync(principalId);
 
-        //    var hasPrincipalRole = principal.UserRoles
-        //        .Any(ur => ur.Role.Name == "Principal Investigator");
+            var hasPrincipalRole = principal.UserRoles
+                .Any(ur => ur.Role.Name == "Principal Investigator");
 
-        //    if (!hasPrincipalRole)
-        //        throw new UnauthorizedAccessException("Account does not have Principal Investigator role.");
+            if (!hasPrincipalRole)
+                throw new UnauthorizedAccessException("Account does not have Principal Investigator role.");
 
 
-        //    // Step 2: Clone base project using Mapster
-        //    var clonedProject = sourceProject.Adapt<Project>();
+            // Step 2: Clone base project using Mapster
+            var clonedProject = sourceProject.Adapt<Project>();
 
-        //    // Override essential fields
-        //    clonedProject.Id = Guid.NewGuid();
-        //    clonedProject.Genre = "proposal"; // for PI workflow
-        //    clonedProject.Status = Status.Submitted.ToString(); 
-        //    clonedProject.CreatedAt = DateTime.UtcNow;
-        //    clonedProject.UpdatedAt = null;
+            // Override essential fields
+            clonedProject.Id = Guid.NewGuid();
+            clonedProject.Genre = "proposal"; // for PI workflow
+            clonedProject.Status = Status.Submitted.ToString();
+            clonedProject.CreatedAt = DateTime.Now;
+            clonedProject.UpdatedAt = DateTime.Now;
 
-        //    // Optionally clear/refresh collections depending on your intent
-        //    clonedProject.ResearchPaper = null;
-        //    clonedProject.Evaluations = new List<Evaluation>();
-        //    clonedProject.IndividualEvaluations = new List<IndividualEvaluation>();
-        //    clonedProject.Documents = new List<Document>();
-        //    clonedProject.Members = new List<UserRole>();
-        //    clonedProject.Transactions = new List<Transaction>();
-        //    clonedProject.Milestones = sourceProject.Milestones?.Select(m => new Milestone
-        //    {
-        //        Title = m.Title,
-        //        Description = m.Description,
-        //        StartDate = m.StartDate,
-        //        EndDate = m.EndDate,
-        //        Status = m.Status,
-        //        Progress = 0m
-        //    }).ToList();
+            clonedProject.Members = new List<UserRole>();
+            await _unitOfWork.GetProjectRepository().AddAsync(clonedProject);
+            await _unitOfWork.SaveChangesAsync();
 
-        //    await _unitOfWork.GetProjectRepository().AddAsync(clonedProject);
-        //        await _unitOfWork.SaveChangesAsync();
+            // Step 3: Attach documents
+            foreach (var doc in request.Documents)
+            {
+                var newDoc = new Document
+                {
+                    Id = Guid.NewGuid(),
+                    Name = doc.Name,
+                    Type = doc.Type,
+                    IsTemplate = doc.IsTemplate,
+                    ContentHTML = doc.ContentHTML,
+                    UploadAt = DateTime.Now,
+                    UpdatedAt = DateTime.Now,
+                    Status = Status.Created.ToString().ToLowerInvariant(),
+                    ProjectId = clonedProject.Id, // override project ID from submission context
+                    EvaluationId = doc.EvaluationId,
+                    IndividualEvaluationId = doc.IndividualEvaluationId,
+                    TransactionId = doc.TransactionId,
+                    UploaderId = principalId
+                };
 
-        //    // Step 3: Attach documents
-        //    foreach (var doc in request.Documents)
-        //    {
-        //        var newDoc = new Document
-        //        {
-        //            Id = Guid.NewGuid(),
-        //            Name = doc.Name,
-        //            Type = doc.Type,
-        //            IsTemplate = doc.IsTemplate,
-        //            ContentHTML = doc.ContentHTML,
-        //            UploadAt = DateTime.Now,
-        //            UpdatedAt = DateTime.Now,
-        //            Status = Status.Created.ToString().ToLowerInvariant(),
-        //            ProjectId = clonedProject.Id, // override project ID from submission context
-        //            EvaluationId = doc.EvaluationId,
-        //            IndividualEvaluationId = doc.IndividualEvaluationId,
-        //            TransactionId = doc.TransactionId,
-        //            UploaderId = principalId 
-        //        };
+                await _unitOfWork.GetDocumentRepository().AddAsync(newDoc);
+            }
 
-        //        await _unitOfWork.GetDocumentRepository().AddAsync(newDoc);
-        //    }
+            // Load all roles that will be used in this context
+            var roleLookup = await _unitOfWork.GetRoleRepository()
+                .GetListAsync(r => r.Name == "Leader" || r.Name == "Secretary" || r.Name == "Principal Investigator");
 
-        //    // Load all roles that will be used in this context
-        //    var roleLookup = await _unitOfWork.GetRoleRepository()
-        //        .GetListAsync(r => r.Name == "Leader" || r.Name == "Secretary" || r.Name == "Principal Investigator");
+            // Track role counts
+            int leaderCount = 0;
+            int secretaryCount = 0;
+            int principalCount = 0;
 
-        //    // Track role counts
-        //    int leaderCount = 0;
-        //    int secretaryCount = 0;
-        //    int principalCount = 0;
+            foreach (var member in request.Members)
+            {
+                var role = roleLookup.FirstOrDefault(r => r.Id == member.RoleId);
+                if (role == null)
+                    throw new ArgumentException($"Role ID {member.RoleId} is invalid.");
 
-        //    foreach (var member in request.Members)
-        //    {
-        //        var role = roleLookup.FirstOrDefault(r => r.Id == member.RoleId);
-        //        if (role == null)
-        //            throw new ArgumentException($"Role ID {member.RoleId} is invalid.");
+                switch (role.Name)
+                {
+                    case "Leader":
+                        leaderCount++;
+                        if (leaderCount > 1)
+                            throw new InvalidOperationException("Only one Leader can be assigned to a project.");
+                        break;
 
-        //        switch (role.Name)
-        //        {
-        //            case "Leader":
-        //                leaderCount++;
-        //                if (leaderCount > 1)
-        //                    throw new InvalidOperationException("Only one Leader can be assigned to a project.");
-        //                break;
+                    case "Secretary":
+                        secretaryCount++;
+                        if (secretaryCount > 1)
+                            throw new InvalidOperationException("Only one Secretary can be assigned to a project.");
+                        break;
 
-        //            case "Secretary":
-        //                secretaryCount++;
-        //                if (secretaryCount > 1)
-        //                    throw new InvalidOperationException("Only one Secretary can be assigned to a project.");
-        //                break;
+                    case "Principal Investigator":
+                        principalCount++;
+                        if (principalCount > 1)
+                            throw new InvalidOperationException("Only one Principal Investigator can be assigned to a project.");
+                        break;
+                }
 
-        //            case "Principal Investigator":
-        //                principalCount++;
-        //                if (principalCount > 1)
-        //                    throw new InvalidOperationException("Only one Principal Investigator can be assigned to a project.");
-        //                break;
-        //        }
+                var userRole = new UserRole
+                {
+                    Id = Guid.NewGuid(),
+                    AccountId = member.AccountId,
+                    RoleId = member.RoleId,
+                    ProjectId = clonedProject.Id,
+                    GroupName = clonedProject.EnglishTitle,
+                    IsOfficial = false,
+                    ExpireDate = clonedProject.CreatedAt.AddYears(1),
+                    CreatedAt = DateTime.UtcNow,
+                    Status = "created"
+                };
 
-        //        var userRole = new UserRole
-        //        {
-        //            Id = Guid.NewGuid(),
-        //            AccountId = member.AccountId,
-        //            RoleId = member.RoleId,
-        //            ProjectId = clonedProject.Id,
-        //            GroupName = clonedProject.EnglishTitle,
-        //            IsOfficial = false,
-        //            ExpireDate = clonedProject.CreatedAt.AddYears(1),
-        //            CreatedAt = DateTime.UtcNow,
-        //            Status = "created"
-        //        };
-
-        //        await _unitOfWork.GetUserRoleRepository().AddAsync(userRole);
-        //    }
+                await _unitOfWork.GetUserRoleRepository().AddAsync(userRole);
+            }
 
 
 
 
-        //    await _unitOfWork.SaveChangesAsync();
+            await _unitOfWork.SaveChangesAsync();
 
-        //    // Step 5: Return mapped result
-        //    return clonedProject.Adapt<RS_Project>();
-        //}
+            // Step 5: Return mapped result
+            return clonedProject.Adapt<RS_Project>();
+        }
 
 
     }

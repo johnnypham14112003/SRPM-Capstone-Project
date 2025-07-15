@@ -15,8 +15,8 @@ namespace SRPM_Services.BusinessModels.Others
         public string? Status { get; set; }
         public string? Language { get; set; }
 
-        public string? MajorName { get; set; }
-        public string? FieldName { get; set; }
+        public Guid? MajorId { get; set; }
+        public Guid? FieldId { get; set; }
         public List<string>? TagNames { get; set; }
 
 
