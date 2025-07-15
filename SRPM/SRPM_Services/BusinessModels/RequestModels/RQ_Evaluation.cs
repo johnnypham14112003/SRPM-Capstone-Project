@@ -1,21 +1,22 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.ComponentModel.DataAnnotations;
 
-namespace SRPM_Services.BusinessModels.RequestModels
+namespace SRPM_Services.BusinessModels.RequestModels;
+
+public class RQ_Evaluation
 {
-    public class RQ_Evaluation
-    {
-        public string Title { get; set; } = null!;
-        public string? Comment { get; set; }
-        public byte? TotalRate { get; set; }
-        public string Phrase { get; set; } = "proposal";
-        public string Type { get; set; } = "project"; // or "milestone"
-        public Guid ProjectId { get; set; }
-        public Guid? MilestoneId { get; set; }
-        public Guid? AppraisalCouncilId { get; set; }
-    }
+    public Guid? Id { get; set; }
 
+    public string? Code { get; set; }
+    public string? Title { get; set; }
+    public byte? TotalRate { get; set; }
+    public string? Comment { get; set; }
+    [MaxLength(30)] public string Phrase { get; set; } = "proposal";//report
+    [MaxLength(30)] public string Type { get; set; } = "project";//milestone
+    public DateTime CreateDate { get; set; } = DateTime.Now;
+    [MaxLength(30)] public string Status { get; set; } = "created";
+
+    // Foreign keys
+    public Guid? ProjectId { get; set; }
+    public Guid? MilestoneId { get; set; }
+    public Guid? AppraisalCouncilId { get; set; }
 }

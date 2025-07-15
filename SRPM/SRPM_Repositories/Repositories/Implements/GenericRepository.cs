@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Query.SqlExpressions;
 using SRPM_Repositories.Repositories.Interfaces;
 using System.Linq.Expressions;
 using Task = System.Threading.Tasks.Task;
@@ -49,11 +50,30 @@ public class GenericRepository<T> : IGenericRepository<T> where T : class
         return hasTrackings ? await _context.Set<T>().Where(whereLinQ).Select(selectLinQ).ToListAsync()
                             : await _context.Set<T>().Where(whereLinQ).AsNoTracking().Select(selectLinQ).ToListAsync();
     }
-
-    public async Task<T?> GetOneAsync(Expression<Func<T, bool>> expression, bool hasTrackings = true)
+    public async Task<List<T>?> GetListAdvanceAsync(
+        Expression<Func<T, bool>> whereLinQ,
+        Func<IQueryable<T>, IQueryable<T>>? include = null,
+        bool hasTrackings = true)
     {
-        return hasTrackings ? await _context.Set<T>().FirstOrDefaultAsync(expression)
-                            : await _context.Set<T>().AsNoTracking().FirstOrDefaultAsync(expression);
+        IQueryable<T> query = _context.Set<T>().Where(whereLinQ);
+
+        if (include is not null) query = include(query);
+        if (!hasTrackings) query = query.AsNoTracking();
+
+        return await query.ToListAsync();
+    }
+
+    public async Task<T?> GetOneAsync(
+        Expression<Func<T, bool>> expression,
+        Func<IQueryable<T>, IQueryable<T>>? include = null,
+        bool hasTracking = true)
+    {
+        IQueryable<T> query = _context.Set<T>().Where(expression);
+
+        if (include is not null) query = include(query);
+        if (!hasTracking) query = query.AsNoTracking();
+
+        return await query.FirstOrDefaultAsync();
     }
 
     public async Task<T?> GetByIdAsync<Tkey>(Tkey id)

@@ -17,8 +17,15 @@ public interface IGenericRepository<T> where T : class
         Expression<Func<T, bool>> whereLinQ,
         Expression<Func<T, TResult>> selectLinQ,
         bool hasTrackings = true);
+    Task<List<T>?> GetListAdvanceAsync(
+        Expression<Func<T, bool>> whereLinQ,
+        Func<IQueryable<T>, IQueryable<T>>? include = null,
+        bool hasTrackings = true);
 
-    Task<T?> GetOneAsync(Expression<Func<T, bool>> expression, bool hasTrackings = true);
+    Task<T?> GetOneAsync(
+        Expression<Func<T, bool>> expression,
+        Func<IQueryable<T>, IQueryable<T>>? include = null,
+        bool hasTrackings = true);
     Task<T?> GetByIdAsync<Tkey>(Tkey id);
 
     System.Threading.Tasks.Task AddAsync(T TEntity);

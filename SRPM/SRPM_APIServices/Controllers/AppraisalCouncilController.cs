@@ -25,10 +25,12 @@ public class AppraisalCouncilController : Controller
         return result.result ? Created(nameof(Add), "Create Successfully!") : BadRequest("Create Failed!");
     }
 
-    [HttpGet]
-    public async Task<IActionResult> ViewDetail([FromBody] RQ_AppraisalCouncil council)
+    // api/appraisalcouncil/123e4567-e89b-12d3-a456-426614174000?incl=1
+    [HttpGet("{id}")]
+    public async Task<IActionResult> ViewDetail([FromRoute] Guid id, [FromQuery] byte incl)
     {
-        var result = await _appraisalCouncilService.ViewDetailCouncil(council.Id, council.IncludeNo);
+        //IncludeNo 1:Evaluations | 2:EvaluationStages | 3:Members | 12, 13, 23...
+        var result = await _appraisalCouncilService.ViewDetailCouncil(id, incl);
         return Ok(result);
     }
 

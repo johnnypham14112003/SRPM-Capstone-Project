@@ -37,8 +37,9 @@ namespace SRPM_APIServices.Controllers
             return Ok(configyInfo);
         }
 
-        [HttpGet("{typeData}/{keyData}")]
-        public async Task<IActionResult> ListConfig(string typeData, string? keyData)
+        // api/systemconfiguration?typeData...&keyData=...
+        [HttpGet]
+        public async Task<IActionResult> ListConfig([FromQuery]string typeData, [FromQuery] string? keyData)
         {
             var categoryInfo = await _systemConfigurationService.ListConfig(typeData, keyData);
             return Ok(categoryInfo);
