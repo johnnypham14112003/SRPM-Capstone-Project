@@ -21,6 +21,6 @@ public class RQ_IndividualEvaluation
     public Guid? ReviewerId { get; set; }
     public Guid? ProjectId { get; set; }
     public Guid? MilestoneId { get; set; }
-    public virtual ICollection<RS_Document>? Documents { get; set; }
-    public virtual ICollection<Notification>? Notifications { get; set; }
+    //public virtual ICollection<RS_Document>? Documents { get; set; }
+    //public virtual ICollection<Notification>? Notifications { get; set; }
 }

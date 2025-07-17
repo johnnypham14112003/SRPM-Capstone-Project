@@ -21,6 +21,6 @@ public class RS_Evaluation
     public Guid? AppraisalCouncilId { get; set; }
 
     // Navigation properties
-    public virtual ICollection<RS_Document>? Documents { get; set; }
-    public virtual ICollection<RS_EvaluationStage>? EvaluationStages { get; set; }
+    //public virtual ICollection<RS_Document>? Documents { get; set; }
+    //public virtual ICollection<RS_EvaluationStage>? EvaluationStages { get; set; }
 }

@@ -11,7 +11,7 @@ public class RS_EvaluationStage
     public Guid EvaluationId { get; set; }
     public Guid? AppraisalCouncilId { get; set; }
 
-    public virtual ICollection<RS_Transaction>? Transactions { get; set; }
-    public virtual ICollection<RS_IndividualEvaluation>? IndividualEvaluations { get; set; }
-    public virtual ICollection<Notification>? Notifications { get; set; }
+    //public virtual ICollection<RS_Transaction>? Transactions { get; set; }
+    //public virtual ICollection<RS_IndividualEvaluation>? IndividualEvaluations { get; set; }
+    //public virtual ICollection<Notification>? Notifications { get; set; }
 }
