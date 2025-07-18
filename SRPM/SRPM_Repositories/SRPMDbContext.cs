@@ -26,6 +26,7 @@ public class SRPMDbContext : DbContext
     public DbSet<OTPCode> OTPCode { get; set; }
     public DbSet<Project> Project { get; set; }
     public DbSet<ProjectMajor> ProjectMajor { get; set; }
+    public DbSet<ProjectSimilarity> ProjectSimilarity { get; set; }
     public DbSet<ProjectTag> ProjectTag { get; set; }
     public DbSet<ResearchPaper> ResearchPaper { get; set; }
     public DbSet<Role> Role { get; set; }
@@ -256,16 +257,12 @@ public class SRPMDbContext : DbContext
             .HasForeignKey(ie => ie.ReviewerId)
             .OnDelete(DeleteBehavior.Restrict);
 
-            inev.HasOne(ie => ie.Project)
-            .WithMany(pro => pro.IndividualEvaluations)
-            .HasForeignKey(ie => ie.ProjectId)
-            .OnDelete(DeleteBehavior.Restrict);
-
-            inev.HasOne(ie => ie.Milestone)
-            .WithMany(ms => ms.IndividualEvaluations)
-            .HasForeignKey(ie => ie.MilestoneId)
-            .OnDelete(DeleteBehavior.Restrict);
             //xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+            inev.HasMany(ie => ie.ProjectsSimilarity)
+            .WithOne(pros => pros.IndividualEvaluation)
+            .HasForeignKey(pros => pros.IndividualEvaluationId)
+            .OnDelete(DeleteBehavior.Cascade);
+
             inev.HasMany(ie => ie.Documents)
             .WithOne(d => d.IndividualEvaluation)
             .HasForeignKey(d => d.IndividualEvaluationId)
@@ -335,11 +332,6 @@ public class SRPMDbContext : DbContext
             .OnDelete(DeleteBehavior.Restrict);
             //xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
             miles.HasMany(ms => ms.Evaluations)
-            .WithOne(e => e.Milestone)
-            .HasForeignKey(e => e.MilestoneId)
-            .OnDelete(DeleteBehavior.Restrict);
-
-            miles.HasMany(ms => ms.IndividualEvaluations)
             .WithOne(e => e.Milestone)
             .HasForeignKey(e => e.MilestoneId)
             .OnDelete(DeleteBehavior.Restrict);
@@ -450,11 +442,11 @@ public class SRPMDbContext : DbContext
             .HasForeignKey(e => e.ProjectId)
             .OnDelete(DeleteBehavior.Restrict);
 
-            proj.HasMany(p => p.IndividualEvaluations)
-            .WithOne(ie => ie.Project)
-            .HasForeignKey(ie => ie.ProjectId)
-            .OnDelete(DeleteBehavior.Restrict);
-
+            proj.HasMany(p => p.ProjectsSimilarity)
+            .WithOne(pros => pros.Project)
+            .HasForeignKey(pros => pros.ProjectId)
+            .OnDelete(DeleteBehavior.Cascade);
+            
             proj.HasMany(p => p.ProjectMajors)
             .WithOne(pm => pm.Project)
             .HasForeignKey(pm => pm.ProjectId)
@@ -491,6 +483,21 @@ public class SRPMDbContext : DbContext
             .WithMany(m => m.ProjectMajors)
             .HasForeignKey(pm => pm.MajorId)
             .OnDelete(DeleteBehavior.Cascade);// when delete Major - cascade in ProjectMajor
+        });
+
+        modelBuilder.Entity<ProjectSimilarity>(proSim =>
+        {
+            proSim.HasKey(proSimModel => new { proSimModel.ProjectId, proSimModel.IndividualEvaluationId });
+
+            proSim.HasOne(ps => ps.Project)
+            .WithMany(p => p.ProjectsSimilarity)
+            .HasForeignKey(ps => ps.ProjectId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+            proSim.HasOne(ps => ps.IndividualEvaluation)
+            .WithMany(ie => ie.ProjectsSimilarity)
+            .HasForeignKey(ps => ps.IndividualEvaluationId)
+            .OnDelete(DeleteBehavior.Cascade);
         });
 
         //ProjectTag

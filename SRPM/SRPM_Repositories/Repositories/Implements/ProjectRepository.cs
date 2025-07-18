@@ -25,7 +25,7 @@ public class ProjectRepository : GenericRepository<Project>, IProjectRepository
             .Include(p => p.Members).ThenInclude(m => m.Account)
             .Include(p => p.Milestones)
             .Include(p => p.Evaluations)
-            .Include(p => p.IndividualEvaluations)
+            .Include(p => p.ProjectsSimilarity)
             .Include(p => p.ProjectTags)
             .Include(p => p.Documents)
             .Include(p => p.Transactions)

@@ -1,4 +1,5 @@
 ﻿using SRPM_APIServices;
+using SRPM_APIServices.Middlewares;
 
 var builder = WebApplication.CreateBuilder(args);
 var config = builder.Configuration;
@@ -12,6 +13,9 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddMemoryCache();
 
 var app = builder.Build();
+
+//First Priority (before useRouting and useEndpoint)
+app.UseMiddleware<GlobalExceptionMiddleware>();
 
 // Configure the HTTP request pipeline.
 app.UseSwagger();

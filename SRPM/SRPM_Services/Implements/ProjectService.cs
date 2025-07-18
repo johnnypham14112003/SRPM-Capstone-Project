@@ -43,7 +43,102 @@ namespace SRPM_Services.Implements
             var entity = await _unitOfWork.GetProjectRepository()
                 .GetByIdAsync(id, hasTrackings: false);
 
-            return entity?.Adapt<RS_Project>();
+                if (query.IncludeCreator)
+                    q = q.Include(p => p.Creator).ThenInclude(c => c.Role);
+
+                if (query.IncludeMembers)
+                    q = q.Include(p => p.Members).ThenInclude(m => m.Account);
+
+                if (query.IncludeMilestones)
+                    q = q.Include(p => p.Milestones);
+
+                if (query.IncludeEvaluations)
+                    q = q.Include(p => p.Evaluations);
+
+                if (query.IncludeProjectSimilarity)
+                    q = q.Include(p => p.ProjectsSimilarity);
+
+                if (query.IncludeDocuments)
+                    q = q.Include(p => p.Documents);
+
+                if (query.IncludeTransactions)
+                    q = q.Include(p => p.Transactions);
+
+                return q;
+            },
+
+            hasTrackings: false
+        );
+
+        projects = query.SortBy?.ToLower() switch
+        {
+            "englishtitle" => query.Desc ? projects.OrderByDescending(p => p.EnglishTitle).ToList() : projects.OrderBy(p => p.EnglishTitle).ToList(),
+            "vietnamesetitle" => query.Desc ? projects.OrderByDescending(p => p.VietnameseTitle).ToList() : projects.OrderBy(p => p.VietnameseTitle).ToList(),
+            "createdat" => query.Desc ? projects.OrderByDescending(p => p.CreatedAt).ToList() : projects.OrderBy(p => p.CreatedAt).ToList(),
+            _ => projects.OrderBy(p => p.CreatedAt).ToList()
+        };
+
+        var total = projects.Count;
+        var page = projects
+            .Skip((query.PageIndex - 1) * query.PageSize)
+            .Take(query.PageSize)
+            .ToList();
+
+        return new PagingResult<RS_Project>
+        {
+            PageIndex = query.PageIndex,
+            PageSize = query.PageSize,
+            TotalCount = total,
+            DataList = page.Adapt<List<RS_Project>>()
+        };
+    }
+
+
+    public async Task<RS_Project> CreateAsync(RQ_Project request)
+    {
+        var entity = request.Adapt<Project>();
+        entity.Id = Guid.NewGuid();
+        entity.CreatedAt = DateTime.Now;
+        entity.UpdatedAt = DateTime.Now;
+
+        var sanitizedAbbr = (entity.Abbreviations ?? "XXX").Trim().ToUpperInvariant();
+        entity.Code = $"RP-{DateTime.Now:yyyy_MM}_{sanitizedAbbr}";
+
+        // Assign defaults if needed
+        entity.Budget = entity.Budget <= 0 ? 0m : entity.Budget;
+        entity.Progress = entity.Progress <= 0 ? 0m : entity.Progress;
+        entity.MaximumMember = entity.MaximumMember <= 0 ? 5 : entity.MaximumMember;
+        entity.Language = string.IsNullOrWhiteSpace(entity.Language) ? "English" : entity.Language;
+
+        var accountId = Guid.Parse(_userContextService.GetCurrentUserId());
+
+        // Fetch all roles tied to the user
+        var userRoles = await _unitOfWork.GetUserRoleRepository().GetListByFilterAsync(
+            accountId: accountId,
+            roleId: null,
+            projectId: null,
+            appraisalCouncilId: null,
+            status: Status.Created.ToString().ToLowerInvariant(),
+            isOfficial: null
+        );
+
+        // Validate role and assign genre + creator
+        var hostRole = userRoles.FirstOrDefault(r => r.Role?.Name == "Host Institution");
+        var staffRole = userRoles.FirstOrDefault(r => r.Role?.Name == "Staff");
+
+        if (hostRole != null)
+        {
+            entity.Genre = "normal";
+            entity.CreatorId = hostRole.Id;
+        }
+        else if (staffRole != null)
+        {
+            entity.Genre = "propose";
+            entity.CreatorId = staffRole.Id;
+        }
+        else
+        {
+            throw new UnauthorizedException("User must be either Host Institution or Staff to create a project.");
         }
 
         public async Task<PagingResult<RS_Project>> GetListAsync(RQ_ProjectQuery query)

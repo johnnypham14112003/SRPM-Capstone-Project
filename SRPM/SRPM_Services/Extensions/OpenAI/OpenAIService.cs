@@ -151,7 +151,6 @@ public class OpenAIService : IOpenAIService
                 EnglishTitle = project.EnglishTitle ?? "",
                 Description = project.Description,
                 EncodedDescription = project.EncodedDescription,
-                OnlineUrl = project.OnlineUrl,
                 Similarity = similarity
             });
         }

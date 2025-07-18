@@ -27,7 +27,7 @@ public class DocumentService : IDocumentService
     public async Task<(bool success, Guid DocumentId)> NewDocument(RQ_Document doc)
     {
         //Check Null Data
-        bool hasInvalidFields = new[] { doc.Name, doc.Type, doc.ContentHTML }
+        bool hasInvalidFields = new[] { doc.Name, doc.Type, doc.ContentHtml }
         .Any(string.IsNullOrWhiteSpace);
         if (hasInvalidFields) throw new BadRequestException("Document Name or Type or Content cannot be empty!");
 

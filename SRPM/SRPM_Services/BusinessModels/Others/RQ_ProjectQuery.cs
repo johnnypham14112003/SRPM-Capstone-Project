@@ -29,7 +29,7 @@ namespace SRPM_Services.BusinessModels.Others
         public bool IncludeMilestones { get; set; } = false;
         public bool IncludeEvaluations { get; set; } = false;
         public bool IncludeDocuments { get; set; } = false;
-        public bool IncludeIndividualEvaluations { get; set; } = false;
+        public bool IncludeProjectSimilarity { get; set; } = false;
         public bool IncludeTransactions { get; set; } = false;
 
 

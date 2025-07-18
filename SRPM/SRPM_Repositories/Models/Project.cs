@@ -38,7 +38,7 @@ public class Project
     public virtual ICollection<UserRole>? Members { get; set; }//1 project have many member
     public virtual ICollection<Milestone>? Milestones { get; set; }
     public virtual ICollection<Evaluation>? Evaluations { get; set; }
-    public virtual ICollection<IndividualEvaluation>? IndividualEvaluations { get; set; }
+    public virtual ICollection<ProjectSimilarity>? ProjectsSimilarity { get; set; }
     public virtual ICollection<ProjectMajor>? ProjectMajors { get; set; }
     public virtual ICollection<ProjectTag>? ProjectTags { get; set; }
     public virtual ICollection<Document>? Documents { get; set; }

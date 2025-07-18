@@ -1,5 +1,4 @@
 ﻿using SRPM_Repositories.Repositories.Interfaces;
-using SRPM_Repositories.Repositories.Implements;
 
 namespace SRPM_Repositories.Repositories.Implements;
 
@@ -21,6 +20,7 @@ public class UnitOfWork : IUnitOfWork
     private readonly Lazy<INotificationRepository> _notificationRepository;
     private readonly Lazy<IOTPCodeRepository> _otpCodeRepository;
     private readonly Lazy<IProjectMajorRepository> _projectMajorRepository;
+    private readonly Lazy<IProjectSimilarityRepository> _projectSimilarityRepository;
     private readonly Lazy<IProjectRepository> _projectRepository;
     private readonly Lazy<IProjectTagRepository> _projectTagRepository;
     private readonly Lazy<IResearchPaperRepository> _researchPaperRepository;
@@ -76,6 +76,9 @@ public class UnitOfWork : IUnitOfWork
 
         _projectMajorRepository = new Lazy<IProjectMajorRepository>
             (() => new ProjectMajorRepository(context));
+
+        _projectSimilarityRepository = new Lazy<IProjectSimilarityRepository>
+            (() => new ProjectSimilarityRepository(context));
 
         _projectRepository = new Lazy<IProjectRepository>
             (() => new ProjectRepository(context));
@@ -139,6 +142,8 @@ public class UnitOfWork : IUnitOfWork
         => _otpCodeRepository.Value;
     public IProjectMajorRepository GetProjectMajorRepository()
         => _projectMajorRepository.Value;
+    public IProjectSimilarityRepository GetProjectSimilarityRepository()
+        => _projectSimilarityRepository.Value;
     public IProjectRepository GetProjectRepository()
         => _projectRepository.Value;
     public IProjectTagRepository GetProjectTagRepository()

@@ -99,5 +99,4 @@ public class EvaluationStageRepository : GenericRepository<EvaluationStage>, IEv
 
         return (pagedList, totalFound);
     }
-
 }
