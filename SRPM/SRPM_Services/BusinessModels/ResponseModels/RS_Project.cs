@@ -39,7 +39,7 @@ namespace SRPM_Services.BusinessModels.ResponseModels
         public List<RS_UserRole>? Members { get; set; }
         public List<RS_Milestone>? Milestones { get; set; }
         public List<RS_Evaluation>? Evaluations { get; set; }
-        public List<RS_IndividualEvaluation>? IndividualEvaluations { get; set; }
+        public List<RS_ProjectSimilarity>? ProjectSimilarity { get; set; }
         public List<RS_MajorBrief>? Majors { get; set; }
         public List<RS_TagBrief>? ProjectTags { get; set; }
         public List<RS_Document>? Documents { get; set; }

@@ -333,7 +333,6 @@ public static class DIContainer
             .Ignore(dest => dest.Project)
             .Ignore(dest => dest.Creator)
             .Ignore(dest => dest.Evaluations)
-            .Ignore(dest => dest.IndividualEvaluations)
             .Ignore(dest => dest.Tasks)
             .IgnoreNullValues(true);
 

@@ -20,5 +20,5 @@ public class RS_IndividualEvaluation
     public Guid EvaluationStageId { get; set; }
     public Guid? ReviewerId { get; set; }
     public virtual ICollection<RS_Document>? Documents { get; set; }
-    public virtual ICollection<ProjectSimilarity>? ProjectsSimilarity { get; set; }
+    public virtual ICollection<RS_ProjectSimilarity>? ProjectsSimilarity { get; set; }
 }

@@ -28,7 +28,6 @@ namespace SRPM_Services.BusinessModels.ResponseModels
         public RS_Project? Project { get; set; }
         public RS_UserRole? Creator { get; set; }
         public List<RS_Evaluation>? Evaluations { get; set; }
-        public List<RS_IndividualEvaluation>? IndividualEvaluations { get; set; }
         public List<RS_Task>? Tasks { get; set; }
     }
 

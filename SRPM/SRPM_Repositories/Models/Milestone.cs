@@ -25,6 +25,5 @@ public class Milestone
     public Project Project { get; set; } = null!;
     public UserRole Creator { get; set; } = null!;
     public ICollection<Evaluation>? Evaluations { get; set; }
-    public ICollection<IndividualEvaluation>? IndividualEvaluations { get; set; }
     public ICollection<Task>? Tasks { get; set; }
 }

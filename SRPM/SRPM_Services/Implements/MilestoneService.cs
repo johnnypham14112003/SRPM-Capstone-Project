@@ -51,7 +51,6 @@ public class MilestoneService : IMilestoneService
                 .Include(m => m.Project)
                 .Include(m => m.Creator).ThenInclude(c => c.Role)
                 .Include(m => m.Evaluations)
-                .Include(m => m.IndividualEvaluations)
                 .Include(m => m.Tasks),
             hasTrackings: false
         );
