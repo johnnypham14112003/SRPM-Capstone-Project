@@ -50,7 +50,7 @@ public class ProjectController : ControllerBase
     // GET: api/project/{id}
     [HttpGet("{id}")]
     [Authorize]
-    public async Task<ActionResult<RS_Project>> GetById(Guid id)
+    public async Task<ActionResult<object>> GetById(Guid id)
     {
         try
         {

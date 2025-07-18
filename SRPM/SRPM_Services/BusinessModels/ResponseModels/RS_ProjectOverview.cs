@@ -17,7 +17,7 @@ namespace SRPM_Services.BusinessModels.ResponseModels
         public string Genre { get; set; } = null!;
         public string Status { get; set; } = null!;
         public DateTime CreatedAt { get; set; }
-            public string? PictureUrl { get; set; } 
+        public string? PictureUrl { get; set; } 
         public string? Description { get; set; }
         public string? RequirementNote { get; set; }
         public decimal Progress { get; set; } = 0m;

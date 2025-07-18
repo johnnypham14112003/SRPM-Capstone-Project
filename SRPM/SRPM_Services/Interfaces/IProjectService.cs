@@ -7,7 +7,7 @@ namespace SRPM_Services.Interfaces;
 
 public interface IProjectService
 {
-    Task<RS_Project?> GetByIdAsync(Guid id);
+    Task<object?> GetByIdAsync(Guid id);
     Task<PagingResult<RS_Project>> GetListAsync(RQ_ProjectQuery query);
     Task<RS_Project> CreateAsync(RQ_Project request);
     Task<RS_Project?> UpdateAsync(Guid id, RQ_Project request);

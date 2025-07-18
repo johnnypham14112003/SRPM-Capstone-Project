@@ -28,7 +28,7 @@ namespace SRPM_Services.Implements
             _unitOfWork = unitOfWork;
             _userContextService = userContextService;
         }
-        public async Task<RS_Project?> GetByIdAsync(Guid id)
+        public async Task<object?> GetByIdAsync(Guid id)
         {
             var userId = Guid.Parse(_userContextService.GetCurrentUserId()); // fetch current user's ID
 
@@ -37,13 +37,15 @@ namespace SRPM_Services.Implements
 
             if (!isMember)
             {
-                throw new UnauthorizedAccessException("You are not part of this project.");
+                var projectOverview = await _unitOfWork.GetProjectRepository()
+                .GetByIdAsync(id);
+                return new { ProjectDetail = projectOverview?.Adapt<RS_ProjectOverview>() , isMember};
             }
 
             var entity = await _unitOfWork.GetProjectRepository()
                 .GetByIdAsync(id, hasTrackings: false);
 
-            return entity?.Adapt<RS_Project>();
+            return new { ProjectDetail = entity?.Adapt<RS_Project>(), isMember };
         }
 
         public async Task<PagingResult<RS_Project>> GetListAsync(RQ_ProjectQuery query)
