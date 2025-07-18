@@ -18,6 +18,7 @@ public interface IUnitOfWork
     IOTPCodeRepository GetOTPCodeRepository();
     IProjectRepository GetProjectRepository();
     IProjectMajorRepository GetProjectMajorRepository();
+    IProjectSimilarityRepository GetProjectSimilarityRepository();
     IProjectTagRepository GetProjectTagRepository();
     IResearchPaperRepository GetResearchPaperRepository();
     IRoleRepository GetRoleRepository();

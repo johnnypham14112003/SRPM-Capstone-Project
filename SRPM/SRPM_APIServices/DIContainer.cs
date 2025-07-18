@@ -124,6 +124,7 @@ public static class DIContainer
         services.AddScoped<IOTPCodeRepository, OTPCodeRepository>();
         services.AddScoped<IProjectRepository, ProjectRepository>();
         services.AddScoped<IProjectMajorRepository, ProjectMajorRepository>();
+        services.AddScoped<IProjectSimilarityRepository, ProjectSimilarityRepository>();
         services.AddScoped<IProjectTagRepository, ProjectTagRepository>();
         services.AddScoped<IResearchPaperRepository, ResearchPaperRepository>();
         services.AddScoped<IRoleRepository, RoleRepository>();
@@ -238,7 +239,7 @@ public static class DIContainer
             .Ignore(dest => dest.Members)
             .Ignore(dest => dest.Milestones)
             .Ignore(dest => dest.Evaluations)
-            .Ignore(dest => dest.IndividualEvaluations)
+            .Ignore(dest => dest.ProjectsSimilarity)
             .Ignore(dest => dest.Documents)
             .Ignore(dest => dest.ProjectMajors)
             .Ignore(dest => dest.ProjectTags)

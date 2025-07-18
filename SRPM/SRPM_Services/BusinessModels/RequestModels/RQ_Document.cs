@@ -6,10 +6,10 @@ public class RQ_Document
 {
     public Guid? Id { get; set; }
 
-    public string? Name { get; set; }
+    public string Name { get; set; } = null!;
     [MaxLength(30)] public string? Type { get; set; } //System | Final E-Doc | Ly lich khoa hoc
     public bool IsTemplate { get; set; } = false;
-    public string? ContentHTML { get; set; }
+    public string? ContentHtml { get; set; }
     [Required] public DateTime UpdatedAt { get; set; } = DateTime.Now;
     [Required] public DateTime UploadAt { get; set; } = DateTime.Now;
     [MaxLength(30)] public string Status { get; set; } = "created";

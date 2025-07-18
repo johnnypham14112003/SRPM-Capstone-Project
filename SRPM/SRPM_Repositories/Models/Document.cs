@@ -8,7 +8,7 @@ public class Document
     [Required] public string Name { get; set; } = null!;
     [Required, MaxLength(30)] public string Type { get; set; } = null!;//Final E-Doc | Ly lich khoa hoc
     [Required] public bool IsTemplate { get; set; } = false;
-    public string? ContentHTML { get; set; }
+    public string? ContentHtml { get; set; }
     [Required] public DateTime UpdatedAt { get; set; } = DateTime.Now;
     [Required] public DateTime UploadAt { get; set; } = DateTime.Now;
     [Required, MaxLength(30)] public string Status { get; set; } = "created";

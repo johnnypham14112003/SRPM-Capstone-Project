@@ -1,22 +1,24 @@
 ﻿using SRPM_Repositories.Models;
+using System.ComponentModel.DataAnnotations;
 
 namespace SRPM_Services.BusinessModels.ResponseModels;
 
 public class RS_IndividualEvaluation
 {
     public Guid Id { get; set; }
+
+    public string Name { get; set; } = null!;
     public byte? TotalRate { get; set; }
     public string? Comment { get; set; }
     public DateTime SubmittedAt { get; set; }
-    public bool IsApproved { get; set; }
+    public bool IsApproved { get; set; } = false;
     public bool? ReviewerResult { get; set; }
-    public bool IsAIReport { get; set; }
-    public string Status { get; set; } = null!;
+    public bool IsAIReport { get; set; } = false;
+    [MaxLength(30)] public string Status { get; set; } = null!;
 
+    // Foreign keys
     public Guid EvaluationStageId { get; set; }
     public Guid? ReviewerId { get; set; }
-    public Guid? ProjectId { get; set; }
-    public Guid? MilestoneId { get; set; }
     public virtual ICollection<RS_Document>? Documents { get; set; }
-    public virtual ICollection<Notification>? Notifications { get; set; }
+    public virtual ICollection<ProjectSimilarity>? ProjectsSimilarity { get; set; }
 }

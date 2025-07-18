@@ -83,8 +83,8 @@ public class ProjectService : IProjectService
                 if (query.IncludeEvaluations)
                     q = q.Include(p => p.Evaluations);
 
-                if (query.IncludeIndividualEvaluations)
-                    q = q.Include(p => p.IndividualEvaluations);
+                if (query.IncludeProjectSimilarity)
+                    q = q.Include(p => p.ProjectsSimilarity);
 
                 if (query.IncludeDocuments)
                     q = q.Include(p => p.Documents);
