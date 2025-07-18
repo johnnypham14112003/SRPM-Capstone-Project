@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using SRPM_Services.BusinessModels.RequestModels;
-using SRPM_Services.BusinessModels.ResponseModels;
+using SRPM_Services.BusinessModels.RequestModels.Query;
 using SRPM_Services.Interfaces;
 
 namespace SRPM_APIServices.Controllers;
@@ -9,46 +9,47 @@ namespace SRPM_APIServices.Controllers;
 [Route("api/[controller]")]
 public class IndividualEvaluationController : ControllerBase
 {
-    private readonly IIndividualEvaluationService _service;
+    private readonly IIndividualEvaluationService _individualEvaluationService;
 
-    public IndividualEvaluationController(IIndividualEvaluationService service)
+    public IndividualEvaluationController(IIndividualEvaluationService individualEvaluationService)
     {
-        _service = service;
+        _individualEvaluationService = individualEvaluationService;
     }
 
-    // GET: api/individualevaluation/{id}
-    [HttpGet("{id}")]
-    public async Task<ActionResult<RS_IndividualEvaluation>> GetById(Guid id)
+    //=================================[ Endpoints ]================================
+    [HttpPost]
+    public async Task<IActionResult> Add([FromBody] RQ_IndividualEvaluation inputData)
     {
-        var result = await _service.GetByIdAsync(id);
-        if (result == null)
-            return NotFound($"IndividualEvaluation with ID {id} not found.");
+        var result = await _individualEvaluationService.CreateAsync(inputData);
+        return result.success ? Created(nameof(Add), "Create Successfully! IndividualEvaluationId:" + result.individualEvaluationId)
+            : BadRequest("Create Failed!");
+    }
+
+    [HttpGet("{id}")]
+    public async Task<IActionResult> ViewDetail([FromRoute] Guid id)
+    {
+        var result = await _individualEvaluationService.ViewDetail(id);
         return Ok(result);
     }
 
-    // GET: api/individualevaluation/by-stage/{evaluationStageId}
-    [HttpGet("by-stage/{evaluationStageId}")]
-    public async Task<ActionResult<List<RS_IndividualEvaluation>>> GetByStageId(Guid evaluationStageId)
+    [HttpPost("list")]
+    public async Task<IActionResult> List([FromBody] Q_IndividualEvaluation queryInput)
     {
-        var results = await _service.GetListByStageAsync(evaluationStageId);
-        return Ok(results);
+        var result = await _individualEvaluationService.GetListAsync(queryInput);
+        return Ok(result);
     }
 
-    // POST: api/individualevaluation
-    [HttpPost]
-    public async Task<ActionResult<RS_IndividualEvaluation>> Create(RQ_IndividualEvaluation request)
+    [HttpPut]
+    public async Task<IActionResult> Update([FromBody] RQ_IndividualEvaluation inputData)
     {
-        var created = await _service.CreateAsync(request);
-        return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
+        bool result = await _individualEvaluationService.UpdateAsync(inputData);
+        return result ? Ok("Update Successfully!") : BadRequest("Update Failed!");
     }
 
-    // PUT: api/individualevaluation/{id}
-    [HttpPut("{id}")]
-    public async Task<ActionResult<RS_IndividualEvaluation>> Update(Guid id, RQ_IndividualEvaluation request)
+    [HttpDelete("{id}")]
+    public async Task<IActionResult> Delete([FromRoute] Guid id)
     {
-        var updated = await _service.UpdateAsync(id, request);
-        if (updated == null)
-            return NotFound($"IndividualEvaluation with ID {id} not found.");
-        return Ok(updated);
+        bool result = await _individualEvaluationService.DeleteAsync(id);
+        return result ? Ok("Delete Successfully!") : BadRequest("Delete Failed!");
     }
 }
