@@ -53,4 +53,25 @@ public class UserContextService : IUserContextService
 
         return currentUserId;
     }
+    public string GetCurrentUserRole()
+    {
+        var httpContext = _httpContextAccessor.HttpContext;
+        if (httpContext == null)
+        {
+            throw new ArgumentException("Http context is null. Please login.");
+        }
+        var user = httpContext.User;
+        if (user == null || !user.Identity.IsAuthenticated)
+        {
+            throw new ArgumentException("User is not authenticated or token is invalid");
+        }
+
+        var currentUserRole = user.FindFirstValue(ClaimTypes.Role);
+        if (string.IsNullOrEmpty(currentUserRole))
+        {
+            throw new ArgumentException("User Role claim is not found");
+        }
+
+        return currentUserRole;
+    }
 }
