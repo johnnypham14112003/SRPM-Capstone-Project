@@ -15,142 +15,19 @@ public class AuthController : ControllerBase
     private readonly IAccountService _accountService;
     private readonly IUserRoleService _roleService;
     private readonly ITokenService _tokenService;
-    private readonly ISessionService _sessionService;
+    private readonly IUserContextService _userContextService;
 
     public AuthController(
         IAccountService accountService,
         ITokenService tokenService,
         IUserRoleService roleService,
-        ISessionService sessionService)
+        IUserContextService userContextService)
     {
         _accountService = accountService;
         _tokenService = tokenService;
         _roleService = roleService;
-        _sessionService = sessionService;
+       _userContextService = userContextService;
     }
-
-
-    //    [HttpPost("google-login")]
-    //    public async Task<IActionResult> GoogleLogin([FromBody] GoogleLoginRQ request)
-    //    {
-    //        try
-    //        {
-    //            var account = await _accountService.LoginWithGoogleAsync(request);
-    //            return Ok(account);
-    //        }
-    //        catch (UnauthorizedAccessException ex)
-    //        {
-    //            return Unauthorized(new { message = ex.Message });
-    //        }
-    //        catch (Exception ex)
-    //        {
-    //            return BadRequest(new { message = ex.Message });
-    //        }
-    //    }
-    //}
-    // Endpoint to trigger the Google login challenge.
-    //[HttpGet("google-login")]
-    //public IActionResult GoogleLogin(string returnUrl = "/", string role = null)
-    //{
-    //    var properties = new AuthenticationProperties
-    //    {
-    //        RedirectUri = Url.Action("GoogleResponse", new { returnUrl, role })
-    //    };
-
-    //    return Challenge(properties, GoogleDefaults.AuthenticationScheme);
-    //}
-
-
-    //[HttpGet("google-response")]
-    //public async Task<IActionResult> GoogleResponse(string returnUrl = "/", string role = null)
-    //{
-    //    var user = HttpContext.User;
-
-    //    var email = user.FindFirst(ClaimTypes.Email)?.Value;
-    //    var name = user.FindFirst(ClaimTypes.Name)?.Value;
-    //    var avatarUrl = user.FindFirst("AvatarUrl")?.Value;
-
-    //    if (string.IsNullOrEmpty(email) || string.IsNullOrEmpty(name))
-    //        return BadRequest("Missing required information from Google account.");
-
-    //    var loginRequest = new RQ_GoogleLogin
-    //    {
-    //        Email = email,
-    //        Name = name,
-    //        AvatarUrl = avatarUrl,
-    //        SelectedRole = role
-    //    };
-
-    //    try
-    //    {
-    //        var account = await _accountService.LoginWithGoogleAsync(loginRequest);
-
-    //        if (account == null)
-    //            throw new NotFoundException("Account not found during Google login flow.");
-
-    //        if (role != null)
-    //        {
-    //            var isAuthorized = await _roleService.UserHasRoleAsync(account.Id, role);
-    //            if (!isAuthorized)
-    //                return Forbid("Selected role is not assigned to this user.");
-    //        }
-
-    //        var allRoles = await _roleService.GetAllUserRole(account.Id);
-
-    //        var claims = new List<Claim>
-    //{
-    //    new Claim(ClaimTypes.NameIdentifier, account.Id.ToString()),
-    //    new Claim("Id", account.Id.ToString()),
-    //    new Claim(ClaimTypes.Role, role ?? string.Empty)
-    //};
-
-    //        var token = _tokenService.GenerateJwtToken(claims);
-
-    //        var sessionPayload = new
-    //        {
-    //            Token = token,
-    //            FullName = account.FullName,
-    //            AvatarUrl = account.AvatarURL,
-    //            Email = account.Email,
-    //            SelectedRole = role,
-    //            Roles = allRoles
-    //        };
-
-    //        var sessionId = Guid.NewGuid().ToString();
-    //        _sessionService.Store(sessionId, sessionPayload, TimeSpan.FromMinutes(5));
-
-    //        Response.Cookies.Append("sessionId", sessionId, new CookieOptions
-    //        {
-    //            HttpOnly = true,
-    //            Secure = true,
-    //            SameSite = SameSiteMode.None,
-    //            Expires = DateTime.UtcNow.AddMinutes(10)
-    //        });
-
-    //        return Redirect(returnUrl);
-    //    }
-    //    catch (RedirectException redirectEx)
-    //    {
-    //        return Redirect(redirectEx.RedirectUrl);
-    //    }
-    //}
-
-
-
-    //[HttpGet("session")]
-    //public IActionResult GetSessionFromCookie()
-    //{
-    //    var sessionId = Request.Cookies["sessionId"];
-    //    if (string.IsNullOrEmpty(sessionId))
-    //        return BadRequest("Session cookie not found.");
-
-    //    var sessionData = _sessionService.Retrieve(sessionId);
-    //    if (sessionData == null)
-    //        return NotFound("Session expired or invalid");
-
-    //    return Ok(sessionData);
-    //}
-
 
     [HttpPost]
     [Route("google-authentication")]
@@ -195,7 +72,40 @@ public class AuthController : ControllerBase
             Roles = allRoles
         });
     }
+    [HttpPost]
+    [Route("switch-role")]
+    [Authorize(Roles ="Principal Investigator, Researcher")]
+    public async Task<IActionResult> SwitchRole(string selectedSwitchRole)
+    {
+        var account = await _accountService.GetOnlineUserInfoAsync();
+        var currentRole = _userContextService.GetCurrentUserRole();
+        var allRoles = await _roleService.GetAllUserRole(account.Id);
 
+        var isAuthorized = await _roleService.UserHasRoleAsync(account.Id, selectedSwitchRole);
+         if (!isAuthorized)
+           return Forbid("Selected role is not assigned to this user.");
+
+        var claims = new List<Claim>
+    {
+        new Claim(ClaimTypes.NameIdentifier, account.Id.ToString()),
+        new Claim("Id", account.Id.ToString()),
+        new Claim(ClaimTypes.Role, selectedSwitchRole ?? string.Empty)
+    };
+
+        var jwtToken = _tokenService.GenerateJwtToken(claims);
+        if (string.IsNullOrEmpty(jwtToken))
+            return BadRequest("There is an error during generate JWT Token!");
+
+        return Ok(new
+        {
+            Token = jwtToken,
+            FullName = account.FullName,
+            AvatarUrl = account.AvatarURL,
+            Email = account.Email,
+            SelectedRole = selectedSwitchRole,
+            Roles = allRoles
+        });
+    }
 
 
     [HttpPost("login")]

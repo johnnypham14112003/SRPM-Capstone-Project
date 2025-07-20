@@ -50,63 +50,6 @@ public class AccountService : IAccountService
         return email.Split('@')[0]; // Gets the portion before '@'
     }
 
-    public async Task<Account> LoginWithGoogleAsync(RQ_GoogleLogin request)
-    {
-        try
-        {
-            if (string.IsNullOrWhiteSpace(request.Email))
-                throw new ArgumentException("Email is required for Google login.");
-
-            string expectedDomain = "@" + _allowedEmailDomain;
-            if (!request.Email.EndsWith(expectedDomain, StringComparison.OrdinalIgnoreCase))
-            {
-                var errorRedirect = _configuration["ErrorRedirectUrl"];
-                throw new RedirectException($"{errorRedirect}?reason=invalid_domain", "Invalid email domain.");
-            }
-
-
-            var account = await _unitOfWork.GetAccountRepository()
-                .GetOneAsync(a => a.Email == request.Email, hasTrackings: false);
-
-            if (account == null)
-            {
-                string randomPassword = GenerateRandomPassword(12);
-                string hashedPassword = HashStringSHA256(randomPassword);
-                string identityCode = ExtractIdentityCode(request.Email);
-
-                account = new Account
-                {
-                    Id = Guid.NewGuid(),
-                    Email = request.Email,
-                    FullName = request.Name,
-                    AvatarURL = request.AvatarUrl,
-                    IdentityCode = identityCode, // Extracted from email
-                    Password = hashedPassword,
-                    Status = "created",
-                    CreateTime = DateTime.Now
-                };
-
-                await _unitOfWork.GetAccountRepository().AddAsync(account);
-                await _unitOfWork.SaveChangesAsync();
-            }
-            if (account.Status.ToLower() == "deleted")
-            {
-                throw new UnauthorizedException("This account has been deleted. Please contact support for assistance.");
-            }
-            account.FullName = request.Name;
-            account.AvatarURL = request.AvatarUrl;
-            await _unitOfWork.GetAccountRepository().UpdateAsync(account);
-            await _unitOfWork.SaveChangesAsync();
-
-            return account;
-        }
-        catch (Exception ex)
-        {
-            Debug.WriteLine($"Exception in LoginWithGoogleAsync: {ex.Message}");
-            Debug.WriteLine(ex.ToString());
-            throw;
-        }
-    }
     public async Task<Account> HandleGoogleAsync(string accessToken)
     {
         var payload = await GetGoogleUserInfoAsync(accessToken)

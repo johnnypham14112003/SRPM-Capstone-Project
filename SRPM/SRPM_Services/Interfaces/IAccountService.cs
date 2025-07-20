@@ -9,8 +9,6 @@ namespace SRPM_Services.Interfaces;
 
 public interface IAccountService
 {
-    Task<Account> LoginWithGoogleAsync(RQ_GoogleLogin request);
-    // ... other account methods
     Task<Account> LoginWithEmailPasswordAsync(string email, string password);
     Task<bool> ForgotPasswordAsync(string email);
     Task<bool> ResetPasswordAsync(RQ_ResetPassword request);
