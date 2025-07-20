@@ -13,7 +13,7 @@ public interface IProjectService
     Task<RS_Project?> UpdateAsync(Guid id, RQ_Project request);
     Task<RS_Project?> ToggleStatusAsync(Guid id);
     Task<bool> DeleteAsync(Guid id);
-    Task<List<RS_ProjectOverview>> GetAllOverviewsAsync();
+    Task<List<RS_ProjectOverview>> GetAllOnlineUserProjectAsync();
     //Task<RS_Project> SubmitProposalAsync(Guid sourceProjectId, RQ_ProposalSubmission payload); 
     //Task<bool> IsUserInProjectAsync(Guid projectId); 
     //Task<List<RS_Project>> GetUserProjectsAsync(); 

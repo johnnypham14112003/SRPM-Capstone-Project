@@ -30,23 +30,57 @@ namespace SRPM_Services.Implements
         }
         public async Task<object?> GetByIdAsync(Guid id)
         {
-            var userId = Guid.Parse(_userContextService.GetCurrentUserId()); // fetch current user's ID
+            var userId = Guid.Parse(_userContextService.GetCurrentUserId());
 
-            var isMember = await _unitOfWork.GetUserRoleRepository()
-                .AnyAsync(ur => ur.AccountId == userId && ur.ProjectId == id);
+            // Get all user roles for the user in this project, with Role included
+            var userRoles = await _unitOfWork.GetUserRoleRepository()
+                .GetListAsync(
+                    us => us.AccountId == userId && us.ProjectId == id,
+                    include: q => q.Include(ur => ur.Role)
+                );
+
+            var isMember = userRoles.Any();
+
+            // Group roles: Leader, Secretary, etc.
+            var groupRoles = userRoles
+                .Where(ur => ur.Role != null && ur.Role.IsGroupRole == true)
+                .Select(ur => ur.Role.Name)
+                .Distinct()
+                .ToList();
+
+            // Non-group roles: Researcher, Principal, etc.
+            var fallbackRoles = userRoles
+                .Where(ur => ur.Role != null && ur.Role.IsGroupRole == false)
+                .Select(ur => ur.Role.Name)
+                .Distinct()
+                .ToList();
+
+            var roleInProject = groupRoles.Any() ? groupRoles : fallbackRoles;
 
             if (!isMember)
             {
                 var projectOverview = await _unitOfWork.GetProjectRepository()
-                .GetByIdAsync(id);
-                return new { ProjectDetail = projectOverview?.Adapt<RS_ProjectOverview>() , isMember};
+                    .GetByIdAsync(id);
+
+                return new
+                {
+                    ProjectDetail = projectOverview?.Adapt<RS_ProjectOverview>(),
+                    isMember,
+                    roleInProject = new List<string>()
+                };
             }
 
             var entity = await _unitOfWork.GetProjectRepository()
                 .GetByIdAsync(id, hasTrackings: false);
 
-            return new { ProjectDetail = entity?.Adapt<RS_Project>(), isMember };
+            return new
+            {
+                ProjectDetail = entity?.Adapt<RS_Project>(),
+                isMember,
+                roleInProject
+            };
         }
+
 
         public async Task<PagingResult<RS_Project>> GetListAsync(RQ_ProjectQuery query)
         {
@@ -227,12 +261,36 @@ namespace SRPM_Services.Implements
             return true;
         }
 
-        public async Task<List<RS_ProjectOverview>> GetAllOverviewsAsync()
+        public async Task<List<RS_ProjectOverview>> GetAllOnlineUserProjectAsync()
         {
-            var projects = await _unitOfWork.GetProjectRepository().GetListAsync(
-                p => p.Genre.ToLower() == "normal" || p.Genre.ToLower() == "propose",
-                hasTrackings: false
-            );
+            var accountId = Guid.Parse(_userContextService.GetCurrentUserId());
+            var currentRoleName = _userContextService.GetCurrentUserRole();
+
+            // Fetch UserRoles with Role included (to access Name)
+            var userRoles = await _unitOfWork.GetUserRoleRepository()
+                .GetListAsync(
+                    ur => ur.AccountId == accountId,
+                    include: q => q.Include(ur => ur.Role)
+                );
+
+            // Filter by matching role name
+            var matchingRoles = userRoles
+                .Where(ur => ur.Role != null && ur.Role.Name == currentRoleName)
+                .ToList();
+
+            var projectIds = matchingRoles
+                .Select(ur => ur.ProjectId)
+                .Distinct()
+                .ToList();
+
+            if (!projectIds.Any())
+                return new List<RS_ProjectOverview>();
+
+            var projects = await _unitOfWork.GetProjectRepository()
+                .GetListAsync(
+                    p => projectIds.Contains(p.Id),
+                    hasTrackings: false
+                );
 
             var overviewList = projects
                 .OrderByDescending(p => p.CreatedAt)

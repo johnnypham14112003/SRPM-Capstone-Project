@@ -145,13 +145,13 @@ public class ProjectController : ControllerBase
     }
 
     // GET: api/project/overview
-    [HttpGet("overview")]
+    [HttpGet("my-project")]
     [Authorize]
-    public async Task<ActionResult<List<RS_ProjectOverview>>> GetOverview()
+    public async Task<ActionResult<List<RS_ProjectOverview>>> GetMyProject()
     {
         try
         {
-            var result = await _service.GetAllOverviewsAsync();
+            var result = await _service.GetAllOnlineUserProjectAsync();
             return result?.Count > 0 ? Ok(result) : NoContent();
         }
         catch (Exception ex)
