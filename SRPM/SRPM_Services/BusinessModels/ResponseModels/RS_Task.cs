@@ -24,6 +24,7 @@ namespace SRPM_Services.BusinessModels.ResponseModels
         public string Status { get; set; } = null!;
         public Guid MilestoneId { get; set; }
         public Guid CreatorId { get; set; }
+        public List<RS_MemberTask> MemberTasks { get; set; } = new List<RS_MemberTask>();
     }
 
 }

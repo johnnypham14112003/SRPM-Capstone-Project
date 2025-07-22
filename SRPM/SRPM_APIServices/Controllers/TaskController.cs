@@ -43,8 +43,20 @@ public class TaskController : ControllerBase
         return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
     }
 
-    // PUT: api/task/{id}
-    [HttpPut("{id}")]
+    [HttpPost("change-status")]
+    public async Task<ActionResult<bool>> ChangeStatus([FromBody] Guid id, string status)
+    {
+        try
+        {
+            var changed = await _service.ChangeStatus(id, status);
+            return changed;
+        } catch (Exception ex) {
+            return BadRequest($"Error changing status: {ex.Message}");
+        }
+    }
+
+        // PUT: api/task/{id}
+        [HttpPut("{id}")]
     public async Task<ActionResult<RS_Task>> Update(Guid id, [FromBody] RQ_Task request)
     {
         var updated = await _service.UpdateAsync(id, request);
@@ -72,4 +84,5 @@ public class TaskController : ControllerBase
             return NotFound($"Task with ID {id} not found.");
         return NoContent();
     }
+
 }

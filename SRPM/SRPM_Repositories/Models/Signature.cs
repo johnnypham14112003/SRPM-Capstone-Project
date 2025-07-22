@@ -5,8 +5,8 @@ namespace SRPM_Repositories.Models;
 public class Signature
 {
     [Key] public Guid Id { get; set; } = Guid.NewGuid();
-
-    public string? URL { get; set; }
+    public string? SignerName { get; set; }
+    public string? SignatureHash { get; set; }
     [Required] public DateTime SignedDate { get; set; } = DateTime.Now;
 
     // Foreign keys

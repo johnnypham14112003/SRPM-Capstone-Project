@@ -53,15 +53,21 @@ public class MemberTaskService : IMemberTaskService
 
     public async Task<RS_MemberTask> CreateAsync(RQ_MemberTask request)
     {
-        var entity = request.Adapt<MemberTask>();
-        entity.Id = Guid.NewGuid();
-        entity.JoinedAt = DateTime.Now;
-        entity.Status = Status.Created.ToString().ToLowerInvariant();
+        try {
+            var entity = request.Adapt<MemberTask>();
+            entity.Id = Guid.NewGuid();
+            entity.JoinedAt = DateTime.Now;
+            entity.Status = Status.Created.ToString().ToLowerInvariant();
 
-        await _unitOfWork.GetMemberTaskRepository().AddAsync(entity);
-        await _unitOfWork.SaveChangesAsync();
+            await _unitOfWork.GetMemberTaskRepository().AddAsync(entity);
+            await _unitOfWork.SaveChangesAsync();
 
-        return entity.Adapt<RS_MemberTask>();
+            return entity.Adapt<RS_MemberTask>();
+        }
+        catch (Exception e)
+        {
+            throw new BadRequestException("Failed to create MemberTask");
+        }
     }
 
     public async Task<RS_MemberTask?> UpdateAsync(Guid id, RQ_MemberTask request)

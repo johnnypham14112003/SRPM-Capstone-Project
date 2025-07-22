@@ -1,4 +1,5 @@
 ﻿using Mapster;
+using Microsoft.EntityFrameworkCore;
 using SRPM_Repositories.Repositories.Interfaces;
 using SRPM_Services.BusinessModels;
 using SRPM_Services.BusinessModels.RequestModels;
@@ -20,7 +21,16 @@ public class TaskService : ITaskService
 
     public async Task<RS_Task?> GetByIdAsync(Guid id)
     {
-        var entity = await _unitOfWork.GetTaskRepository().GetByIdAsync<Guid>(id);
+        var entity = await _unitOfWork.GetTaskRepository().GetOneAsync(t => t.Id == id
+        , include: t =>
+        {
+           t = t.Include(x => x.Milestone)
+            .Include(x => x.Creator)
+            .Include(x => x.MemberTasks);
+            return t;
+            }
+        , hasTrackings: false
+        );
         return entity?.Adapt<RS_Task>();
     }
 
@@ -36,6 +46,13 @@ public class TaskService : ITaskService
             (query.MilestoneId == null || t.MilestoneId == query.MilestoneId) &&
             (query.CreatorId == null || t.CreatorId == query.CreatorId) &&
             (string.IsNullOrWhiteSpace(query.Status) || t.Status == query.Status),
+            include: t =>
+            {
+                t = t.Include(x => x.Milestone)
+                 .Include(x => x.Creator)
+                 .Include(x => x.MemberTasks);
+                return t;
+            },
             hasTrackings: false
         );
 
@@ -109,5 +126,18 @@ public class TaskService : ITaskService
         await repo.DeleteAsync(entity);
         await _unitOfWork.SaveChangesAsync();
         return true;
+    }
+    public async Task<bool> ChangeStatus(Guid id, string status)
+    {
+            var repo = _unitOfWork.GetTaskRepository();
+        var entity = await repo.GetByIdAsync<Guid>(id);
+            if (entity == null) return false;
+            var parsedStatus = status.ToStatus();
+        entity.Status = parsedStatus.ToString().ToLowerInvariant();
+
+        await repo.UpdateAsync(entity);
+        await _unitOfWork.SaveChangesAsync();
+            return true;
+
     }
 }

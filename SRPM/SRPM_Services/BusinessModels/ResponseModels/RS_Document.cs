@@ -5,7 +5,6 @@ namespace SRPM_Services.BusinessModels.ResponseModels;
 public class RS_Document
 {
     public Guid? Id { get; set; }
-
     public string Name { get; set; } = null!;
     [MaxLength(30)] public string Type { get; set; } = null!;//Final E-Doc | Ly lich khoa hoc
     public bool IsTemplate { get; set; } = false;
