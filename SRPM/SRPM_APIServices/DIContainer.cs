@@ -95,6 +95,7 @@ public static class DIContainer
         services.AddScoped<ISessionService, MemorySessionService>();
         services.AddScoped<ITransactionService, TransactionService>();
         services.AddScoped<IFieldService, FieldService>();
+        services.AddScoped<IDashboardService, DashboardService>();
 
         //Extensions Services
         services.AddScoped<IEmailService, EmailService>();
@@ -358,6 +359,18 @@ public static class DIContainer
             .IgnoreNullValues(true);
 
         TypeAdapterConfig<Account, RS_Account>.NewConfig();
+
+        TypeAdapterConfig<UserRole, RS_UserRoleDetail>.NewConfig()
+        .Map(dest => dest.FullName, src => src.Account.FullName)
+        .Map(dest => dest.Email, src => src.Account.Email)
+        .Map(dest => dest.PhoneNumber, src => src.Account.PhoneNumber)
+        .Map(dest => dest.Address, src => src.Account.Address)
+        .Map(dest => dest.CompanyName, src => src.Account.CompanyName)
+        .Map(dest => dest.AvatarURL, src => src.Account.AvatarURL)
+        .Map(dest => dest.Name, src => src.Role.Name)
+        // Optional: Map other fields as needed
+        .IgnoreNullValues(true); // optional setting for cleanliness
+
 
         return services;
     }

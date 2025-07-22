@@ -75,7 +75,7 @@ namespace SRPM_Services.Implements
 
             return new
             {
-                ProjectDetail = entity?.Adapt<RS_Project>(),
+                ProjectDetail = entity?.Adapt<RS_ProjectDetail>(),
                 isMember,
                 roleInProject
             };

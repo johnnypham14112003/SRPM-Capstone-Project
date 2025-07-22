@@ -1,0 +1,69 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace SRPM_Services.BusinessModels.ResponseModels
+{
+    public class RS_ProjectDetail
+    {
+            public Guid Id { get; set; }
+            public string? LogoURL { get; set; }
+            public string? PictureURL { get; set; }
+            public string Code { get; set; } = null!;
+            public string EnglishTitle { get; set; } = null!;
+            public string VietnameseTitle { get; set; } = null!;
+            public string? Abbreviations { get; set; }
+            public int? Duration { get; set; }
+            public DateTime? StartDate { get; set; }
+            public DateTime? EndDate { get; set; }
+            public string? Description { get; set; }
+            public string? RequirementNote { get; set; }
+            public decimal Budget { get; set; }
+            public decimal Progress { get; set; }
+            public int MaximumMember { get; set; }
+            public string Language { get; set; } = null!;
+            public string Category { get; set; } = null!;
+            public string Type { get; set; } = null!;
+            public string Genre { get; set; } = null!;
+            public DateTime CreatedAt { get; set; }
+            public DateTime? UpdatedAt { get; set; }
+            public string Status { get; set; } = null!;
+            public Guid CreatorId { get; set; }
+
+
+            // 🧠 Related Entities
+            public RS_UserRoleDetail? Creator { get; set; }
+            //public RS_ResearchPaper? ResearchPaper { get; set; }
+            public List<RS_UserRoleDetail>? Members { get; set; }
+            public List<RS_Milestone>? Milestones { get; set; }
+            public List<RS_Evaluation>? Evaluations { get; set; }
+            public List<RS_ProjectSimilarity>? ProjectSimilarity { get; set; }
+            public List<RS_MajorBrief>? Majors { get; set; }
+            public List<RS_TagBrief>? ProjectTags { get; set; }
+            public List<RS_Document>? Documents { get; set; }
+            public List<RS_Transaction>? Transactions { get; set; }
+        }
+    public class RS_UserRoleDetail
+    {
+        public Guid Id { get; set; }
+        public string Code { get; set; } = null!;
+        public string? GroupName { get; set; }
+        public bool IsOfficial { get; set; }
+        public DateTime? ExpireDate { get; set; }
+        public DateTime CreatedAt { get; set; }
+        public string Status { get; set; } = "created";
+        public Guid AccountId { get; set; }
+        public string FullName { get; set; }
+        public string Email { get; set; }
+        public string? PhoneNumber { get; set; }
+        public string? Address { get; set; }
+        public string? CompanyName { get; set; }
+        public string? AvatarURL { get; set; }
+        public Guid RoleId { get; set; }
+        public string Name { get; set; }
+        public Guid? ProjectId { get; set; }
+        public Guid? AppraisalCouncilId { get; set; }
+    }
+}

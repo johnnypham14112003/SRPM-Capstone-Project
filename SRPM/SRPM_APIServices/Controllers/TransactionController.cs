@@ -4,6 +4,8 @@ using SRPM_Services.Interfaces;
 
 namespace SRPM_APIServices.Controllers;
 
+[ApiController]
+[Route("api/[controller]")]
 public class TransactionController: Controller
 {
     //=================================[ Declares ]================================
