@@ -10,7 +10,7 @@ namespace SRPM_Services.Extensions.Enumerables
         Submitted,
         Approved,
         InProgress,
-        Done,
+        Completed,
         Deleted
     }
 
