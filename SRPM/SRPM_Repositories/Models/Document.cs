@@ -1,6 +1,7 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
 namespace SRPM_Repositories.Models;
+
 public class Document
 {
     [Key] public Guid Id { get; set; } = Guid.NewGuid();

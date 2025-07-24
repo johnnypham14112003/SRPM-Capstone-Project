@@ -21,82 +21,102 @@ public class DocumentRepository : GenericRepository<Document>, IDocumentReposito
     }
 
     public async Task<(List<Document>? listDocument, int totalFound)> ListPaging
-        (string? keyWord, string? docType, string? status,
-        DateTime? fromDate, DateTime? toDate, bool searchByCreateDate,
-        byte SortBy, int pageIndex, int pageSize)
+        (string? keyWord, string? docType, bool? isTemplate, string? status,
+        DateTime? fromDate, DateTime? toDate,
+        Guid? uploaderId, Guid? editorId, Guid? projectId, Guid? evaluationId, Guid? individualEvaluationId, Guid? transactionId,
+        byte sortBy, int pageIndex, int pageSize)
     {
         var query = _context.Document
             .Include(d => d.Signatures)
             .AsNoTracking()
             .AsQueryable();
 
-        // ===========================[ Apply Search ]===========================
-        //keyword Filter
+        // ===========================[ Apply Filters ]===========================
+        //Filter By Name
         if (!string.IsNullOrWhiteSpace(keyWord))
-            query = query.Where(d => d.Name.ToLower().Contains(keyWord.ToLower()));
+            query = query.Where(d => d.Name.Contains(keyWord, StringComparison.OrdinalIgnoreCase));
 
-        //Type Filter
+        //Filter By Type
         if (!string.IsNullOrWhiteSpace(docType))
-            query = query.Where(d => d.Type.ToLower().Equals(docType.ToLower()));
+            query = query.Where(d => d.Type.Equals(docType, StringComparison.OrdinalIgnoreCase));
+        
+        //Filter By IsTemplate
+        if (isTemplate.HasValue)
+            query = query.Where(d => d.IsTemplate == isTemplate);
 
-        //Status Filter
+        //Filter By Status
         if (!string.IsNullOrWhiteSpace(status))
-            query = query.Where(d => d.Status.ToLower().Equals(status.ToLower()));
+            query = query.Where(d => d.Status.Equals(status, StringComparison.OrdinalIgnoreCase));
 
-        //Date Filter
-        if (searchByCreateDate)
+        //Filter By Time
+        if (fromDate.HasValue)
+            query = query.Where(d => d.UploadAt >= fromDate.Value);
+        if (toDate.HasValue)
+            query = query.Where(d => d.UploadAt <= toDate.Value);
+
+        // Filter by IDs
+        if (uploaderId.HasValue)
+            query = query.Where(d => d.UploaderId == uploaderId.Value);
+
+        if (editorId.HasValue)
+            query = query.Where(d => d.EditorId == editorId.Value);
+
+        if (projectId.HasValue)
+            query = query.Where(d => d.ProjectId == projectId.Value);
+
+        if (evaluationId.HasValue)
+            query = query.Where(d => d.EvaluationId == evaluationId.Value);
+
+        if (individualEvaluationId.HasValue)
+            query = query.Where(d => d.IndividualEvaluationId == individualEvaluationId.Value);
+
+        if (transactionId.HasValue)
+            query = query.Where(d => d.TransactionId == transactionId.Value);
+
+        // ===========================[ Apply Sorting ]===========================
+
+        query = sortBy switch
         {
-            if (fromDate.HasValue)
-                query = query.Where(d => d.UploadAt >= fromDate.Value);
-            if (toDate.HasValue)
-                query = query.Where(d => d.UploadAt <= toDate.Value);
-        }
-        else
-        {
-            if (fromDate.HasValue)
-                query = query.Where(d => d.UpdatedAt >= fromDate.Value);
-            if (toDate.HasValue)
-                query = query.Where(d => d.UpdatedAt <= toDate.Value);
-        }
+            // UpdatedAt 
+            1 => query.OrderByDescending(d => d.UpdatedAt),
+            2 => query.OrderBy(d => d.UpdatedAt),
 
-        // Sort By (Newer come first)(A-Z)
-        switch (SortBy)
-        {
-            default://Name
-                query = query.OrderBy(d => d.Name);
-                break;
-            case 1://UpdateTime
-                query = query.OrderByDescending(d => d.UpdatedAt);
-                break;
-            case 2://CreateTime
-                query = query.OrderByDescending(d => d.UploadAt);
-                break;
-            case 3://UploaderId
-                query = query.OrderBy(d => d.UploaderId);
-                break;
-            case 4://ProjectId
-                query = query.OrderBy(d => d.ProjectId);
-                break;
-            case 5://EvaluationId
-                query = query.OrderBy(d => d.EvaluationId);
-                break;
-            case 6://IndividualEvaluationId
-                query = query.OrderBy(d => d.IndividualEvaluationId);
-                break;
-            case 7://TransactionId
-                query = query.OrderBy(d => d.TransactionId);
-                break;
-        }
+            // UploadAt
+            3 => query.OrderByDescending(d => d.UploadAt),
+            4 => query.OrderByDescending(d => d.UpdatedAt),
 
-        // Sum notification of a user
-        int sumCouncil = await query.CountAsync();
+            // UploaderId
+            5 => query.OrderBy(d => d.UploaderId),
 
-        // ===========================[ Apply paging ]===========================
+            // ProjectId
+            6 => query.OrderBy(d => d.ProjectId),
+
+            // EvaluationId
+            7 => query.OrderBy(d => d.EvaluationId),
+
+            // IndividualEvaluationId
+            8 => query.OrderBy(d => d.IndividualEvaluationId),
+
+            // TransactionId
+            9 => query.OrderBy(d => d.TransactionId),
+
+            // EditorId
+            10 => query.OrderBy(d => d.EditorId),
+
+            // Name
+            11 => query.OrderByDescending(d => d.Name),
+            _ => query.OrderBy(d => d.Name),
+        };
+
+        // ===========================[ Apply Paging ]===========================
+
+        int totalFound = await query.CountAsync();
+
         var pagedList = await query
             .Skip((pageIndex - 1) * pageSize)
             .Take(pageSize)
             .ToListAsync();
 
-        return (pagedList, sumCouncil);
+        return (pagedList, totalFound);
     }
 }
