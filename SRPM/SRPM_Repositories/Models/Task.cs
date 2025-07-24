@@ -4,15 +4,17 @@ namespace SRPM_Repositories.Models;
 
 public class Task
 {
-    [Key] public Guid Id { get; set; }
+    [Key] public Guid Id { get; set; } = Guid.NewGuid();
 
     [Required, MaxLength(30)] public string Code { get; set; } = null!;
     [Required] public string Name { get; set; } = null!;
     public string? Description { get; set; }
+    public string? Objective { get; set; }
     public DateTime? StartDate { get; set; }
     public DateTime? EndDate { get; set; }
     public DateTime? DeliveryDate { get; set; }
     [MaxLength(30)] public string? Priority { get; set; }
+    public decimal Cost { get; set; } = 0m;
     [Required] public decimal Progress { get; set; } = 0m;//100.00
     [Required] public int Overdue { get; set; } = 0;
     public string? MeetingUrl { get; set; }

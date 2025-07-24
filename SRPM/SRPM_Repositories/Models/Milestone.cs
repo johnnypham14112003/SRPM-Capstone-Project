@@ -4,7 +4,7 @@ namespace SRPM_Repositories.Models;
 
 public class Milestone
 {
-    [Key] public Guid Id { get; set; }
+    [Key] public Guid Id { get; set; } = Guid.NewGuid();
 
     [MaxLength(30)] public string Code { get; set; } = null!;
     [MaxLength(255)] public string Title { get; set; } = null!;
