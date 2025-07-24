@@ -26,6 +26,13 @@ public class DocumentController : Controller
             : BadRequest("Create Failed!");
     }
 
+    [HttpGet("science-cv")]
+    public async Task<IActionResult> GetScienceCV([FromQuery] string? email)
+    {
+        var result = await _documentService.ViewProfileCV(email);
+        return Ok(result);
+    }
+
     [HttpGet("{id}")]
     public async Task<IActionResult> ViewDetail([FromRoute] Guid id)
     {

@@ -26,7 +26,7 @@ public class IndividualEvaluationRepository : GenericRepository<IndividualEvalua
         // ===========================[ Apply Search ]===========================
         // Keyword Filter
         if (!string.IsNullOrWhiteSpace(keyword))
-            query = query.Where(ie => ie.Name.Contains(keyword,StringComparison.OrdinalIgnoreCase));
+            query = query.Where(ie => ie.Name.Contains(keyword, StringComparison.OrdinalIgnoreCase));
 
         // TotalRate Filter
         if (totalRate.HasValue)
@@ -55,6 +55,12 @@ public class IndividualEvaluationRepository : GenericRepository<IndividualEvalua
         // ReviewerId Filter
         if (reviewerId.HasValue)
             query = query.Where(ie => ie.ReviewerId == reviewerId);
+        
+        //Filter By Time
+        if (fromDate.HasValue)
+            query = query.Where(ie => ie.SubmittedAt >= fromDate.Value);
+        if (toDate.HasValue)
+            query = query.Where(ie => ie.SubmittedAt <= toDate.Value);
 
         // ===========================[ Apply Sorting ]===========================
         query = sortBy switch

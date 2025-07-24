@@ -1,4 +1,5 @@
 ﻿using Mapster;
+using Microsoft.AspNetCore.Http.HttpResults;
 using SRPM_Repositories.Models;
 using SRPM_Repositories.Repositories.Interfaces;
 using SRPM_Services.BusinessModels;
@@ -13,9 +14,11 @@ namespace SRPM_Services.Implements;
 public class DocumentService : IDocumentService
 {
     private readonly IUnitOfWork _unitOfWork;
-    public DocumentService(IUnitOfWork unitOfWork)
+    private readonly IUserContextService _userContextService;
+    public DocumentService(IUnitOfWork unitOfWork, IUserContextService userContextService)
     {
         _unitOfWork = unitOfWork;
+        _userContextService = userContextService;
     }
 
     //=============================================================================
@@ -39,8 +42,10 @@ public class DocumentService : IDocumentService
         queryInput.PageSize = queryInput.PageSize < 1 ? 1 : queryInput.PageSize;
 
         var dataResult = await _unitOfWork.GetDocumentRepository().ListPaging
-            (queryInput.KeyWord, queryInput.Type, queryInput.Status,
-            queryInput.FromDate, queryInput.ToDate, queryInput.SearchByUploadDate,
+            (queryInput.KeyWord, queryInput.Type, queryInput.IsTemplate, queryInput.Status,
+            queryInput.FromDate, queryInput.ToDate,
+            queryInput.UploaderId, queryInput.EditorId, queryInput.ProjectId,
+            queryInput.EvaluationId, queryInput.IndividualEvaluationId, queryInput.TransactionId,
             queryInput.SortBy, queryInput.PageIndex, queryInput.PageSize);
 
         // Checking Result
@@ -56,13 +61,60 @@ public class DocumentService : IDocumentService
         };
     }
 
+    public async Task<RS_Document?> ViewProfileCV(string? email)
+    {//default get by current session
+        UserRole? defaultUserRole = null;
+        Guid accId = Guid.Empty;
+        Guid.TryParse(_userContextService.GetCurrentUserId(), out accId);
+
+        if (accId == Guid.Empty && string.IsNullOrWhiteSpace(email))
+            throw new BadRequestException("Unknown User Parameter To Find Document!");
+
+        if (string.IsNullOrWhiteSpace(email))
+        {
+            var existAccount = await _unitOfWork.GetAccountRepository().GetOneAsync(a => a.Id == accId, null, false) ??
+            throw new NotFoundException("Your current session account Id is not exist in database! Can't find your cv");
+
+            defaultUserRole = await _unitOfWork.GetUserRoleRepository().GetOneAsync(ur =>
+                ur.AccountId == accId &&
+                ur.ProjectId == null &&
+                ur.AppraisalCouncilId == null &&
+                ur.ExpireDate.HasValue &&
+                ur.ExpireDate > DateTime.Now, null, false) ??
+            throw new NotFoundException("Not found your base role Id or it is expired in system!");
+        }
+        else
+        {//search by email
+            var existAccount = await _unitOfWork.GetAccountRepository()
+                .GetOneAsync(a => a.Email.Equals(email, StringComparison.OrdinalIgnoreCase), null, false) ??
+                    throw new NotFoundException("Not found this user account Id base on email!");
+
+            defaultUserRole = await _unitOfWork.GetUserRoleRepository().GetOneAsync(ur =>
+                ur.AccountId == existAccount.Id &&
+                ur.ProjectId == null &&
+                ur.AppraisalCouncilId == null &&
+                ur.ExpireDate.HasValue &&
+                ur.ExpireDate > DateTime.Now, null, false) ??
+            throw new NotFoundException("Not found this email user base role Id or it is expired in system!");
+        }
+
+        var existDocument = await _unitOfWork.GetDocumentRepository().GetOneAsync(d =>
+            (d.UploaderId == defaultUserRole!.Id || d.EditorId == defaultUserRole!.Id) &&
+            d.Type.Equals("ScienceCV", StringComparison.OrdinalIgnoreCase) &&
+            d.IsTemplate == false &&
+            !d.Status.Equals("deleted", StringComparison.OrdinalIgnoreCase), null, false)
+            ?? throw new NotFoundException("Not found the Cv Document of that UserRole!");
+
+        return existDocument.Adapt<RS_Document>();
+    }
+
     public async Task<RS_Document?> ViewDetailDocument(Guid id)
     {
         if (id == Guid.Empty) throw new BadRequestException("Cannot view a null Document Id!");
-        var existCouncil = await _unitOfWork.GetDocumentRepository().GetFullDetailDocument(id)
+        var existDocument = await _unitOfWork.GetDocumentRepository().GetFullDetailDocument(id)
             ?? throw new NotFoundException("Not found this Document Id!");
 
-        return existCouncil.Adapt<RS_Document>();
+        return existDocument.Adapt<RS_Document>();
     }
 
     public async Task<bool> UpdateDocumentInfo(RQ_Document newDocument)

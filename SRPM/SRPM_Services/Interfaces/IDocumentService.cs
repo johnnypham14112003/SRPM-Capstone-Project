@@ -9,6 +9,7 @@ public interface IDocumentService
 {
     Task<(bool success, Guid DocumentId)> NewDocument(RQ_Document doc);
     Task<PagingResult<RS_Document>?> ListDocument(Q_Document queryInput);
+    Task<RS_Document?> ViewProfileCV(string? email);
     Task<RS_Document?> ViewDetailDocument(Guid id);
     Task<bool> UpdateDocumentInfo(RQ_Document newDocument);
     Task<bool> DeleteDocument(Guid id);
