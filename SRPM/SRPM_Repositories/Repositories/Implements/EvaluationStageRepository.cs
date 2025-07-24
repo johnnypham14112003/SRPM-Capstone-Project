@@ -59,7 +59,7 @@ public class EvaluationStageRepository : GenericRepository<EvaluationStage>, IEv
 
         // Status Filter
         if (!string.IsNullOrWhiteSpace(status))
-            query = query.Where(es => es.Status.Equals(status, StringComparison.OrdinalIgnoreCase));
+            query = query.Where(es => es.Status.ToLower().Equals(status.ToLower()));
 
         // EvaluationId Filter
         if (evaluationId.HasValue)

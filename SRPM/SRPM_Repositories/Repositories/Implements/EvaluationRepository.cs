@@ -56,15 +56,15 @@ public class EvaluationRepository : GenericRepository<Evaluation>, IEvaluationRe
 
         //Phrase Filter
         if (!string.IsNullOrWhiteSpace(evaPhrase))
-            query = query.Where(e => e.Phrase.Equals(evaPhrase, StringComparison.OrdinalIgnoreCase));
+            query = query.Where(e => e.Phrase.ToLower().Equals(evaPhrase.ToLower()));
 
         //Type Filter
         if (!string.IsNullOrWhiteSpace(evaType))
-            query = query.Where(e => e.Type.Equals(evaType, StringComparison.OrdinalIgnoreCase));
+            query = query.Where(e => e.Type.ToLower().Equals(evaType.ToLower()));
 
         //Status Filter
         if (!string.IsNullOrWhiteSpace(status))
-            query = query.Where(e => e.Status.Equals(status, StringComparison.OrdinalIgnoreCase));
+            query = query.Where(e => e.Status.ToLower().Equals(status.ToLower()));
 
         // Date Range Filter
         if (fromDate.HasValue)

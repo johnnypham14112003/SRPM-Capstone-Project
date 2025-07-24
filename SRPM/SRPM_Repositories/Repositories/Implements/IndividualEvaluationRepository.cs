@@ -26,7 +26,7 @@ public class IndividualEvaluationRepository : GenericRepository<IndividualEvalua
         // ===========================[ Apply Search ]===========================
         // Keyword Filter
         if (!string.IsNullOrWhiteSpace(keyword))
-            query = query.Where(ie => ie.Name.Contains(keyword, StringComparison.OrdinalIgnoreCase));
+            query = query.Where(ie => ie.Name.ToLower().Contains(keyword.ToLower()));
 
         // TotalRate Filter
         if (totalRate.HasValue)
@@ -46,7 +46,7 @@ public class IndividualEvaluationRepository : GenericRepository<IndividualEvalua
 
         // Status Filter
         if (!string.IsNullOrWhiteSpace(status))
-            query = query.Where(ie => ie.Status.Equals(status, StringComparison.OrdinalIgnoreCase));
+            query = query.Where(ie => ie.Status.ToLower().Equals(status.ToLower()));
 
         // EvaluationStageId Filter
         if (evaluationStageId.HasValue)

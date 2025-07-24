@@ -86,7 +86,7 @@ public class DocumentService : IDocumentService
         else
         {//search by email
             var existAccount = await _unitOfWork.GetAccountRepository()
-                .GetOneAsync(a => a.Email.Equals(email, StringComparison.OrdinalIgnoreCase), null, false) ??
+                .GetOneAsync(a => a.Email.ToLower().Equals(email.ToLower()), null, false) ??
                     throw new NotFoundException("Not found this user account Id base on email!");
 
             defaultUserRole = await _unitOfWork.GetUserRoleRepository().GetOneAsync(ur =>
@@ -100,9 +100,9 @@ public class DocumentService : IDocumentService
 
         var existDocument = await _unitOfWork.GetDocumentRepository().GetOneAsync(d =>
             (d.UploaderId == defaultUserRole!.Id || d.EditorId == defaultUserRole!.Id) &&
-            d.Type.Equals("ScienceCV", StringComparison.OrdinalIgnoreCase) &&
+            d.Type.ToLower().Equals("ScienceCV".ToLower()) &&
             d.IsTemplate == false &&
-            !d.Status.Equals("deleted", StringComparison.OrdinalIgnoreCase), null, false)
+            !d.Status.ToLower().Equals("deleted".ToLower()), null, false)
             ?? throw new NotFoundException("Not found the Cv Document of that UserRole!");
 
         return existDocument.Adapt<RS_Document>();

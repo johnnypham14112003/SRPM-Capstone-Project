@@ -34,11 +34,11 @@ public class DocumentRepository : GenericRepository<Document>, IDocumentReposito
         // ===========================[ Apply Filters ]===========================
         //Filter By Name
         if (!string.IsNullOrWhiteSpace(keyWord))
-            query = query.Where(d => d.Name.Contains(keyWord, StringComparison.OrdinalIgnoreCase));
+            query = query.Where(d => d.Name.ToLower().Contains(keyWord.ToLower()));
 
         //Filter By Type
         if (!string.IsNullOrWhiteSpace(docType))
-            query = query.Where(d => d.Type.Equals(docType, StringComparison.OrdinalIgnoreCase));
+            query = query.Where(d => d.Type.ToLower().Equals(docType.ToLower()));
         
         //Filter By IsTemplate
         if (isTemplate.HasValue)
@@ -46,7 +46,7 @@ public class DocumentRepository : GenericRepository<Document>, IDocumentReposito
 
         //Filter By Status
         if (!string.IsNullOrWhiteSpace(status))
-            query = query.Where(d => d.Status.Equals(status, StringComparison.OrdinalIgnoreCase));
+            query = query.Where(d => d.Status.ToLower().Equals(status.ToLower()));
 
         //Filter By Time
         if (fromDate.HasValue)
