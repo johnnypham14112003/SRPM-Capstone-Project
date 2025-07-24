@@ -249,18 +249,22 @@ public static class DIContainer
 
         TypeAdapterConfig<Project, RS_Project>.NewConfig()
             .Map(dest => dest.Majors, src =>
-                src.ProjectMajors.Select(pm => new RS_MajorBrief
-                {
-                    Id = pm.Major.Id,
-                    Name = pm.Major.Name,
-                    Field = new RS_FieldBrief
-                    {
-                        Id = pm.Major.Field.Id,
-                        Name = pm.Major.Field.Name
-                    }
-                }).ToList()
-            );
-
+                (src.ProjectMajors != null && src.ProjectMajors.Any())
+                    ? src.ProjectMajors
+                        .Where(pm => pm.Major != null && pm.Major.Field != null)
+                        .Select(pm => new RS_MajorBrief
+                        {
+                            Id = pm.Major.Id,
+                            Name = pm.Major.Name,
+                            Field = new RS_FieldBrief
+                            {
+                                Id = pm.Major.Field.Id,
+                                Name = pm.Major.Field.Name
+                            }
+                        }).ToList()
+                    : new List<RS_MajorBrief>()
+            )
+            .IgnoreNullValues(true);
 
         TypeAdapterConfig<RQ_ProjectMajor, ProjectMajor>.NewConfig()
             .Ignore(dest => dest.Project)
