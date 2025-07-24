@@ -8,7 +8,7 @@ namespace SRPM_Services.BusinessModels.RequestModels
 {
     public class RQ_ProjectTag
     {
-        public string Name { get; set; } = null!;
+        public List<string> Names { get; set; } = new();
         public Guid ProjectId { get; set; }
     }
 

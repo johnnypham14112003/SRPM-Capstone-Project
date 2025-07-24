@@ -29,17 +29,22 @@ public class ProjectTagService : IProjectTagService
         return list.Adapt<List<RS_ProjectTag>>();
     }
 
-    public async Task<RS_ProjectTag> CreateAsync(RQ_ProjectTag request)
+    public async Task<List<RS_ProjectTag>> CreateAsync(RQ_ProjectTag request)
     {
-        var entity = request.Adapt<ProjectTag>();
-        entity.Id = Guid.NewGuid();
+        var entities = request.Names
+            .Where(name => !string.IsNullOrWhiteSpace(name))
+            .Select(name => new ProjectTag
+            {
+                Id = Guid.NewGuid(),
+                Name = name,
+                ProjectId = request.ProjectId
+            }).ToList();
 
-        await _unitOfWork.GetProjectTagRepository().AddAsync(entity);
+        await _unitOfWork.GetProjectTagRepository().AddRangeAsync(entities);
         await _unitOfWork.SaveChangesAsync();
 
-        return entity.Adapt<RS_ProjectTag>();
+        return entities.Adapt<List<RS_ProjectTag>>();
     }
-
     public async Task<RS_ProjectTag?> UpdateAsync(Guid id, RQ_ProjectTag request)
     {
         var repo = _unitOfWork.GetProjectTagRepository();

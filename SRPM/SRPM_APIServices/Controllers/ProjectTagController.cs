@@ -34,14 +34,20 @@ public class ProjectTagController : ControllerBase
         return Ok(tags);
     }
 
-    // POST: api/projecttag
     [HttpPost]
-    public async Task<ActionResult<RS_ProjectTag>> Create(RQ_ProjectTag request)
+    public async Task<IActionResult> Create(RQ_ProjectTag request)
     {
-        var created = await _service.CreateAsync(request);
-        return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
+        try
+        {
+            var createdTags = await _service.CreateAsync(request);
+            return Ok(createdTags);
+        }
+        catch (Exception ex)
+        {
+            // Optionally log the error here if you have a logger
+            return BadRequest(new { message = ex.Message });
+        }
     }
-
     // PUT: api/projecttag/{id}
     [HttpPut("{id}")]
     public async Task<ActionResult<RS_ProjectTag>> Update(Guid id, RQ_ProjectTag request)

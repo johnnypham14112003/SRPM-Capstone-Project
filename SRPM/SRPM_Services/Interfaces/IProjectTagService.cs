@@ -7,7 +7,7 @@ public interface IProjectTagService
 {
     Task<RS_ProjectTag?> GetByIdAsync(Guid id);
     Task<List<RS_ProjectTag>> GetByProjectIdAsync(Guid projectId);
-    Task<RS_ProjectTag> CreateAsync(RQ_ProjectTag request);
+    Task<List<RS_ProjectTag>> CreateAsync(RQ_ProjectTag request);
     Task<RS_ProjectTag?> UpdateAsync(Guid id, RQ_ProjectTag request);
     Task<bool> DeleteAsync(Guid id);
 }
