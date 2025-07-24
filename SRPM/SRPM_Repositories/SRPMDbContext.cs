@@ -565,6 +565,7 @@ public class SRPMDbContext : DbContext
         {
             //Config Specific ColumnType
             tas.Property(t => t.Progress).HasColumnType("DECIMAL(5,2)");
+            tas.Property(t => t.Cost).HasColumnType("MONEY");
 
             tas.HasOne(t => t.Milestone)
             .WithMany(m => m.Tasks)
