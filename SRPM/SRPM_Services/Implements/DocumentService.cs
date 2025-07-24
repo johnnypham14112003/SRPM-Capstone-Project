@@ -19,11 +19,6 @@ public class DocumentService : IDocumentService
     }
 
     //=============================================================================
-    public async Task<Dictionary<string, double>?> CheckPlagiarism(string inputText, IEnumerable<string> inputSource)
-    {
-        return null;
-    }
-
     public async Task<(bool success, Guid DocumentId)> NewDocument(RQ_Document doc)
     {
         //Check Null Data

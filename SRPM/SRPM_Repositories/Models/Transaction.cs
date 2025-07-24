@@ -31,7 +31,7 @@ public class Transaction
 
     // Foreign keys
     [Required] public Guid RequestPersonId { get; set; }
-    [Required] public Guid? HandlePersonId { get; set; }
+    public Guid? HandlePersonId { get; set; }
 
     public Guid? ProjectId { get; set; }
     public Guid? EvaluationStageId { get; set; }
