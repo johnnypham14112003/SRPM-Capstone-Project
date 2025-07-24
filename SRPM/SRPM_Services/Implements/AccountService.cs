@@ -360,6 +360,39 @@ public class AccountService : IAccountService
             DataList = paged.Adapt<List<RS_Account>>()
         };
     }
+    public async Task<List<object>> SearchByNameOrEmailAsync(string? input)
+    {
+        var keyword = input?.Trim();
+
+        List<Account> results;
+
+        if (string.IsNullOrWhiteSpace(keyword))
+        {
+            // Return all accounts
+            results = await _unitOfWork.GetAccountRepository().GetListAsync(p => true, hasTrackings: false);
+        }
+        else
+        {
+            // Search by name or email
+            results = await _unitOfWork.GetAccountRepository().GetListAsync(
+                a => a.FullName.Contains(keyword) || a.Email.Contains(keyword),
+                hasTrackings: false
+            );
+        }
+
+        var projected = results
+            .Select(a => new
+            {
+                a.Id,
+                a.FullName,
+                a.Email,
+                a.AvatarURL
+            })
+            .Cast<object>()
+            .ToList();
+
+        return projected;
+    }
 
 
     public async Task<RS_Account> CreateAsync(RQ_Account request)

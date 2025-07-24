@@ -6,6 +6,7 @@ using SRPM_Services.BusinessModels.ResponseModels;
 using SRPM_Services.BusinessModels;
 using SRPM_Services.Interfaces;
 using SRPM_Services.BusinessModels.Others;
+using SRPM_Services.Implements;
 
 namespace SRPM_APIServices.Controllers;
 
@@ -39,13 +40,23 @@ public class AccountController : ControllerBase
         return Ok(result);
     }
 
-    // POST: api/account
-    [HttpPost]
-    public async Task<ActionResult<RS_Account>> Create([FromBody] RQ_Account request)
+
+
+    // GET: api/account/search?input=John
+    [HttpGet("search")]
+    public async Task<IActionResult> SearchByInput([FromQuery] string? input)
     {
-        var created = await _service.CreateAsync(request);
-        return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
+        try
+        {
+            var results = await _service.SearchByNameOrEmailAsync(input);
+            return Ok(results);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = "Search failed", details = ex.Message });
+        }
     }
+
 
     // PUT: api/account/{id}
     [HttpPut("{id}")]
