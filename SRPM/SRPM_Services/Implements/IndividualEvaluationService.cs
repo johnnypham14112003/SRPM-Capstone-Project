@@ -6,9 +6,8 @@ using SRPM_Services.BusinessModels;
 using SRPM_Services.BusinessModels.RequestModels;
 using SRPM_Services.BusinessModels.RequestModels.Query;
 using SRPM_Services.BusinessModels.ResponseModels;
-using SRPM_Services.Extensions.BackgroundService;
 using SRPM_Services.Extensions.Exceptions;
-using SRPM_Services.Extensions.OpenAI;
+
 using SRPM_Services.Interfaces;
 
 namespace SRPM_Services.Implements;
@@ -16,14 +15,10 @@ namespace SRPM_Services.Implements;
 public class IndividualEvaluationService : IIndividualEvaluationService
 {
     private readonly IUnitOfWork _unitOfWork;
-    private readonly IOpenAIService _openAIService;
-    private readonly ITaskQueueHandler _taskQueueHandler;
 
-    public IndividualEvaluationService(IUnitOfWork unitOfWork, IOpenAIService openAIService, ITaskQueueHandler taskQueueHandler)
+    public IndividualEvaluationService(IUnitOfWork unitOfWork)
     {
         _unitOfWork = unitOfWork;
-        _openAIService = openAIService;
-        _taskQueueHandler = taskQueueHandler;
     }
 
     //=============================================================================
@@ -127,42 +122,5 @@ public class IndividualEvaluationService : IIndividualEvaluationService
         await _unitOfWork.GetIndividualEvaluationRepository().DeleteAsync(existIndividualEvaluation);
         //existEvaluation.Status = "deleted";
         return await _unitOfWork.SaveChangesAsync();
-    }
-
-    //=============================================================================================
-    private async Task<(List<RS_ProjectSimilarityResult>? listSimilarity, string summaryEvaluation, string bgTaskId)>
-        AIReviewAndPlagiarism(Guid evaluationStageId, RQ_ProjectContentForAI projectSummary)
-    {
-        if (string.IsNullOrWhiteSpace(projectSummary.Description)) throw new BadRequestException("Require Project Description!");
-
-        List<RS_ProjectSimilarityResult>? listSimilarity = [];
-        float[]? vectorDescription;
-        string summaryEvaluation = "";
-
-        string bgTaskId = _taskQueueHandler.EnqueueTracked(async cancelToken =>
-        {
-            //Query encoded completed Project
-            var projectEncoded = await _unitOfWork.GetProjectRepository().GetListAdvanceAsync(
-                p => p.Status.Equals("completed", StringComparison.OrdinalIgnoreCase) && !string.IsNullOrWhiteSpace(p.EncodedDescription),
-                p => new { p.Id, p.EnglishTitle, p.Description, p.EncodedDescription });
-
-            //Query all completed Project if 'projectEncoded' is null
-            List<Project>? databaseSource = projectEncoded is null ?
-            await _unitOfWork.GetProjectRepository().GetListAsync(p => p.Status.Equals("completed", StringComparison.OrdinalIgnoreCase))
-                : projectEncoded.Adapt<List<Project>>();
-
-            //Final Source
-            //syntheticSource = projectSource + online source
-            var syntheticSource = databaseSource.Adapt<List<RS_ProjectSimilarityResult>>();
-
-            vectorDescription = await _openAIService.EmbedTextAsync(projectSummary.Description, cancelToken);
-
-            summaryEvaluation = await _openAIService.ReviewProjectAsync(projectSummary, cancelToken);
-
-            //Then compare
-            listSimilarity = await _openAIService.CompareWithSourceAsync(vectorDescription, syntheticSource, cancelToken);
-        });
-
-        return (listSimilarity, summaryEvaluation, bgTaskId);
     }
 }
