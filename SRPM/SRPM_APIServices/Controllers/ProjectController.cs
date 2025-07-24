@@ -78,7 +78,7 @@ public class ProjectController : ControllerBase
         try
         {
             var created = await _service.CreateAsync(request);
-            return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
+            return CreatedAtAction(nameof(GetById), new { id = created.Id }, created.Id);
         }
         catch (UnauthorizedAccessException ex)
         {
