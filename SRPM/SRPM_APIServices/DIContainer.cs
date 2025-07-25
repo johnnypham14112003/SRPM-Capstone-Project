@@ -247,6 +247,18 @@ public static class DIContainer
             .Ignore(dest => dest.Transactions)
             .IgnoreNullValues(true);
 
+        TypeAdapterConfig<Project, Project>.NewConfig()
+            .Ignore(dest => dest.Creator)
+            .Ignore(dest => dest.ResearchPaper)
+            .Ignore(dest => dest.Members)
+            .Ignore(dest => dest.Milestones)
+            .Ignore(dest => dest.Evaluations)
+            .Ignore(dest => dest.ProjectsSimilarity)
+            .Ignore(dest => dest.ProjectMajors)
+            .Ignore(dest => dest.ProjectTags)
+            .Ignore(dest => dest.Documents)
+            .Ignore(dest => dest.Transactions);
+
         TypeAdapterConfig<Project, RS_Project>.NewConfig()
             .Map(dest => dest.Majors, src =>
                 (src.ProjectMajors != null && src.ProjectMajors.Any())
