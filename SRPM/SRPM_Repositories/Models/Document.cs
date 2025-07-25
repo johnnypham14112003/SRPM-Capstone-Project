@@ -24,7 +24,7 @@ public class Document
 
     // Navigation properties
     public virtual UserRole Uploader { get; set; } = null!;
-    public virtual UserRole? Editor { get; set; } = null!;
+    public virtual UserRole? Editor { get; set; }
     public virtual Project? Project { get; set; }
     public virtual Evaluation? Evaluation { get; set; }
     public virtual IndividualEvaluation? IndividualEvaluation { get; set; }

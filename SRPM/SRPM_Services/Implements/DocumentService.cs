@@ -8,6 +8,7 @@ using SRPM_Services.BusinessModels.RequestModels.Query;
 using SRPM_Services.BusinessModels.ResponseModels;
 using SRPM_Services.Extensions.Exceptions;
 using SRPM_Services.Interfaces;
+using System.Text;
 
 namespace SRPM_Services.Implements;
 
@@ -29,7 +30,13 @@ public class DocumentService : IDocumentService
         .Any(string.IsNullOrWhiteSpace);
         if (hasInvalidFields) throw new BadRequestException("Document Name or Type or Content cannot be empty!");
 
+        //default get by current session || use id on parameter
+        Guid userRoleId = doc.UploaderId is null ? userRoleId = await GetCurrentMainUserRoleId() : Guid.Empty;
+        if (userRoleId == Guid.Empty)
+            throw new BadRequestException("Unknown Who Is Uploading This Document!");
+
         Document documentDTO = doc.Adapt<Document>();
+        documentDTO.UploaderId = userRoleId;
         await _unitOfWork.GetDocumentRepository().AddAsync(documentDTO);
         var resultSave = await _unitOfWork.GetDocumentRepository().SaveChangeAsync();
         return (resultSave, documentDTO.Id);
@@ -62,7 +69,7 @@ public class DocumentService : IDocumentService
     }
 
     public async Task<RS_Document?> ViewProfileCV(string? email)
-    {//default get by current session
+    {
         UserRole? defaultUserRole = null;
         Guid accId = Guid.Empty;
         Guid.TryParse(_userContextService.GetCurrentUserId(), out accId);
@@ -71,7 +78,7 @@ public class DocumentService : IDocumentService
             throw new BadRequestException("Unknown User Parameter To Find Document!");
 
         if (string.IsNullOrWhiteSpace(email))
-        {
+        {//default get by current session
             var existAccount = await _unitOfWork.GetAccountRepository().GetOneAsync(a => a.Id == accId, null, false) ??
             throw new NotFoundException("Your current session account Id is not exist in database! Can't find your cv");
 
@@ -122,8 +129,22 @@ public class DocumentService : IDocumentService
         var existDocument = await _unitOfWork.GetDocumentRepository().GetOneAsync(d => d.Id == newDocument.Id)
             ?? throw new NotFoundException("Not found any Document match this Id!");
 
+        //Get Current UserRoleId if EditorId is null
+        Guid userRoleId = newDocument.EditorId is null ? userRoleId = await GetCurrentMainUserRoleId() : Guid.Empty;
+        if (userRoleId == Guid.Empty)
+            throw new BadRequestException("Unknown Who Is Editing This Document!");
+
         //Transfer new Data to old Data
-        newDocument.Adapt(existDocument);
+        var docDTO = existDocument.Adapt<RQ_Document>();//Clone existDoc
+        newDocument.Adapt(existDocument);//Update tracked doc
+
+        //Reload UploaderId, time to prevent update them accidentally
+        existDocument.UploaderId = (Guid)docDTO.UploaderId;
+        existDocument.UploadAt = docDTO.UploadAt;
+
+        //Assign current interacting userRoleId as EditorId when update
+        if (existDocument.EditorId is null)
+            existDocument.EditorId = userRoleId;
         return await _unitOfWork.GetDocumentRepository().SaveChangeAsync();
     }
 
@@ -138,5 +159,23 @@ public class DocumentService : IDocumentService
 
         existDocument.Status = "deleted";
         return await _unitOfWork.GetDocumentRepository().SaveChangeAsync();
+    }
+
+    private async Task<Guid> GetCurrentMainUserRoleId()
+    {
+        Guid.TryParse(_userContextService.GetCurrentUserId(), out Guid accId);
+
+        var existAccount = await _unitOfWork.GetAccountRepository().GetOneAsync(a => a.Id == accId, null, false) ??
+            throw new NotFoundException("Your current session account Id is not exist in database! Can't find your cv");
+
+        var defaultUserRole = await _unitOfWork.GetUserRoleRepository().GetOneAsync(ur =>
+            ur.AccountId == accId &&
+            ur.ProjectId == null &&
+            ur.AppraisalCouncilId == null &&
+            ur.ExpireDate.HasValue &&
+            ur.ExpireDate > DateTime.Now, null, false) ??
+        throw new NotFoundException("Not found your base role Id or it is expired in system!");
+
+        return defaultUserRole.Id;
     }
 }

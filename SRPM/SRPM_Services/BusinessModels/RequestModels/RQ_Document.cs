@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using SRPM_Repositories.Models;
+using System.ComponentModel.DataAnnotations;
 
 namespace SRPM_Services.BusinessModels.RequestModels;
 
@@ -15,7 +16,8 @@ public class RQ_Document
     [MaxLength(30)] public string Status { get; set; } = "created";
 
     // Foreign keys
-    public Guid UploaderId { get; set; }
+    public Guid? UploaderId { get; set; }
+    public Guid? EditorId { get; set; }
     public Guid? ProjectId { get; set; }
     public Guid? EvaluationId { get; set; }
     public Guid? IndividualEvaluationId { get; set; }
