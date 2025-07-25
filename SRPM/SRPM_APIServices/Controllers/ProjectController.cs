@@ -5,6 +5,7 @@ using SRPM_Services.BusinessModels;
 using SRPM_Services.BusinessModels.Others;
 using SRPM_Services.BusinessModels.RequestModels;
 using SRPM_Services.BusinessModels.ResponseModels;
+using SRPM_Services.Extensions.Exceptions;
 using SRPM_Services.Implements;
 using SRPM_Services.Interfaces;
 
@@ -97,11 +98,11 @@ public class ProjectController : ControllerBase
     // PUT: api/project/{id}
     [HttpPut("{id}")]
     [Authorize]
-    public async Task<ActionResult<RS_Project>> Update(Guid id, RQ_Project request)
+    public async Task<ActionResult<RS_Project>> Update(Guid id, RQ_Project request, string status)
     {
         try
         {
-            var updated = await _service.UpdateAsync(id, request);
+            var updated = await _service.UpdateAsync(id, request, status);
             if (updated == null)
                 return NotFound($"Project with ID {id} not found.");
 
@@ -143,6 +144,34 @@ public class ProjectController : ControllerBase
             return StatusCode(500, $"Unexpected error: {ex.Message}");
         }
     }
+    // POST: api/project/enroll-as-principal/{sourceProjectId}
+    [HttpPost("enroll-as-principal/{sourceProjectId}")]
+    public async Task<IActionResult> EnrollAsPrincipal(Guid sourceProjectId)
+    {
+        try
+        {
+            var enrolledProject = await _service.EnrollAsPrincipalAsync(sourceProjectId);
+            return Ok(enrolledProject);
+        }
+        catch (NotFoundException nfEx)
+        {
+            return NotFound(new { message = nfEx.Message });
+        }
+        catch (UnauthorizedAccessException uaEx)
+        {
+            return StatusCode(403, new { message = uaEx.Message });
+        }
+        catch (InvalidOperationException ioEx)
+        {
+            return Conflict(new { message = ioEx.Message });
+        }
+        catch (Exception ex)
+        {
+            // You can log the exception here if needed
+            return StatusCode(500, new { message = "An unexpected error occurred.", details = ex.Message });
+        }
+    }
+
 
     // GET: api/project/overview
     [HttpGet("my-project")]

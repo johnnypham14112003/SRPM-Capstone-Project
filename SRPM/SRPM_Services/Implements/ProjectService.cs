@@ -13,6 +13,7 @@ using SRPM_Services.Extensions.OpenAI;
 using SRPM_Services.Extensions.BackgroundService;
 using HtmlAgilityPack;
 using System.Text.RegularExpressions;
+using Microsoft.AspNetCore.Mvc;
 
 namespace SRPM_Services.Implements;
 
@@ -221,14 +222,14 @@ public class ProjectService : IProjectService
         return entity.Adapt<RS_Project>();
     }
 
-    public async Task<RS_Project?> UpdateAsync(Guid id, RQ_Project request)
+    public async Task<RS_Project?> UpdateAsync(Guid id, RQ_Project request, [FromBody]string status)
     {
         var repo = _unitOfWork.GetProjectRepository();
         var entity = await repo.GetByIdAsync<Guid>(id);
         if (entity == null) return null;
         entity.UpdatedAt = DateTime.Now;
         request.Adapt(entity);
-
+        entity.Status = status.ToStatus().ToString().ToLowerInvariant();
         await repo.UpdateAsync(entity);
         await _unitOfWork.SaveChangesAsync();
 
@@ -301,117 +302,90 @@ public class ProjectService : IProjectService
         return overviewList;
     }
 
-    public async Task<RS_Project> SubmitProposalAsync(Guid sourceProjectId, RQ_ProposalSubmission request)
+    public async Task<RS_Project> EnrollAsPrincipalAsync(Guid sourceProjectId)
     {
-        // Step 1: Validate principal and source
         Guid principalId = Guid.Parse(_userContextService.GetCurrentUserId());
+
+        // Step 1: Validate source project
         var sourceProject = await _unitOfWork.GetProjectRepository().GetByIdAsync(sourceProjectId, hasTrackings: false);
         if (sourceProject == null)
-            throw new NotFoundException("Source project not found.");
+            throw new NotFoundException("Project to enroll not found.");
 
-        var principal = await _unitOfWork.GetAccountRepository()
-            .GetByIdAsync(principalId);
-
-        var hasPrincipalRole = principal.UserRoles
-            .Any(ur => ur.Role.Name == "Principal Investigator");
+        // Step 2: Validate role of Principal Investigator
+        var principal = await _unitOfWork.GetAccountRepository().GetByIdAsync(principalId);
+        var hasPrincipalRole = principal.UserRoles.Any(ur => ur.Role.Name == "Principal Investigator");
 
         if (!hasPrincipalRole)
             throw new UnauthorizedAccessException("Account does not have Principal Investigator role.");
 
+        // Step 3: Check for existing proposals with same info
+        var similarProjects = await _unitOfWork.GetProjectRepository().GetListAsync(
+            p =>
+                p.CreatorId == sourceProject.CreatorId &&
+                p.Genre == "proposal" &&
+                p.EnglishTitle == sourceProject.EnglishTitle &&
+                p.VietnameseTitle == sourceProject.VietnameseTitle &&
+                p.StartDate == sourceProject.StartDate,
+            hasTrackings: false
+        );
 
-        // Step 2: Clone base project using Mapster
-        var clonedProject = sourceProject.Adapt<Project>();
+        var restrictedStatuses = new[]
+        {
+        Status.Draft,
+        Status.Created,
+        Status.Submitted,
+        Status.Approved,
+        Status.InProgress,
+        Status.Completed
+    };
 
-        // Override essential fields
-        clonedProject.Id = Guid.NewGuid();
-        clonedProject.Genre = "proposal"; // for PI workflow
-        clonedProject.Status = Status.Submitted.ToString();
-        clonedProject.CreatedAt = DateTime.Now;
-        clonedProject.UpdatedAt = DateTime.Now;
+        var hasConflict = similarProjects.Any(p =>
+        {
+            var statusEnum = p.Status.ToStatus();
+            return restrictedStatuses.Contains(statusEnum);
+        });
 
-        clonedProject.Members = new List<UserRole>();
-        await _unitOfWork.GetProjectRepository().AddAsync(clonedProject);
+        if (hasConflict)
+            throw new InvalidOperationException("You've already enrolled with a similar proposal that's active.");
+
+        // Step 4: Clone as draft
+        var draftClone = sourceProject.Adapt<Project>();
+        draftClone.Id = Guid.NewGuid();
+        draftClone.Genre = "proposal";
+        draftClone.Status = Status.Draft.ToString().ToLowerInvariant();
+        draftClone.CreatedAt = DateTime.Now;
+        draftClone.UpdatedAt = DateTime.Now;
+        draftClone.Members = new List<UserRole>();
+    {
+    };
+
+        await _unitOfWork.GetProjectRepository().AddAsync(draftClone);
+
+        // Step 5: Attach Principal Investigator role to cloned project
+        var piRole = await _unitOfWork.GetRoleRepository()
+            .GetOneAsync(r => r.Name == "Principal Investigator");
+
+        if (piRole == null)
+            throw new ArgumentException("Role 'Principal Investigator' not found.");
+
+        var userRole = new UserRole
+        {
+            Id = Guid.NewGuid(),
+            AccountId = principalId,
+            Code = $"UR-{DateTime.Now:yyyy_MM}_{principalId.ToString().Substring(0, 6).ToUpperInvariant()}",
+            RoleId = piRole.Id,
+            ProjectId = draftClone.Id,
+            GroupName = draftClone.EnglishTitle,
+            IsOfficial = false,
+            ExpireDate = draftClone.CreatedAt.AddYears(1),
+            CreatedAt = DateTime.Now,
+            Status = Status.Created.ToString().ToLowerInvariant()
+        };
+
+        await _unitOfWork.GetUserRoleRepository().AddAsync(userRole);
         await _unitOfWork.SaveChangesAsync();
 
-        // Step 3: Attach documents
-        foreach (var doc in request.Documents)
-        {
-            var newDoc = new Document
-            {
-                Id = Guid.NewGuid(),
-                Name = doc.Name,
-                Type = doc.Type,
-                IsTemplate = doc.IsTemplate,
-                ContentHtml = doc.ContentHtml,
-                UploadAt = DateTime.Now,
-                UpdatedAt = DateTime.Now,
-                Status = Status.Created.ToString().ToLowerInvariant(),
-                ProjectId = clonedProject.Id, // override project ID from submission context
-                EvaluationId = doc.EvaluationId,
-                IndividualEvaluationId = doc.IndividualEvaluationId,
-                TransactionId = doc.TransactionId,
-                UploaderId = principalId
-            };
-
-            await _unitOfWork.GetDocumentRepository().AddAsync(newDoc);
-        }
-
-        // Load all roles that will be used in this context
-        var roleLookup = await _unitOfWork.GetRoleRepository()
-            .GetListAsync(r => r.Name == "Leader" || r.Name == "Secretary" || r.Name == "Principal Investigator");
-
-        // Track role counts
-        int leaderCount = 0;
-        int secretaryCount = 0;
-        int principalCount = 0;
-
-        foreach (var member in request.Members)
-        {
-            var role = roleLookup.FirstOrDefault(r => r.Id == member.RoleId);
-            if (role == null)
-                throw new ArgumentException($"Role ID {member.RoleId} is invalid.");
-
-            switch (role.Name)
-            {
-                case "Leader":
-                    leaderCount++;
-                    if (leaderCount > 1)
-                        throw new InvalidOperationException("Only one Leader can be assigned to a project.");
-                    break;
-
-                case "Secretary":
-                    secretaryCount++;
-                    if (secretaryCount > 1)
-                        throw new InvalidOperationException("Only one Secretary can be assigned to a project.");
-                    break;
-
-                case "Principal Investigator":
-                    principalCount++;
-                    if (principalCount > 1)
-                        throw new InvalidOperationException("Only one Principal Investigator can be assigned to a project.");
-                    break;
-            }
-
-            var userRole = new UserRole
-            {
-                Id = Guid.NewGuid(),
-                AccountId = member.AccountId,
-                RoleId = member.RoleId,
-                ProjectId = clonedProject.Id,
-                GroupName = clonedProject.EnglishTitle,
-                IsOfficial = false,
-                ExpireDate = clonedProject.CreatedAt.AddYears(1),
-                CreatedAt = DateTime.UtcNow,
-                Status = "created"
-            };
-
-            await _unitOfWork.GetUserRoleRepository().AddAsync(userRole);
-        }
-
-        await _unitOfWork.SaveChangesAsync();
-
-        // Step 5: Return mapped result
-        return clonedProject.Adapt<RS_Project>();
+        return draftClone.Adapt<RS_Project>();
     }
 
     //=============================================================================================

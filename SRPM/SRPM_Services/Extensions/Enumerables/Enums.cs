@@ -11,6 +11,7 @@ namespace SRPM_Services.Extensions.Enumerables
         Approved,
         InProgress,
         Completed,
+        Rejected,
         Deleted
     }
 
