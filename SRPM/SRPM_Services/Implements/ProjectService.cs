@@ -78,7 +78,7 @@ public class ProjectService : IProjectService
 
         return new
         {
-            ProjectDetail = entity?.Adapt<RS_Project>(),
+            ProjectDetail = entity?.Adapt<RS_ProjectDetail>(),
             isMember,
             roleInProject
         };
