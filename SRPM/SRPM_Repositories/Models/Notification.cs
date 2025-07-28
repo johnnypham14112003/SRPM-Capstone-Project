@@ -6,7 +6,6 @@ public class Notification
 {
     [Key] public Guid Id { get; set; } = Guid.NewGuid();
 
-
     [Required, MaxLength(255)] public string Title { get; set; } = null!;
     [Required, MaxLength(30)] public string Type { get; set; } = null!;
     [Required] public bool IsGlobalSend { get; set; } = false;

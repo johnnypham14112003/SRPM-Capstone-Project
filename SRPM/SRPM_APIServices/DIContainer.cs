@@ -231,6 +231,30 @@ public static class DIContainer
             .Map(dest => dest.AccountId, src => src.AccountId)
             .Map(dest => dest.TypeObjectId, src => MapsterConfigMethods.GetTypeObjectIdByType(src.Notification));
 
+        TypeAdapterConfig<RQ_Evaluation, Evaluation>.NewConfig()
+            .Map(dest => dest.Id, src => src.Id ?? Guid.NewGuid());
+
+        TypeAdapterConfig<RQ_EvaluationStage, EvaluationStage>.NewConfig()
+            .Map(dest => dest.Id, src => src.Id ?? Guid.NewGuid());
+
+        TypeAdapterConfig<RQ_IndividualEvaluation, IndividualEvaluation>.NewConfig()
+            .Map(dest => dest.Id, src => src.Id ?? Guid.NewGuid());
+
+        TypeAdapterConfig<RQ_Notification, Notification>.NewConfig()
+            .Map(dest => dest.Id, src => src.Id ?? Guid.NewGuid());
+
+        TypeAdapterConfig<RQ_AppraisalCouncil, AppraisalCouncil>.NewConfig()
+            .Map(dest => dest.Id, src => src.Id ?? Guid.NewGuid());
+
+        TypeAdapterConfig<RQ_Document, Document>.NewConfig()
+            .Map(dest => dest.Id, src => src.Id ?? Guid.NewGuid());
+
+        TypeAdapterConfig<RQ_SystemConfiguration, SystemConfiguration>.NewConfig()
+            .Map(dest => dest.Id, src => src.Id ?? Guid.NewGuid());
+
+        TypeAdapterConfig<RQ_Transaction, Transaction>.NewConfig()
+            .Map(dest => dest.Id, src => src.Id ?? Guid.NewGuid());
+
         TypeAdapterConfig<RQ_Project, Project>.NewConfig()
             .Ignore(dest => dest.Id)
             .Ignore(dest => dest.CreatedAt)
