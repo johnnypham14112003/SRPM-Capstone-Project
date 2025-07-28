@@ -28,7 +28,9 @@ public class GenericRepository<T> : IGenericRepository<T> where T : class
     public async Task<List<T>?> GetListAsync(
         Expression<Func<T, bool>> expression,
         Func<IQueryable<T>, IQueryable<T>>? include = null,
-        bool hasTrackings = true)
+        bool hasTrackings = true,
+        bool useSplitQuery = true 
+    )
     {
         IQueryable<T> query = _context.Set<T>().Where(expression);
 
@@ -37,6 +39,9 @@ public class GenericRepository<T> : IGenericRepository<T> where T : class
 
         if (!hasTrackings)
             query = query.AsNoTracking();
+
+        if (useSplitQuery)
+            query = query.AsSplitQuery(); 
 
         return await query.ToListAsync();
     }

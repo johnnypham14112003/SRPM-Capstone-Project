@@ -303,34 +303,35 @@ public class ProjectService : IProjectService
     }
 
     public async Task<RS_Project> EnrollAsPrincipalAsync(Guid sourceProjectId)
+{
+    Guid principalId = Guid.Parse(_userContextService.GetCurrentUserId());
+
+    // Step 1: Validate source project
+    var sourceProject = await _unitOfWork.GetProjectRepository().GetByIdAsync(sourceProjectId, hasTrackings: false);
+    if (sourceProject == null)
+        throw new NotFoundException("Project to enroll not found.");
+
+    // Step 2: Validate role of Principal Investigator
+    var principal = await _unitOfWork.GetAccountRepository().GetByIdAsync(principalId);
+    var hasPrincipalRole = principal.UserRoles.Any(ur => ur.Role.Name == "Principal Investigator");
+
+    if (!hasPrincipalRole)
+        throw new UnauthorizedAccessException("Account does not have Principal Investigator role.");
+
+    // Step 3: Check for existing proposals with same info
+    var similarProjects = await _unitOfWork.GetProjectRepository().GetListAsync(
+        p =>
+            p.CreatorId == sourceProject.CreatorId &&
+            p.Genre == "proposal" &&
+            p.EnglishTitle == sourceProject.EnglishTitle &&
+            p.VietnameseTitle == sourceProject.VietnameseTitle &&
+            p.StartDate == sourceProject.StartDate,
+        hasTrackings: false,
+        useSplitQuery: true
+    );
+
+    var restrictedStatuses = new[]
     {
-        Guid principalId = Guid.Parse(_userContextService.GetCurrentUserId());
-
-        // Step 1: Validate source project
-        var sourceProject = await _unitOfWork.GetProjectRepository().GetByIdAsync(sourceProjectId, hasTrackings: false);
-        if (sourceProject == null)
-            throw new NotFoundException("Project to enroll not found.");
-
-        // Step 2: Validate role of Principal Investigator
-        var principal = await _unitOfWork.GetAccountRepository().GetByIdAsync(principalId);
-        var hasPrincipalRole = principal.UserRoles.Any(ur => ur.Role.Name == "Principal Investigator");
-
-        if (!hasPrincipalRole)
-            throw new UnauthorizedAccessException("Account does not have Principal Investigator role.");
-
-        // Step 3: Check for existing proposals with same info
-        var similarProjects = await _unitOfWork.GetProjectRepository().GetListAsync(
-            p =>
-                p.CreatorId == sourceProject.CreatorId &&
-                p.Genre == "proposal" &&
-                p.EnglishTitle == sourceProject.EnglishTitle &&
-                p.VietnameseTitle == sourceProject.VietnameseTitle &&
-                p.StartDate == sourceProject.StartDate,
-            hasTrackings: false
-        );
-
-        var restrictedStatuses = new[]
-        {
         Status.Draft,
         Status.Created,
         Status.Submitted,
@@ -339,14 +340,14 @@ public class ProjectService : IProjectService
         Status.Completed
     };
 
-        var hasConflict = similarProjects.Any(p =>
-        {
-            var statusEnum = p.Status.ToStatus();
-            return restrictedStatuses.Contains(statusEnum);
-        });
+    var existingDraft = similarProjects.FirstOrDefault(p =>
+        restrictedStatuses.Contains(p.Status.ToStatus()));
 
-        if (hasConflict)
-            throw new InvalidOperationException("You've already enrolled with a similar proposal that's active.");
+    if (existingDraft != null)
+    {
+        // ✅ Return the existing draft instead of throwing
+        return existingDraft.Adapt<RS_Project>();
+    }
 
         // Step 4: Clone as draft
         var draftClone = sourceProject.Adapt<Project>();
@@ -355,38 +356,35 @@ public class ProjectService : IProjectService
         draftClone.Status = Status.Draft.ToString().ToLowerInvariant();
         draftClone.CreatedAt = DateTime.Now;
         draftClone.UpdatedAt = DateTime.Now;
-        draftClone.Members = new List<UserRole>();
-    {
-    };
 
         await _unitOfWork.GetProjectRepository().AddAsync(draftClone);
 
-        // Step 5: Attach Principal Investigator role to cloned project
-        var piRole = await _unitOfWork.GetRoleRepository()
-            .GetOneAsync(r => r.Name == "Principal Investigator");
+    // Step 5: Attach Principal Investigator role to cloned project
+    var piRole = await _unitOfWork.GetRoleRepository()
+        .GetOneAsync(r => r.Name == "Principal Investigator");
 
-        if (piRole == null)
-            throw new ArgumentException("Role 'Principal Investigator' not found.");
+    if (piRole == null)
+        throw new ArgumentException("Role 'Principal Investigator' not found.");
 
-        var userRole = new UserRole
-        {
-            Id = Guid.NewGuid(),
-            AccountId = principalId,
-            Code = $"UR-{DateTime.Now:yyyy_MM}_{principalId.ToString().Substring(0, 6).ToUpperInvariant()}",
-            RoleId = piRole.Id,
-            ProjectId = draftClone.Id,
-            GroupName = draftClone.EnglishTitle,
-            IsOfficial = false,
-            ExpireDate = draftClone.CreatedAt.AddYears(1),
-            CreatedAt = DateTime.Now,
-            Status = Status.Created.ToString().ToLowerInvariant()
-        };
+    var userRole = new UserRole
+    {
+        Id = Guid.NewGuid(),
+        AccountId = principalId,
+        Code = $"UR-{DateTime.Now:yyyy_MM}_{principalId.ToString().Substring(0, 6).ToUpperInvariant()}",
+        RoleId = piRole.Id,
+        ProjectId = draftClone.Id,
+        GroupName = draftClone.EnglishTitle,
+        IsOfficial = false,
+        ExpireDate = draftClone.CreatedAt.AddYears(1),
+        CreatedAt = DateTime.Now,
+        Status = Status.Created.ToString().ToLowerInvariant()
+    };
 
-        await _unitOfWork.GetUserRoleRepository().AddAsync(userRole);
-        await _unitOfWork.SaveChangesAsync();
+    await _unitOfWork.GetUserRoleRepository().AddAsync(userRole);
+    await _unitOfWork.SaveChangesAsync();
 
-        return draftClone.Adapt<RS_Project>();
-    }
+    return draftClone.Adapt<RS_Project>();
+}
 
     //=============================================================================================
     public async Task<bool> CreateFromDocumentAsync(Project project, Document document, Guid creatorId, RQ_MilestoneTaskContent titleContent)

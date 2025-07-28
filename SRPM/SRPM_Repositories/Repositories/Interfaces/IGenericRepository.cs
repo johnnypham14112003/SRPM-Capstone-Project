@@ -11,7 +11,8 @@ public interface IGenericRepository<T> where T : class
     Task<List<T>?> GetListAsync(
         Expression<Func<T, bool>> expression,
         Func<IQueryable<T>, IQueryable<T>>? include = null,
-        bool hasTrackings = true);
+        bool hasTrackings = true,
+        bool useSplitQuery = true);
 
     Task<List<TResult>?> GetListAdvanceAsync<TResult>(
         Expression<Func<T, bool>> whereLinQ,
