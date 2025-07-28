@@ -333,7 +333,6 @@ public class ProjectService : IProjectService
     var restrictedStatuses = new[]
     {
         Status.Draft,
-        Status.Created,
         Status.Submitted,
         Status.Approved,
         Status.InProgress,
