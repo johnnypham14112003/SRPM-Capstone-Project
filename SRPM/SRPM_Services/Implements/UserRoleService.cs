@@ -5,6 +5,7 @@ using SRPM_Services.BusinessModels;
 using SRPM_Services.BusinessModels.RequestModels;
 using SRPM_Services.BusinessModels.ResponseModels;
 using SRPM_Services.Extensions.Enumerables;
+using SRPM_Services.Extensions.Exceptions;
 using SRPM_Services.Interfaces;
 
 namespace SRPM_Services.Implements;
@@ -92,20 +93,71 @@ public class UserRoleService : IUserRoleService
 
     public async Task<RS_UserRole> CreateAsync(RQ_UserRole request)
     {
+
+        if (request.ProjectId == null && request.AppraisalCouncilId == null)
+            throw new ArgumentException("Either ProjectId or AppraisalCouncilId must be provided.");
+
+        var account = await _unitOfWork.GetAccountRepository().GetByIdAsync(request.AccountId);
+        if (account == null)
+            throw new NotFoundException($"Account with ID {request.AccountId} was not found.");
+
+        var role = await _unitOfWork.GetRoleRepository().GetByIdAsync(request.RoleId);
+        if (role == null)
+            throw new NotFoundException($"Role with ID {request.RoleId} was not found.");
+
+        string? groupName = null;
+        bool isOfficial;
+        DateTime? expireDate = null;
+
+        if (request.AppraisalCouncilId != null)
+        {
+            var council = await _unitOfWork.GetAppraisalCouncilRepository().GetByIdAsync(request.AppraisalCouncilId.Value);
+            if (council == null)
+                throw new NotFoundException($"Appraisal Council with ID {request.AppraisalCouncilId} was not found.");
+
+            if (council.CreatedAt <= DateTime.MinValue)
+                throw new InvalidOperationException("Appraisal Council created date is invalid.");
+
+            isOfficial = true;
+            expireDate = council.CreatedAt.AddYears(1);
+            groupName = council.Name;
+        }
+        else
+        {
+            var project = await _unitOfWork.GetProjectRepository().GetByIdAsync(request.ProjectId!.Value);
+            if (project == null)
+                throw new NotFoundException($"Project with ID {request.ProjectId} was not found.");
+
+            if (project.EndDate <= DateTime.Now)
+                throw new InvalidOperationException("Cannot assign role to a project that has already ended.");
+
+            isOfficial = false;
+            expireDate = project.EndDate;
+            groupName = project.EnglishTitle;
+        }
+
+        var existing = await _unitOfWork.GetUserRoleRepository().GetListAsync(
+            ur =>
+                ur.AccountId == request.AccountId &&
+                ur.RoleId == request.RoleId &&
+                ur.ProjectId == request.ProjectId &&
+                ur.AppraisalCouncilId == request.AppraisalCouncilId &&
+                ur.IsOfficial == isOfficial,
+            hasTrackings: false
+        );
+
+        var match = existing?.FirstOrDefault();
+        if (match != null)
+            return match.Adapt<RS_UserRole>();
+
         var entity = request.Adapt<UserRole>();
         entity.Id = Guid.NewGuid();
         entity.CreatedAt = DateTime.Now;
-
-        // Generate a short UID fragment — e.g. UR-X9TZ3B
-        string fragment = Convert.ToBase64String(Guid.NewGuid().ToByteArray())
-                            .Replace("=", "")
-                            .Replace("+", "")
-                            .Replace("/", "")
-                            .Substring(0, 6)
-                            .ToUpperInvariant();
-
-        entity.Code = $"UR-{fragment}";
+        entity.Code = $"UR-{Convert.ToBase64String(Guid.NewGuid().ToByteArray()).Replace("=", "").Replace("+", "").Replace("/", "").Substring(0, 6).ToUpperInvariant()}";
         entity.Status = Status.Created.ToString().ToLowerInvariant();
+        entity.IsOfficial = isOfficial;
+        entity.ExpireDate = expireDate;
+        entity.GroupName = groupName;
 
         await _unitOfWork.GetUserRoleRepository().AddAsync(entity);
         await _unitOfWork.SaveChangesAsync();
