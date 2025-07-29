@@ -52,52 +52,52 @@ public class MemberTaskService : IMemberTaskService
         };
     }
 
-    public async Task<RS_MemberTask> CreateAsync(RQ_MemberTask request)
-    {
-        try
+        public async Task<RS_MemberTask> CreateAsync(RQ_MemberTask request)
         {
+            try
+            {
 
-            // Step 2: Get the Task to retrieve its MilestoneId
-            var task = await _unitOfWork.GetTaskRepository().GetByIdAsync(request.TaskId);
-            if (task == null)
-                throw new BadRequestException("Task not found");
+                // Step 2: Get the Task to retrieve its MilestoneId
+                var task = await _unitOfWork.GetTaskRepository().GetByIdAsync(request.TaskId);
+                if (task == null)
+                    throw new BadRequestException("Task not found");
 
-            // Step 3: Get the Milestone to retrieve ProjectId
-            var milestone = await _unitOfWork.GetMilestoneRepository().GetByIdAsync(task.MilestoneId);
-            if (milestone == null)
-                throw new BadRequestException("Milestone not found");
+                // Step 3: Get the Milestone to retrieve ProjectId
+                var milestone = await _unitOfWork.GetMilestoneRepository().GetByIdAsync(task.MilestoneId);
+                if (milestone == null)
+                    throw new BadRequestException("Milestone not found");
 
-            var projectId = milestone.ProjectId;
+                var projectId = milestone.ProjectId;
 
-            // Step 4: Find user role for this project and user, excluding group roles
-            var userRole = await _unitOfWork.GetUserRoleRepository()
-                .GetOneAsync(ur =>
-                    ur.AccountId == request.MemberId &&
-                    ur.ProjectId == projectId &&
-                    ur.Role.IsGroupRole == false,
-                    include: ur => 
-                    ur = ur.Include(ur => ur.Role));
+                // Step 4: Find user role for this project and user, excluding group roles
+                var userRole = await _unitOfWork.GetUserRoleRepository()
+                    .GetOneAsync(ur =>
+                        ur.AccountId == request.MemberId &&
+                        ur.ProjectId == projectId &&
+                        ur.Role.IsGroupRole == false,
+                        include: ur => 
+                        ur = ur.Include(ur => ur.Role));
 
-            if (userRole == null)
-                throw new BadRequestException("UserRole not found for user in this project");
+                if (userRole == null)
+                    throw new BadRequestException("UserRole not found for user in this project");
 
-            // Step 5: Create the MemberTask with the correct MemberId
-            var entity = request.Adapt<MemberTask>();
-            entity.Id = Guid.NewGuid();
-            entity.JoinedAt = DateTime.Now;
-            entity.Status = Status.Created.ToString().ToLowerInvariant();
-            entity.MemberId = userRole.Id;
+                // Step 5: Create the MemberTask with the correct MemberId
+                var entity = request.Adapt<MemberTask>();
+                entity.Id = Guid.NewGuid();
+                entity.JoinedAt = DateTime.Now;
+                entity.Status = Status.Created.ToString().ToLowerInvariant();
+                entity.MemberId = userRole.Id;
 
-            await _unitOfWork.GetMemberTaskRepository().AddAsync(entity);
-            await _unitOfWork.SaveChangesAsync();
+                await _unitOfWork.GetMemberTaskRepository().AddAsync(entity);
+                await _unitOfWork.SaveChangesAsync();
 
-            return entity.Adapt<RS_MemberTask>();
+                return entity.Adapt<RS_MemberTask>();
+            }
+            catch (Exception e)
+            {
+                throw new BadRequestException("Failed to create MemberTask");
+            }
         }
-        catch (Exception e)
-        {
-            throw new BadRequestException("Failed to create MemberTask");
-        }
-    }
 
     public async Task<RS_MemberTask?> UpdateAsync(Guid id, RQ_MemberTask request)
     {
