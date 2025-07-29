@@ -135,6 +135,40 @@ public class UserRoleService : IUserRoleService
             expireDate = project.EndDate;
             groupName = project.EnglishTitle;
         }
+        if (request.ProjectId != null)
+        {
+            // Check for single Principal Investigator constraint
+            var projectRoles = await _unitOfWork.GetUserRoleRepository().GetListAsync(
+                ur =>
+                    ur.ProjectId == request.ProjectId &&
+                    ur.Status != Status.Deleted.ToString().ToLowerInvariant(),
+                hasTrackings: false
+            );
+
+            if (role.Name == "Principal Investigator")
+            {
+                bool hasPI = projectRoles.Any(ur =>
+                    ur.RoleId == request.RoleId &&
+                    ur.AccountId != request.AccountId); // exclude self if updating
+
+                if (hasPI)
+                    throw new InvalidOperationException("This project already has a Principal Investigator.");
+            }
+
+            if (request.ProjectId != null && role.IsGroupRole)
+            {
+                var existingGroupRole = await _unitOfWork.GetUserRoleRepository().GetListAsync(
+                    ur =>
+                        ur.ProjectId == request.ProjectId &&
+                        ur.RoleId == request.RoleId &&
+                        ur.Status != Status.Deleted.ToString().ToLowerInvariant(),
+                    hasTrackings: false
+                );
+
+                if (existingGroupRole != null && existingGroupRole.Any())
+                    throw new InvalidOperationException($"Project already has a user assigned to the group role '{role.Name}'.");
+            }
+        }
 
         var existing = await _unitOfWork.GetUserRoleRepository().GetListAsync(
             ur =>

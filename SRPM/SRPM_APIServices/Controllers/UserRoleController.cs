@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using SRPM_Services.BusinessModels;
 using SRPM_Services.BusinessModels.RequestModels;
 using SRPM_Services.BusinessModels.ResponseModels;
+using SRPM_Services.Extensions.Exceptions;
 using SRPM_Services.Interfaces;
 
 namespace SRPM_APIServices.Controllers;
@@ -49,8 +50,28 @@ public class UserRoleController : ControllerBase
     [HttpPost]
     public async Task<ActionResult<RS_UserRole>> Create(RQ_UserRole request)
     {
-        var created = await _service.CreateAsync(request);
-        return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
+        try
+        {
+            var created = await _service.CreateAsync(request);
+            return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+        catch (NotFoundException ex)
+        {
+            return NotFound(new { message = ex.Message });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return Conflict(new { message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            // For unexpected errors
+            return StatusCode(500, new { message = "An unexpected error occurred.", detail = ex.Message });
+        }
     }
 
     // PUT: api/userrole/{id}

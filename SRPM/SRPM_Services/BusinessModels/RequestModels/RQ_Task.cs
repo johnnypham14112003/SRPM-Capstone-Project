@@ -1,14 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace SRPM_Services.BusinessModels.RequestModels
+﻿namespace SRPM_Services.BusinessModels.RequestModels
 {
     public class RQ_Task
     {
-        public string Code { get; set; } = null!;
         public string Name { get; set; } = null!;
         public string? Description { get; set; }
         public DateTime? StartDate { get; set; }
@@ -20,7 +13,6 @@ namespace SRPM_Services.BusinessModels.RequestModels
         public string? MeetingUrl { get; set; }
         public string? Note { get; set; }
         public Guid MilestoneId { get; set; }
-        public Guid CreatorId { get; set; }
     }
 
 }

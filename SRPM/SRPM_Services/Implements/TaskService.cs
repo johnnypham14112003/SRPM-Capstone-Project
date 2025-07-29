@@ -13,10 +13,12 @@ namespace SRPM_Services.Implements;
 public class TaskService : ITaskService
 {
     private readonly IUnitOfWork _unitOfWork;
+    private readonly IUserContextService _userContextService;
 
-    public TaskService(IUnitOfWork unitOfWork)
+    public TaskService(IUnitOfWork unitOfWork, IUserContextService userContextService)
     {
         _unitOfWork = unitOfWork;
+        _userContextService = userContextService;
     }
 
     public async Task<RS_Task?> GetByIdAsync(Guid id)
@@ -80,7 +82,11 @@ public class TaskService : ITaskService
     {
         var entity = request.Adapt<SRPM_Repositories.Models.Task>();
         entity.Id = Guid.NewGuid();
-        entity.Status = Status.Created.ToString().ToLowerInvariant();
+        entity.Status = Extensions.Enumerables.TaskStatus.ToDo.ToFriendlyString();
+        var guid = Guid.NewGuid().ToString("N"); 
+        entity.Code = "T" + guid.Substring(0, 6).ToUpper(); 
+
+        entity.CreatorId = Guid.Parse(_userContextService.GetCurrentUserId());
 
         await _unitOfWork.GetTaskRepository().AddAsync(entity);
         await _unitOfWork.SaveChangesAsync();
@@ -93,24 +99,8 @@ public class TaskService : ITaskService
         var repo = _unitOfWork.GetTaskRepository();
         var entity = await repo.GetByIdAsync<Guid>(id);
         if (entity == null) return null;
-        entity.Status = Status.Created.ToString().ToLowerInvariant();
 
         request.Adapt(entity);
-        await repo.UpdateAsync(entity);
-        await _unitOfWork.SaveChangesAsync();
-
-        return entity.Adapt<RS_Task>();
-    }
-
-    public async Task<RS_Task?> ToggleStatusAsync(Guid id)
-    {
-        var repo = _unitOfWork.GetTaskRepository();
-        var entity = await repo.GetByIdAsync<Guid>(id);
-        if (entity == null) return null;
-
-        var current = entity.Status.ToStatus();
-        entity.Status = current == Status.Created ? Status.Deleted.ToString().ToLower() : Status.Created.ToString().ToLower();
-
         await repo.UpdateAsync(entity);
         await _unitOfWork.SaveChangesAsync();
 
@@ -127,17 +117,15 @@ public class TaskService : ITaskService
         await _unitOfWork.SaveChangesAsync();
         return true;
     }
-    public async Task<bool> ChangeStatus(Guid id, string status)
+    public async Task<bool> ChangeTaskStatus(Guid id, string status)
     {
-            var repo = _unitOfWork.GetTaskRepository();
+        var repo = _unitOfWork.GetTaskRepository();
         var entity = await repo.GetByIdAsync<Guid>(id);
             if (entity == null) return false;
-            var parsedStatus = status.ToStatus();
-        entity.Status = parsedStatus.ToString().ToLowerInvariant();
-
+        var parsedStatus = status.ToTaskStatus();
+        entity.Status = parsedStatus.ToFriendlyString();
         await repo.UpdateAsync(entity);
         await _unitOfWork.SaveChangesAsync();
-            return true;
-
+        return true;
     }
 }
