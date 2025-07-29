@@ -38,7 +38,7 @@ public class ProjectService : IProjectService
         // Get all user roles for the user in this project, with Role included
         var userRoles = await _unitOfWork.GetUserRoleRepository()
             .GetListAsync(
-                us => us.AccountId == userId && us.ProjectId == id,
+                us => us.AccountId == userId && us.ProjectId == id && string.Equals(us.Status, Status.Deleted.ToString(), StringComparison.OrdinalIgnoreCase),
                 include: q => q.Include(ur => ur.Role)
             );
 
@@ -196,7 +196,7 @@ public class ProjectService : IProjectService
         );
 
         // Validate role and assign genre + creator
-        var hostRole = userRoles.FirstOrDefault(r => r.Role?.Name == "Host Institution");
+        var hostRole = userRoles.FirstOrDefault(r => r.Role?.Name == "Host Institution" && r.Status != Status.Deleted.ToString().ToLowerInvariant() );
         var staffRole = userRoles.FirstOrDefault(r => r.Role?.Name == "Staff");
 
         if (hostRole != null)
@@ -333,6 +333,7 @@ public class ProjectService : IProjectService
     var restrictedStatuses = new[]
     {
         Status.Draft,
+        Status.Created,
         Status.Submitted,
         Status.Approved,
         Status.InProgress,

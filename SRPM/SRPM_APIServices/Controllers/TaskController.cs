@@ -48,7 +48,7 @@ public class TaskController : ControllerBase
     {
         try
         {
-            var changed = await _service.ChangeStatus(id, status);
+            var changed = await _service.ChangeTaskStatus(id, status);
             return changed;
         } catch (Exception ex) {
             return BadRequest($"Error changing status: {ex.Message}");
@@ -65,15 +65,6 @@ public class TaskController : ControllerBase
         return Ok(updated);
     }
 
-    // PUT: api/task/{id}/toggle-status
-    [HttpPut("{id}/toggle-status")]
-    public async Task<ActionResult<RS_Task>> ToggleStatus(Guid id)
-    {
-        var result = await _service.ToggleStatusAsync(id);
-        if (result == null)
-            return NotFound($"Task with ID {id} not found.");
-        return Ok(result);
-    }
 
     // DELETE: api/task/{id}
     [HttpDelete("{id}")]
