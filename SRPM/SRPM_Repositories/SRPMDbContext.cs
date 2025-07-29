@@ -112,19 +112,24 @@ public class SRPMDbContext : DbContext
         //AppraisalCouncil
         modelBuilder.Entity<AppraisalCouncil>(appCoun =>
         {
+            appCoun.HasMany(c => c.Notifications)
+            .WithOne(n => n.AppraisalCouncil)
+            .HasForeignKey(n => n.AppraisalCouncilId)
+            .OnDelete(DeleteBehavior.Restrict); //when delete AppraisalCouncil - block if not handle CouncilId in Notifications
+
             appCoun.HasMany(c => c.Evaluations)
             .WithOne(e => e.AppraisalCouncil)
-            .HasForeignKey(c => c.AppraisalCouncilId)
+            .HasForeignKey(e => e.AppraisalCouncilId)
             .OnDelete(DeleteBehavior.Restrict); //when delete AppraisalCouncil - block if not handle CouncilId in Evaluation
 
             appCoun.HasMany(c => c.EvaluationStages)
             .WithOne(e => e.AppraisalCouncil)
-            .HasForeignKey(c => c.AppraisalCouncilId)
+            .HasForeignKey(e => e.AppraisalCouncilId)
             .OnDelete(DeleteBehavior.Restrict); //when delete AppraisalCouncil - block if not handle CouncilId in EvaluationStage
 
             appCoun.HasMany(c => c.CouncilMembers)
             .WithOne(e => e.AppraisalCouncil)
-            .HasForeignKey(c => c.AppraisalCouncilId)
+            .HasForeignKey(e => e.AppraisalCouncilId)
             .OnDelete(DeleteBehavior.Restrict); //when delete AppraisalCouncil - block if not handle CouncilId in UserRole
         });
 
@@ -350,6 +355,16 @@ public class SRPMDbContext : DbContext
             .HasForeignKey(an => an.NotificationId)
             .OnDelete(DeleteBehavior.Cascade);  // when delete Notification - cascade AccountNotifications
             //xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+            noti.HasOne(n => n.Project)
+            .WithMany(p => p.Notifications)
+            .HasForeignKey(n => n.ProjectId)
+            .OnDelete(DeleteBehavior.Restrict); // when delete Document - block if not handle Notifications of Project
+
+            noti.HasOne(n => n.AppraisalCouncil)
+            .WithMany(ac => ac.Notifications)
+            .HasForeignKey(n => n.AppraisalCouncilId)
+            .OnDelete(DeleteBehavior.Restrict); // when delete Document - block if not handle Notifications of AppraisalCouncil
+
             noti.HasOne(n => n.Document)
             .WithMany(d => d.Notifications)
             .HasForeignKey(n => n.DocumentId)
@@ -427,6 +442,11 @@ public class SRPMDbContext : DbContext
             .HasForeignKey<ResearchPaper>(rp => rp.ProjectId)
             .OnDelete(DeleteBehavior.Cascade);  //When delete Project - cascade ResearchPaper
             //xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+            proj.HasMany(p => p.Notifications)
+            .WithOne(n => n.Project)
+            .HasForeignKey(n => n.ProjectId)
+            .OnDelete(DeleteBehavior.Restrict);
+
             proj.HasMany(p => p.Members)
             .WithOne(ur => ur.Project)
             .HasForeignKey(ur => ur.ProjectId)

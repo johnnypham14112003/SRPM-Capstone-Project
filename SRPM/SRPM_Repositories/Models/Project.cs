@@ -35,6 +35,7 @@ public class Project
     // Navigation properties
     public virtual UserRole Creator { get; set; } = null!;
     public virtual ResearchPaper? ResearchPaper { get; set; } // 1 project only have 1 research paper
+    public virtual ICollection<Notification>? Notifications { get; set; }
     public virtual ICollection<UserRole>? Members { get; set; }//1 project have many member
     public virtual ICollection<Milestone>? Milestones { get; set; }
     public virtual ICollection<Evaluation>? Evaluations { get; set; }
