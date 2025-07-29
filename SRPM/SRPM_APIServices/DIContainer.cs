@@ -358,7 +358,11 @@ public static class DIContainer
             .Ignore(dest => dest.Notifications)
             .IgnoreNullValues(true);
 
-        TypeAdapterConfig<UserRole, RS_UserRole>.NewConfig();
+        TypeAdapterConfig<UserRole, RS_UserRole>.NewConfig()
+            .Map(dest => dest.FullName, src => src.Account != null ? src.Account.FullName : string.Empty)
+            .Map(dest => dest.Email, src => src.Account != null ? src.Account.Email : string.Empty)
+            .Map(dest => dest.AvatarURL, src => src.Account != null ? src.Account.AvatarURL : string.Empty)
+            .Map(dest => dest.Name, src => src.Role != null ? src.Role.Name : string.Empty);
         TypeAdapterConfig<RQ_Task, SRPM_Repositories.Models.Task>.NewConfig()
             .Ignore(dest => dest.Id)
             .Ignore(dest => dest.Milestone)
