@@ -3,6 +3,7 @@ using SRPM_Repositories.Models;
 using SRPM_Repositories.Repositories.Implements;
 using SRPM_Repositories.Repositories.Interfaces;
 using SRPM_Services.BusinessModels;
+using SRPM_Services.BusinessModels.Others;
 using SRPM_Services.BusinessModels.RequestModels;
 using SRPM_Services.BusinessModels.RequestModels.Query;
 using SRPM_Services.BusinessModels.ResponseModels;
@@ -17,12 +18,15 @@ public class NotificationService : INotificationService
 {
     private readonly IUnitOfWork _unitOfWork;
     private readonly IUserContextService _userContextService;
+    private readonly ITaskQueueHandler _taskQueueHandler;
 
     public NotificationService(IUnitOfWork unitOfWork,
-        IUserContextService userContextService)
+        IUserContextService userContextService,
+        ITaskQueueHandler taskQueueHandler)
     {
         _unitOfWork = unitOfWork;
         _userContextService = userContextService;
+        _taskQueueHandler = taskQueueHandler;
     }
 
     //=============================================================================
@@ -41,48 +45,58 @@ public class NotificationService : INotificationService
         //Get Exist Object Id then assign
         switch (notificationDTO.Type.ToLower())
         {
+            case "project":
+                _ = await _unitOfWork.GetProjectRepository().GetOneAsync(p => p.Id == newNotification.ObjecNotificationId, null, false)
+                    ?? throw new NotFoundException("Create Notification Faild: Not found any Project relate to this Id");
+                notificationDTO.ProjectId = newNotification.ObjecNotificationId;
+                break;
+            case "appraisalcouncil":
+                _ = await _unitOfWork.GetAppraisalCouncilRepository().GetOneAsync(ac => ac.Id == newNotification.ObjecNotificationId, null, false)
+                    ?? throw new NotFoundException("Create Notification Faild: Not found any AppraisalCouncil relate to this Id");
+                notificationDTO.AppraisalCouncilId = newNotification.ObjecNotificationId;
+                break;
             case "transaction":
-                var existTr = await _unitOfWork.GetTransactionRepository().GetOneAsync(tr => tr.Id == newNotification.ObjecNotificationId, null, false)
-                    ?? throw new NotFoundException("Create Notification Faild: Not found any Transaction relate to this Id"); ;
+                _ = await _unitOfWork.GetTransactionRepository().GetOneAsync(tr => tr.Id == newNotification.ObjecNotificationId, null, false)
+                    ?? throw new NotFoundException("Create Notification Faild: Not found any Transaction relate to this Id");
                 notificationDTO.TransactionId = newNotification.ObjecNotificationId;
                 break;
             case "individualevaluation":
-                var existIE = await _unitOfWork.GetIndividualEvaluationRepository().GetOneAsync(ie => ie.Id == newNotification.ObjecNotificationId, null, false)
-                    ?? throw new NotFoundException("Create Notification Faild: Not found any IndividualEvaluation relate to this Id"); ;
+                _ = await _unitOfWork.GetIndividualEvaluationRepository().GetOneAsync(ie => ie.Id == newNotification.ObjecNotificationId, null, false)
+                    ?? throw new NotFoundException("Create Notification Faild: Not found any IndividualEvaluation relate to this Id");
                 notificationDTO.IndividualEvaluationId = newNotification.ObjecNotificationId;
                 break;
             case "evaluationstage":
-                var existES = await _unitOfWork.GetEvaluationStageRepository().GetOneAsync(es => es.Id == newNotification.ObjecNotificationId, null, false)
-                    ?? throw new NotFoundException("Create Notification Faild: Not found any EvaluationStage relate to this Id"); ;
+                _ = await _unitOfWork.GetEvaluationStageRepository().GetOneAsync(es => es.Id == newNotification.ObjecNotificationId, null, false)
+                    ?? throw new NotFoundException("Create Notification Faild: Not found any EvaluationStage relate to this Id");
                 notificationDTO.EvaluationStageId = newNotification.ObjecNotificationId;
                 break;
             case "evaluation":
-                var existE = await _unitOfWork.GetEvaluationRepository().GetOneAsync(e => e.Id == newNotification.ObjecNotificationId, null, false)
-                    ?? throw new NotFoundException("Create Notification Faild: Not found any Evaluation relate to this Id"); ;
+                _ = await _unitOfWork.GetEvaluationRepository().GetOneAsync(e => e.Id == newNotification.ObjecNotificationId, null, false)
+                    ?? throw new NotFoundException("Create Notification Faild: Not found any Evaluation relate to this Id");
                 notificationDTO.EvaluationId = newNotification.ObjecNotificationId;
                 break;
             case "userrole":
-                var existUR = await _unitOfWork.GetUserRoleRepository().GetOneAsync(ur => ur.Id == newNotification.ObjecNotificationId, null, false)
-                    ?? throw new NotFoundException("Create Notification Faild: Not found any GroupUser relate to this Id"); ;
+                _ = await _unitOfWork.GetUserRoleRepository().GetOneAsync(ur => ur.Id == newNotification.ObjecNotificationId, null, false)
+                    ?? throw new NotFoundException("Create Notification Faild: Not found any GroupUser relate to this Id");
                 notificationDTO.UserRoleId = newNotification.ObjecNotificationId;
                 break;
             case "document":
-                var existD = await _unitOfWork.GetDocumentRepository().GetOneAsync(d => d.Id == newNotification.ObjecNotificationId, null, false)
-                    ?? throw new NotFoundException("Create Notification Faild: Not found any Document relate to this Id"); ;
+                _ = await _unitOfWork.GetDocumentRepository().GetOneAsync(d => d.Id == newNotification.ObjecNotificationId, null, false)
+                    ?? throw new NotFoundException("Create Notification Faild: Not found any Document relate to this Id");
                 notificationDTO.DocumentId = newNotification.ObjecNotificationId;
                 break;
             case "membertask":
-                var existMT = await _unitOfWork.GetMemberTaskRepository().GetOneAsync(mt => mt.Id == newNotification.ObjecNotificationId, null, false)
-                    ?? throw new NotFoundException("Create Notification Faild: Not found any MemberTask relate to this Id"); ;
+                _ = await _unitOfWork.GetMemberTaskRepository().GetOneAsync(mt => mt.Id == newNotification.ObjecNotificationId, null, false)
+                    ?? throw new NotFoundException("Create Notification Faild: Not found any MemberTask relate to this Id");
                 notificationDTO.MemberTaskId = newNotification.ObjecNotificationId;
                 break;
             case "task":
-                var existTa = await _unitOfWork.GetTaskRepository().GetOneAsync(ta => ta.Id == newNotification.ObjecNotificationId, null, false)
-                    ?? throw new NotFoundException("Create Notification Faild: Not found any Task relate to this Id"); ;
+                _ = await _unitOfWork.GetTaskRepository().GetOneAsync(ta => ta.Id == newNotification.ObjecNotificationId, null, false)
+                    ?? throw new NotFoundException("Create Notification Faild: Not found any Task relate to this Id");
                 notificationDTO.TaskId = newNotification.ObjecNotificationId;
                 break;
             default: //"systemconfiguration"
-                var existSC = await _unitOfWork.GetSystemConfigurationRepository().GetOneAsync(sc => sc.Id == newNotification.ObjecNotificationId, null, false)
+                _ = await _unitOfWork.GetSystemConfigurationRepository().GetOneAsync(sc => sc.Id == newNotification.ObjecNotificationId, null, false)
                     ?? throw new NotFoundException("Create Notification Faild: Not found any SystemConfiguration relate to this Id");
                 notificationDTO.SystemConfigurationId = newNotification.ObjecNotificationId;
                 break;
