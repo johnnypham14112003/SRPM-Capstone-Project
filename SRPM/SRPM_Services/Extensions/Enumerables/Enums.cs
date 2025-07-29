@@ -1,5 +1,5 @@
-﻿namespace SRPM_Services.Extensions.Enumerables;
-
+﻿namespace SRPM_Services.Extensions.Enumerables
+{
     public enum Status
     {
         Draft,
@@ -51,3 +51,4 @@
             };
         }
     }
+}

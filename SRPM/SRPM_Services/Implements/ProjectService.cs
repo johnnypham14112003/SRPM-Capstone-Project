@@ -34,11 +34,13 @@ public class ProjectService : IProjectService
     public async Task<object?> GetByIdAsync(Guid id)
     {
         var userId = Guid.Parse(_userContextService.GetCurrentUserId());
+        var deletedStatus = Status.Deleted.ToString();
 
-        // Get all user roles for the user in this project, with Role included
         var userRoles = await _unitOfWork.GetUserRoleRepository()
             .GetListAsync(
-                us => us.AccountId == userId && us.ProjectId == id && string.Equals(us.Status, Status.Deleted.ToString(), StringComparison.OrdinalIgnoreCase),
+                us => us.AccountId == userId
+                           && us.ProjectId == id
+                           && us.Status != deletedStatus,
                 include: q => q.Include(ur => ur.Role)
             );
 
@@ -89,7 +91,7 @@ public class ProjectService : IProjectService
     {
         query.PageIndex = query.PageIndex < 1 ? 1 : query.PageIndex;
         query.PageSize = query.PageSize < 1 ? 10 : query.PageSize;
-
+        var deletedStatus = Status.Deleted.ToString();
         var projects = await _unitOfWork.GetProjectRepository().GetListAsync(
            p =>
                (string.IsNullOrWhiteSpace(query.Title) ||
