@@ -2,7 +2,7 @@
 
 public class Q_AccountNotification
 {
-    public Guid AccountId { get; set; }
+    public string? Email { get; set; }
     public string? KeyWord { get; set; }
     public DateTime? FromDate { get; set; }
     public DateTime? ToDate { get; set; }
