@@ -1,4 +1,5 @@
 ﻿using Mapster;
+using Microsoft.EntityFrameworkCore;
 using SRPM_Repositories.Models;
 using SRPM_Repositories.Repositories.Interfaces;
 using SRPM_Services.BusinessModels;
@@ -21,7 +22,15 @@ public class UserRoleService : IUserRoleService
 
     public async Task<RS_UserRole?> GetByIdAsync(Guid id)
     {
-        var entity = await _unitOfWork.GetUserRoleRepository().GetByIdAsync<Guid>(id);
+        var entity = await _unitOfWork.GetUserRoleRepository().GetOneAsync(
+            include: p => p
+                .Include(ur => ur.Role)
+                .Include(ur => ur.Account)
+                .Include(ur => ur.Project)
+                .Include(ur => ur.AppraisalCouncil),
+            expression: ur => ur.Id == id // Assuming you're filtering by ID
+        );
+
         return entity?.Adapt<RS_UserRole>();
     }
     public async Task<bool> UserHasRoleAsync(Guid accountId, string roleName)
