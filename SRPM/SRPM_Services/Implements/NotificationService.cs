@@ -150,6 +150,12 @@ public class NotificationService : INotificationService
                 (accId, queryInput.KeyWord, queryInput.FromDate, queryInput.ToDate,
                 queryInput.IsRead, queryInput.Type, queryInput.Status, queryInput.PageIndex, queryInput.PageSize);
         }
+        else
+        {
+            (listNoti, totalCount) = await _unitOfWork.GetAccountNotificationRepository().ListAccountNotification
+                (queryInput.Email, queryInput.KeyWord, queryInput.FromDate, queryInput.ToDate,
+                queryInput.IsRead, queryInput.Type, queryInput.Status, queryInput.PageIndex, queryInput.PageSize);
+        }
 
         // Checking Result
         if (listNoti is null || listNoti.Count == 0)
