@@ -251,13 +251,13 @@ public class UserRoleService : IUserRoleService
     public async Task<RS_UserRole?> ToggleStatusAsync(Guid id)
     {
         var repo = _unitOfWork.GetUserRoleRepository();
-        var entity = await repo..GetOneAsync(
+        var entity = await repo.GetOneAsync(
             include: p => p
                 .Include(ur => ur.Role)
                 .Include(ur => ur.Account)
                 .Include(ur => ur.Project)
                 .Include(ur => ur.AppraisalCouncil),
-            expression: ur => ur.Id == id // Assuming you're filtering by ID
+            expression: ur => ur.Id == id
         );
         if (entity == null) return null;
 
