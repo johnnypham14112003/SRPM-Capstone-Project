@@ -22,7 +22,7 @@ public class NotificationController : Controller
     public async Task<IActionResult> Add([FromBody] RQ_Notification inputData)
     {
         var result = await _notificationService.CreateNew(inputData);
-        return result.Item1 ? Created(nameof(Add), "Create Successfully!") : BadRequest("Create Failed!");
+        return result.Item1 ? Created(nameof(Add), result.Item2) : BadRequest("Create Failed!");
     }
 
     [HttpPost("list")]

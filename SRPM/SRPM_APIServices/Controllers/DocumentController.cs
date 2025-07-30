@@ -22,7 +22,7 @@ public class DocumentController : Controller
     public async Task<IActionResult> Add([FromBody] RQ_Document inputData)
     {
         var result = await _documentService.NewDocument(inputData);
-        return result.success ? Created(nameof(Add), "Create Successfully! DocumentId:" + result.DocumentId)
+        return result.success ? Created(nameof(Add), result.DocumentId)
             : BadRequest("Create Failed!");
     }
 

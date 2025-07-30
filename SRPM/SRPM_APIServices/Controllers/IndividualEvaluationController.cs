@@ -21,7 +21,7 @@ public class IndividualEvaluationController : ControllerBase
     public async Task<IActionResult> Add([FromBody] RQ_IndividualEvaluation inputData)
     {
         var result = await _individualEvaluationService.CreateAsync(inputData);
-        return result.success ? Created(nameof(Add), "Create Successfully! IndividualEvaluationId:" + result.individualEvaluationId)
+        return result.success ? Created(nameof(Add), result.individualEvaluationId)
             : BadRequest("Create Failed!");
     }
 

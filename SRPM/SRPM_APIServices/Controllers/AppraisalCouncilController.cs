@@ -22,7 +22,7 @@ public class AppraisalCouncilController : Controller
     public async Task<IActionResult> Add([FromBody] RQ_AppraisalCouncil inputData)
     {
         var result = await _appraisalCouncilService.NewAppraisal(inputData);
-        return result.result ? Created(nameof(Add), "Create Successfully!") : BadRequest("Create Failed!");
+        return result.result ? Created(nameof(Add), result.CoucilId) : BadRequest("Create Failed!");
     }
 
     // api/appraisalcouncil/123e4567-e89b-12d3-a456-426614174000?incl=1

@@ -37,7 +37,7 @@ public class EvaluationStageController : ControllerBase
     public async Task<IActionResult> CreateEvaluationStage([FromBody] RQ_EvaluationStage newEvaluationStage)
     {
         var result = await _evaluationStageService.CreateAsync(newEvaluationStage);
-        return result.success ? Created(nameof(CreateEvaluationStage), "Create Successfully! EvaluationStageId:" + result.evaluationStageId)
+        return result.success ? Created(nameof(CreateEvaluationStage), result.evaluationStageId)
             : BadRequest("Create Failed!");
     }
 
