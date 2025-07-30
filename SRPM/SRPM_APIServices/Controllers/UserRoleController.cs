@@ -76,12 +76,19 @@ public class UserRoleController : ControllerBase
 
     // PUT: api/userrole/{id}
     [HttpPut("{id}")]
-    public async Task<ActionResult<RS_UserRole>> Update(Guid id, RQ_UserRole request)
+    public async Task<ActionResult<RS_UserRole>> Update(Guid id, RQ_UserRole request, string? Status)
     {
-        var updated = await _service.UpdateAsync(id, request);
-        if (updated == null)
-            return NotFound($"UserRole with ID {id} not found.");
-        return Ok(updated);
+        try
+        {
+            var updated = await _service.UpdateAsync(id, request, Status);
+            if (updated == null)
+                return NotFound($"UserRole with ID {id} not found.");
+            return Ok(updated);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = "Failed to update UserRole.", detail = ex.Message });
+        }
     }
 
     // PUT: api/userrole/{id}/toggle-status

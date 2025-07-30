@@ -7,6 +7,7 @@
         Submitted,
         Approved,
         InProgress,
+        Pending,
         Completed,
         Rejected,
         Deleted
