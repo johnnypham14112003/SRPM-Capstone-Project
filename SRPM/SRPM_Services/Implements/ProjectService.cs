@@ -334,7 +334,11 @@ public class ProjectService : IProjectService
 
     var restrictedStatuses = new[]
     {
-        Status.Draft
+        Status.Draft,
+        Status.Submitted,
+        Status.Approved,
+        Status.InProgress,
+        Status.Completed
     };
 
     var existingDraft = similarProjects.FirstOrDefault(p =>
