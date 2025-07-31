@@ -8,14 +8,17 @@ public class MapsterConfigMethods
     {
         return notification.Type.ToLower() switch
         {
+            "project" => notification.ProjectId,
+            "appraisalcouncil" => notification.AppraisalCouncilId,
             "transaction" => notification.TransactionId,
             "individualevaluation" => notification.IndividualEvaluationId,
             "evaluationstage" => notification.EvaluationStageId,
             "evaluation" => notification.EvaluationId,
-            //"userrole" => notification.GroupUserId,
+            "userrole" => notification.UserRoleId,
             "document" => notification.DocumentId,
             "membertask" => notification.MemberTaskId,
             "task" => notification.TaskId,
+
             //"systemconfiguration"
             _ => notification.SystemConfigurationId
         };

@@ -12,7 +12,7 @@ public interface IUserRoleService
     Task<IEnumerable<string>> GetAllUserRole(Guid userId);
     Task<List<RS_UserRole>> GetAllAsync();
     Task<RS_UserRole> CreateAsync(RQ_UserRole request);
-    Task<RS_UserRole?> UpdateAsync(Guid id, RQ_UserRole request);
+    Task<RS_UserRole?> UpdateAsync(Guid id, RQ_UserRole request, string? Status);
     Task<bool> DeleteAsync(Guid id);
     Task<RS_UserRole?> ToggleStatusAsync(Guid id);
 }

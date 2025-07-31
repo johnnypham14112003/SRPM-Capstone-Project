@@ -48,7 +48,7 @@ public class DocumentService : IDocumentService
         queryInput.PageIndex = queryInput.PageIndex < 1 ? 1 : queryInput.PageIndex;
         queryInput.PageSize = queryInput.PageSize < 1 ? 1 : queryInput.PageSize;
 
-        var dataResult = await _unitOfWork.GetDocumentRepository().ListPaging
+        var (listDocument, totalFound) = await _unitOfWork.GetDocumentRepository().ListPaging
             (queryInput.KeyWord, queryInput.Type, queryInput.IsTemplate, queryInput.Status,
             queryInput.FromDate, queryInput.ToDate,
             queryInput.UploaderId, queryInput.EditorId, queryInput.ProjectId,
@@ -56,15 +56,15 @@ public class DocumentService : IDocumentService
             queryInput.SortBy, queryInput.PageIndex, queryInput.PageSize);
 
         // Checking Result
-        if (dataResult.listDocument is null || dataResult.listDocument.Count == 0)
+        if (listDocument is null || listDocument.Count == 0)
             throw new NotFoundException("Not Found Any Document!");
 
         return new PagingResult<RS_Document>
         {
             PageIndex = queryInput.PageIndex,
             PageSize = queryInput.PageSize,
-            TotalCount = dataResult.totalFound,
-            DataList = dataResult.listDocument.Adapt<List<RS_Document>>()
+            TotalCount = totalFound,
+            DataList = listDocument.Adapt<List<RS_Document>>()
         };
     }
 
@@ -72,13 +72,10 @@ public class DocumentService : IDocumentService
     {
         UserRole? defaultUserRole = null;
         Guid accId = Guid.Empty;
-        Guid.TryParse(_userContextService.GetCurrentUserId(), out accId);
-
-        if (accId == Guid.Empty && string.IsNullOrWhiteSpace(email))
-            throw new BadRequestException("Unknown User Parameter To Find Document!");
 
         if (string.IsNullOrWhiteSpace(email))
         {//default get by current session
+            _ = Guid.TryParse(_userContextService.GetCurrentUserId(), out accId);
             var existAccount = await _unitOfWork.GetAccountRepository().GetOneAsync(a => a.Id == accId, null, false) ??
             throw new NotFoundException("Your current session account Id is not exist in database! Can't find your cv");
 
@@ -163,7 +160,7 @@ public class DocumentService : IDocumentService
 
     private async Task<Guid> GetCurrentMainUserRoleId()
     {
-        Guid.TryParse(_userContextService.GetCurrentUserId(), out Guid accId);
+        _ = Guid.TryParse(_userContextService.GetCurrentUserId(), out Guid accId);
 
         var existAccount = await _unitOfWork.GetAccountRepository().GetOneAsync(a => a.Id == accId, null, false) ??
             throw new NotFoundException("Your current session account Id is not exist in database! Can't find your cv");

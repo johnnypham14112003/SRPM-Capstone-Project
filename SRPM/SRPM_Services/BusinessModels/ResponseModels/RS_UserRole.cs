@@ -16,7 +16,11 @@ namespace SRPM_Services.BusinessModels.ResponseModels
         public DateTime CreatedAt { get; set; }
         public string Status { get; set; } = "created";
         public Guid AccountId { get; set; }
+        public string FullName { get; set; } = null!;
+        public string Email { get; set; } = null!;
+        public string? AvatarURL { get; set; }
         public Guid RoleId { get; set; }
+        public string Name { get; set; } = null!;
         public Guid? ProjectId { get; set; }
         public Guid? AppraisalCouncilId { get; set; }
     }

@@ -1,4 +1,6 @@
 ﻿using Mapster;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Microsoft.EntityFrameworkCore;
 using SRPM_Repositories.Models;
 using SRPM_Repositories.Repositories.Interfaces;
 using SRPM_Services.BusinessModels;
@@ -21,7 +23,15 @@ public class UserRoleService : IUserRoleService
 
     public async Task<RS_UserRole?> GetByIdAsync(Guid id)
     {
-        var entity = await _unitOfWork.GetUserRoleRepository().GetByIdAsync<Guid>(id);
+        var entity = await _unitOfWork.GetUserRoleRepository().GetOneAsync(
+            include: p => p
+                .Include(ur => ur.Role)
+                .Include(ur => ur.Account)
+                .Include(ur => ur.Project)
+                .Include(ur => ur.AppraisalCouncil),
+            expression: ur => ur.Id == id // Assuming you're filtering by ID
+        );
+
         return entity?.Adapt<RS_UserRole>();
     }
     public async Task<bool> UserHasRoleAsync(Guid accountId, string roleName)
@@ -188,7 +198,7 @@ public class UserRoleService : IUserRoleService
         entity.Id = Guid.NewGuid();
         entity.CreatedAt = DateTime.Now;
         entity.Code = $"UR-{Convert.ToBase64String(Guid.NewGuid().ToByteArray()).Replace("=", "").Replace("+", "").Replace("/", "").Substring(0, 6).ToUpperInvariant()}";
-        entity.Status = Status.Created.ToString().ToLowerInvariant();
+        entity.Status = Status.Pending.ToString().ToLowerInvariant();
         entity.IsOfficial = isOfficial;
         entity.ExpireDate = expireDate;
         entity.GroupName = groupName;
@@ -200,13 +210,24 @@ public class UserRoleService : IUserRoleService
     }
 
 
-    public async Task<RS_UserRole?> UpdateAsync(Guid id, RQ_UserRole request)
+    public async Task<RS_UserRole?> UpdateAsync(Guid id, RQ_UserRole request, string? status)
     {
         var repo = _unitOfWork.GetUserRoleRepository();
-        var entity = await repo.GetByIdAsync<Guid>(id);
+        var entity = await repo.GetOneAsync(
+            include: p => p
+                .Include(ur => ur.Role)
+                .Include(ur => ur.Account)
+                .Include(ur => ur.Project)
+                .Include(ur => ur.AppraisalCouncil),
+            expression: ur => ur.Id == id 
+        );
         if (entity == null) return null;
-
-        entity.Status = Status.Created.ToString().ToLowerInvariant();
+        if (status.ToLowerInvariant() != Status.Rejected.ToString().ToLowerInvariant() &&
+            status.ToLowerInvariant() != Status.Approved.ToString().ToLowerInvariant())
+        {
+            throw new BadRequestException("Invalid Status.");
+        }
+        entity.Status = status.ToLowerInvariant();
         request.Adapt(entity);
 
         await repo.UpdateAsync(entity);
@@ -230,7 +251,14 @@ public class UserRoleService : IUserRoleService
     public async Task<RS_UserRole?> ToggleStatusAsync(Guid id)
     {
         var repo = _unitOfWork.GetUserRoleRepository();
-        var entity = await repo.GetByIdAsync<Guid>(id);
+        var entity = await repo.GetOneAsync(
+            include: p => p
+                .Include(ur => ur.Role)
+                .Include(ur => ur.Account)
+                .Include(ur => ur.Project)
+                .Include(ur => ur.AppraisalCouncil),
+            expression: ur => ur.Id == id
+        );
         if (entity == null) return null;
 
         entity.Status = entity.Status.ToStatus() switch

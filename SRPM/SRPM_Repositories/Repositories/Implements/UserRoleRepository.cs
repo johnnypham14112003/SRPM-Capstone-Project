@@ -18,7 +18,8 @@ public class UserRoleRepository : GenericRepository<UserRole>, IUserRoleReposito
     string? status,
     bool? isOfficial)
     {
-        IQueryable<UserRole> query = _context.Set<UserRole>().Include(r => r.Role);
+        IQueryable<UserRole> query = _context.Set<UserRole>().Include(r => r.Role)
+            .Include(r => r.Account).AsSplitQuery();
 
         if (accountId.HasValue)
             query = query.Where(x => x.AccountId == accountId.Value);

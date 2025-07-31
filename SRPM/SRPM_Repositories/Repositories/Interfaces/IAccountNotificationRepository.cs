@@ -9,4 +9,7 @@ public interface IAccountNotificationRepository : IGenericRepository<AccountNoti
     Task<(List<NotificationWithReadStatus>? listNotificationWithStatus, int totalCount)> ListAccountNotification
          (Guid accountId, string? keyWord, DateTime? fromDate, DateTime? toDate,
         bool isRead, string? type, string? status, int pageIndex, int pageSize);
+    Task<(List<NotificationWithReadStatus>? listNotificationWithStatus, int totalCount)> ListAccountNotification
+            (string email, string? keyWord, DateTime? fromDate, DateTime? toDate,
+            bool isRead, string? type, string? status, int pageIndex, int pageSize);
 }

@@ -7,6 +7,7 @@ using SRPM_Services.Extensions.Enumerables;
 using SRPM_Services.Extensions.Exceptions;
 using SRPM_Services.Interfaces;
 using Mapster;
+using Microsoft.EntityFrameworkCore;
 
 namespace SRPM_Services.Implements;
 
@@ -21,7 +22,10 @@ public class MemberTaskService : IMemberTaskService
 
     public async Task<RS_MemberTask?> GetByIdAsync(Guid id)
     {
-        var entity = await _unitOfWork.GetMemberTaskRepository().GetByIdAsync<Guid>(id);
+        var entity = await _unitOfWork.GetMemberTaskRepository().GetOneAsync(p => p.Id == id, include: m => m
+                .Include(m => m.Member).ThenInclude(m => m.Account)
+                .Include(m => m.Member).ThenInclude(m => m.Role)
+                .Include(m => m.Task));
         return entity?.Adapt<RS_MemberTask>();
     }
 
@@ -31,7 +35,12 @@ public class MemberTaskService : IMemberTaskService
             (query.MemberId == null || x.MemberId == query.MemberId) &&
             (query.TaskId == null || x.TaskId == query.TaskId) &&
             (string.IsNullOrWhiteSpace(query.Status) || x.Status == query.Status),
-            hasTrackings: false);
+            hasTrackings: false,
+            include: m => m
+                .Include(m => m.Member).ThenInclude(m => m.Account)
+                .Include(m => m.Member).ThenInclude(m => m.Role)
+                .Include(m => m.Task)
+            );
 
         var total = list.Count;
         if (total == 0)
@@ -51,24 +60,52 @@ public class MemberTaskService : IMemberTaskService
         };
     }
 
-    public async Task<RS_MemberTask> CreateAsync(RQ_MemberTask request)
-    {
-        try {
-            var entity = request.Adapt<MemberTask>();
-            entity.Id = Guid.NewGuid();
-            entity.JoinedAt = DateTime.Now;
-            entity.Status = Status.Created.ToString().ToLowerInvariant();
-
-            await _unitOfWork.GetMemberTaskRepository().AddAsync(entity);
-            await _unitOfWork.SaveChangesAsync();
-
-            return entity.Adapt<RS_MemberTask>();
-        }
-        catch (Exception e)
+        public async Task<RS_MemberTask> CreateAsync(RQ_MemberTask request)
         {
-            throw new BadRequestException("Failed to create MemberTask");
+            try
+            {
+
+                // Step 2: Get the Task to retrieve its MilestoneId
+                var task = await _unitOfWork.GetTaskRepository().GetByIdAsync(request.TaskId);
+                if (task == null)
+                    throw new BadRequestException("Task not found");
+
+                // Step 3: Get the Milestone to retrieve ProjectId
+                var milestone = await _unitOfWork.GetMilestoneRepository().GetByIdAsync(task.MilestoneId);
+                if (milestone == null)
+                    throw new BadRequestException("Milestone not found");
+
+                var projectId = milestone.ProjectId;
+
+                // Step 4: Find user role for this project and user, excluding group roles
+                var userRole = await _unitOfWork.GetUserRoleRepository()
+                    .GetOneAsync(ur =>
+                        ur.AccountId == request.MemberId &&
+                        ur.ProjectId == projectId &&
+                        ur.Role.IsGroupRole == false,
+                        include: ur => 
+                        ur = ur.Include(ur => ur.Role));
+
+                if (userRole == null)
+                    throw new BadRequestException("UserRole not found for user in this project");
+
+                // Step 5: Create the MemberTask with the correct MemberId
+                var entity = request.Adapt<MemberTask>();
+                entity.Id = Guid.NewGuid();
+                entity.JoinedAt = DateTime.Now;
+                entity.Status = Status.Created.ToString().ToLowerInvariant();
+                entity.MemberId = userRole.Id;
+
+                await _unitOfWork.GetMemberTaskRepository().AddAsync(entity);
+                await _unitOfWork.SaveChangesAsync();
+
+                return entity.Adapt<RS_MemberTask>();
+            }
+            catch (Exception e)
+            {
+                throw new BadRequestException("Failed to create MemberTask");
+            }
         }
-    }
 
     public async Task<RS_MemberTask?> UpdateAsync(Guid id, RQ_MemberTask request)
     {

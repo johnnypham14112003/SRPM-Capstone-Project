@@ -1,7 +1,4 @@
-﻿using Newtonsoft.Json.Linq;
-using System;
-
-namespace SRPM_Services.Extensions.Enumerables
+﻿namespace SRPM_Services.Extensions.Enumerables
 {
     public enum Status
     {
@@ -10,8 +7,10 @@ namespace SRPM_Services.Extensions.Enumerables
         Submitted,
         Approved,
         InProgress,
+        Pending,
         Completed,
         Rejected,
+        Cancelled,
         Deleted
     }
     public static class StatusExtensions
@@ -55,4 +54,3 @@ namespace SRPM_Services.Extensions.Enumerables
         }
     }
 }
-

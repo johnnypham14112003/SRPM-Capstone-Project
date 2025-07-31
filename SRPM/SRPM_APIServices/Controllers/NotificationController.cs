@@ -22,14 +22,28 @@ public class NotificationController : Controller
     public async Task<IActionResult> Add([FromBody] RQ_Notification inputData)
     {
         var result = await _notificationService.CreateNew(inputData);
-        return result.Item1 ? Created(nameof(Add), "Create Successfully!") : BadRequest("Create Failed!");
+        return result.Item1 ? Created(nameof(Add), result.Item2) : BadRequest("Create Failed!");
     }
 
-    [HttpGet("list")]
-    public async Task<IActionResult> ListOfUser([FromBody] Q_AccountNotification queryInput)
+    [HttpPost("list")]
+    public async Task<IActionResult> ListNotiOfUser([FromBody] Q_AccountNotification queryInput)
     {
         var result = await _notificationService.ListNotificationOfUser(queryInput);
         return Ok(result);
+    }
+
+    [HttpPost("accounts")]
+    public async Task<IActionResult> NotiToUser([FromBody] RQ_NotificationToUsers input)
+    {
+        var result = await _notificationService.NotificateToUser(input.ListAccountId, input.NotificationId);
+        return Ok(result);
+    }
+
+    [HttpPatch]
+    public async Task<IActionResult> Update([FromQuery] Guid? notification)
+    {
+        bool result = await _notificationService.ReadNotification(notification);
+        return result ? Ok("Update Successfully!") : BadRequest("Update Failed!");
     }
 
     [HttpPut]

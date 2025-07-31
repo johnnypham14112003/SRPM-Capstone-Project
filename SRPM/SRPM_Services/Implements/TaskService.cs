@@ -26,9 +26,10 @@ public class TaskService : ITaskService
         var entity = await _unitOfWork.GetTaskRepository().GetOneAsync(t => t.Id == id
         , include: t =>
         {
-           t = t.Include(x => x.Milestone)
-            .Include(x => x.Creator)
-            .Include(x => x.MemberTasks);
+            t = t.Include(x => x.Milestone)
+             .Include(x => x.Creator)
+             .Include(x => x.MemberTasks).ThenInclude(t => t.Member).ThenInclude(a => a.Account)
+             .Include(x => x.MemberTasks).ThenInclude(t => t.Member).ThenInclude(a => a.Role);
             return t;
             }
         , hasTrackings: false
@@ -52,7 +53,8 @@ public class TaskService : ITaskService
             {
                 t = t.Include(x => x.Milestone)
                  .Include(x => x.Creator)
-                 .Include(x => x.MemberTasks);
+                 .Include(x => x.MemberTasks).ThenInclude(t => t.Member).ThenInclude(a => a.Account)
+                 .Include(x => x.MemberTasks).ThenInclude(t => t.Member).ThenInclude(a => a.Role);
                 return t;
             },
             hasTrackings: false
@@ -83,10 +85,27 @@ public class TaskService : ITaskService
         var entity = request.Adapt<SRPM_Repositories.Models.Task>();
         entity.Id = Guid.NewGuid();
         entity.Status = Extensions.Enumerables.TaskStatus.ToDo.ToFriendlyString();
-        var guid = Guid.NewGuid().ToString("N"); 
-        entity.Code = "T" + guid.Substring(0, 6).ToUpper(); 
+        var guid = Guid.NewGuid().ToString("N");
+        entity.Code = "T" + guid.Substring(0, 6).ToUpper();
 
-        entity.CreatorId = Guid.Parse(_userContextService.GetCurrentUserId());
+        // Get current user account ID
+        var accountId = Guid.Parse(_userContextService.GetCurrentUserId());
+
+        // Lookup milestone to get project ID
+        var milestone = await _unitOfWork.GetMilestoneRepository()
+            .GetByIdAsync(request.MilestoneId);
+
+        if (milestone == null)
+            throw new Exception("Milestone not found.");
+
+        // Lookup user role using account ID and project ID
+        var userRole = await _unitOfWork.GetUserRoleRepository()
+            .GetOneAsync(ur => ur.AccountId == accountId && ur.ProjectId == milestone.ProjectId);
+
+        if (userRole == null)
+            throw new Exception("UserRole not found for the current user in the project.");
+
+        entity.CreatorId = userRole.Id;
 
         await _unitOfWork.GetTaskRepository().AddAsync(entity);
         await _unitOfWork.SaveChangesAsync();

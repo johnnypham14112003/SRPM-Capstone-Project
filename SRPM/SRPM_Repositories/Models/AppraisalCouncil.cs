@@ -13,6 +13,7 @@ public class AppraisalCouncil
     [Required, MaxLength(30)] public string Status { get; set; } = "created";
 
     // Navigation properties
+    public virtual ICollection<Notification>? Notifications { get; set; }
     public virtual ICollection<Evaluation>? Evaluations { get; set; }
     public virtual ICollection<EvaluationStage>? EvaluationStages { get; set; }
     public virtual ICollection<UserRole>? CouncilMembers { get; set; }
