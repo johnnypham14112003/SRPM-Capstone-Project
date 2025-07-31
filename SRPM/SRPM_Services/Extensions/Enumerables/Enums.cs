@@ -10,6 +10,7 @@
         Pending,
         Completed,
         Rejected,
+        Cancelled,
         Deleted
     }
     public static class StatusExtensions

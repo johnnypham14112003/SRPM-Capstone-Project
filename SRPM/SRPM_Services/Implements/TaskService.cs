@@ -26,9 +26,10 @@ public class TaskService : ITaskService
         var entity = await _unitOfWork.GetTaskRepository().GetOneAsync(t => t.Id == id
         , include: t =>
         {
-           t = t.Include(x => x.Milestone)
-            .Include(x => x.Creator)
-            .Include(x => x.MemberTasks);
+            t = t.Include(x => x.Milestone)
+             .Include(x => x.Creator)
+             .Include(x => x.MemberTasks).ThenInclude(t => t.Member).ThenInclude(a => a.Account)
+             .Include(x => x.MemberTasks).ThenInclude(t => t.Member).ThenInclude(a => a.Role);
             return t;
             }
         , hasTrackings: false
@@ -52,7 +53,8 @@ public class TaskService : ITaskService
             {
                 t = t.Include(x => x.Milestone)
                  .Include(x => x.Creator)
-                 .Include(x => x.MemberTasks);
+                 .Include(x => x.MemberTasks).ThenInclude(t => t.Member).ThenInclude(a => a.Account)
+                 .Include(x => x.MemberTasks).ThenInclude(t => t.Member).ThenInclude(a => a.Role);
                 return t;
             },
             hasTrackings: false

@@ -22,7 +22,10 @@ public class MemberTaskService : IMemberTaskService
 
     public async Task<RS_MemberTask?> GetByIdAsync(Guid id)
     {
-        var entity = await _unitOfWork.GetMemberTaskRepository().GetByIdAsync<Guid>(id);
+        var entity = await _unitOfWork.GetMemberTaskRepository().GetOneAsync(p => p.Id == id, include: m => m
+                .Include(m => m.Member).ThenInclude(m => m.Account)
+                .Include(m => m.Member).ThenInclude(m => m.Role)
+                .Include(m => m.Task));
         return entity?.Adapt<RS_MemberTask>();
     }
 
@@ -32,7 +35,12 @@ public class MemberTaskService : IMemberTaskService
             (query.MemberId == null || x.MemberId == query.MemberId) &&
             (query.TaskId == null || x.TaskId == query.TaskId) &&
             (string.IsNullOrWhiteSpace(query.Status) || x.Status == query.Status),
-            hasTrackings: false);
+            hasTrackings: false,
+            include: m => m
+                .Include(m => m.Member).ThenInclude(m => m.Account)
+                .Include(m => m.Member).ThenInclude(m => m.Role)
+                .Include(m => m.Task)
+            );
 
         var total = list.Count;
         if (total == 0)

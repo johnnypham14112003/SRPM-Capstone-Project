@@ -395,7 +395,10 @@ public static class DIContainer
             .Ignore(dest => dest.Notifications)
             .IgnoreNullValues(true);
 
-        TypeAdapterConfig<MemberTask, RS_MemberTask>.NewConfig();
+        TypeAdapterConfig<MemberTask, RS_MemberTask>.NewConfig()
+            .Map(dest => dest.FullName, src => src.Member.Account.FullName)
+            .Map(dest => dest.AvatarUrl, src => src.Member.Account.AvatarURL)
+            .Map(dest => dest.RoleName, src => src.Member.Role.Name);
         TypeAdapterConfig<RQ_Account, Account>.NewConfig()
             .Ignore(dest => dest.Id)
             .Ignore(dest => dest.CreateTime)
