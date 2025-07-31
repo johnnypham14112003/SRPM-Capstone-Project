@@ -39,7 +39,7 @@ public class NotificationController : Controller
         return Ok(result);
     }
 
-    [HttpPatch]
+    [HttpPut("status")]
     public async Task<IActionResult> Update([FromQuery] Guid? notification)
     {
         bool result = await _notificationService.ReadNotification(notification);

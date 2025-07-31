@@ -6,7 +6,7 @@ public class Q_AccountNotification
     public string? KeyWord { get; set; }
     public DateTime? FromDate { get; set; }
     public DateTime? ToDate { get; set; }
-    public bool IsRead { get; set; } = false;
+    public bool? IsRead { get; set; } = false;
     public string? Type { get; set; }
     public string? Status { get; set; }
     public int PageIndex { get; set; } = 1;

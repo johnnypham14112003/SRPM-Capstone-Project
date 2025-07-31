@@ -20,7 +20,7 @@ public class AccountNotificationRepository : GenericRepository<AccountNotificati
 
     public async Task<(List<NotificationWithReadStatus>? listNotificationWithStatus, int totalCount)> ListAccountNotification
         (Guid accountId, string? keyWord, DateTime? fromDate, DateTime? toDate,
-        bool isRead, string? type, string? status, int pageIndex, int pageSize)
+        bool? isRead, string? type, string? status, int pageIndex, int pageSize)
     {
         var query = _context.AccountNotification
             .Include(an => an.Notification)
@@ -34,8 +34,8 @@ public class AccountNotificationRepository : GenericRepository<AccountNotificati
             query = query.Where(an => an.Notification.Title.ToLower().Contains(keyWord.ToLower()));
 
         // IsRead Filter
-        //* If only show all unread then isRead == false / else will show combine
-        if (isRead == false) query = query.Where(an => an.IsRead == false);
+        if (isRead.HasValue)
+            query = query.Where(an => an.IsRead == isRead);
 
         // Type Filter
         // If not null => Show only notification of a type / else show all
@@ -75,7 +75,7 @@ public class AccountNotificationRepository : GenericRepository<AccountNotificati
 
     public async Task<(List<NotificationWithReadStatus>? listNotificationWithStatus, int totalCount)> ListAccountNotification
             (string email, string? keyWord, DateTime? fromDate, DateTime? toDate,
-            bool isRead, string? type, string? status, int pageIndex, int pageSize)
+            bool? isRead, string? type, string? status, int pageIndex, int pageSize)
     {
         var query = _context.AccountNotification
             .Include(an => an.Notification)
@@ -91,8 +91,8 @@ public class AccountNotificationRepository : GenericRepository<AccountNotificati
             query = query.Where(an => an.Notification.Title.ToLower().Contains(keyWord.ToLower()));
 
         // IsRead Filter
-        //* If only show all unread then isRead == false / else will show combine
-        if (isRead == false) query = query.Where(an => an.IsRead == false);
+        if (isRead.HasValue)
+            query = query.Where(an => an.IsRead == isRead);
 
         // Type Filter
         // If not null => Show only notification of a type / else show all

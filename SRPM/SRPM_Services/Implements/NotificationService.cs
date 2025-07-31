@@ -139,7 +139,7 @@ public class NotificationService : INotificationService
 
         //Re-assign value if it smaller than 1
         queryInput.PageIndex = queryInput.PageIndex < 1 ? 1 : queryInput.PageIndex;
-        queryInput.PageSize = queryInput.PageIndex < 1 ? 1 : queryInput.PageIndex;
+        queryInput.PageSize = queryInput.PageSize < 1 ? 1 : queryInput.PageSize;
 
         Guid accId = Guid.Empty;
         if (string.IsNullOrWhiteSpace(queryInput.Email))
