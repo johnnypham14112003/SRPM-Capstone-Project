@@ -34,13 +34,13 @@ public class ProjectService : IProjectService
     public async Task<object?> GetByIdAsync(Guid id)
     {
         var userId = Guid.Parse(_userContextService.GetCurrentUserId());
-        var deletedStatus = Status.Deleted.ToString();
+        var targetStatus = Status.Approved.ToString().ToLower();
 
         var userRoles = await _unitOfWork.GetUserRoleRepository()
             .GetListAsync(
                 us => us.AccountId == userId
                            && us.ProjectId == id
-                           && us.Status != deletedStatus,
+                           && us.Status.ToLower() == targetStatus,
                 include: q => q.Include(ur => ur.Role)
             );
 
@@ -193,7 +193,7 @@ public class ProjectService : IProjectService
             roleId: null,
             projectId: null,
             appraisalCouncilId: null,
-            status: Status.Created.ToString().ToLowerInvariant(),
+            status: Status.Approved.ToString().ToLowerInvariant(),
             isOfficial: null
         );
 
