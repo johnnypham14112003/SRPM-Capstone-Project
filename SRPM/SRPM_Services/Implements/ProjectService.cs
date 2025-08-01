@@ -379,7 +379,7 @@ public class ProjectService : IProjectService
         IsOfficial = false,
         ExpireDate = draftClone.CreatedAt.AddYears(1),
         CreatedAt = DateTime.Now,
-        Status = Status.Created.ToString().ToLowerInvariant()
+        Status = Status.Approved.ToString().ToLowerInvariant()
     };
 
     await _unitOfWork.GetUserRoleRepository().AddAsync(userRole);

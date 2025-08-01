@@ -41,7 +41,7 @@ public class UserRoleService : IUserRoleService
             roleId: null,
             projectId: null,
             appraisalCouncilId: null,
-            status: Status.Created.ToString().ToLower(),
+            status: Status.Approved.ToString().ToLower(),
             isOfficial: null
         );
 
@@ -57,7 +57,7 @@ public class UserRoleService : IUserRoleService
             roleId: null,
             projectId: null,
             appraisalCouncilId: null,
-            status: Status.Created.ToString().ToLower(),
+            status: Status.Approved.ToString().ToLower(),
             isOfficial: null
         );
 
