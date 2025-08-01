@@ -223,7 +223,8 @@ public class UserRoleService : IUserRoleService
         );
         if (entity == null) return null;
         if (status.ToLowerInvariant() != Status.Rejected.ToString().ToLowerInvariant() &&
-            status.ToLowerInvariant() != Status.Approved.ToString().ToLowerInvariant())
+            status.ToLowerInvariant() != Status.Approved.ToString().ToLowerInvariant() &&
+            status.ToLowerInvariant() != Status.Pending.ToString().ToLowerInvariant())
         {
             throw new BadRequestException("Invalid Status.");
         }
