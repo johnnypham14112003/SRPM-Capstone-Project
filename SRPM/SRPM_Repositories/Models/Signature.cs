@@ -14,7 +14,7 @@ public class Signature
     [Required] public Guid DocumentId { get; set; }
 
     // Navigation properties
-    [Required] public virtual UserRole Signer { get; set; } = null!;
-    [Required] public virtual Document Document { get; set; } = null!;
+    public virtual UserRole Signer { get; set; } = null!;
+    public virtual Document Document { get; set; } = null!;
     public virtual ICollection<Notification>? Notifications { get; set; }
 }

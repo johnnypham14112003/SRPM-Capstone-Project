@@ -26,7 +26,6 @@ public class UserRole
     public virtual ICollection<Document>? UploadedDocuments { get; set; }
     public virtual ICollection<Document>? ModifiedDocuments { get; set; }
     public virtual ICollection<Signature>? Signatures { get; set; }
-    public virtual ICollection<ResearchPaper>? ResearchPapers { get; set; }
     public virtual ICollection<IndividualEvaluation>? IndividualEvaluations { get; set; }
     public virtual ICollection<Project>? CreatedProjects { get; set; }//HostInstitute have many project || CreatedProject
     public virtual ICollection<Milestone>? CreatedMilestones { get; set; }// who created those milestones

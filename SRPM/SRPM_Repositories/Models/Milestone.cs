@@ -24,6 +24,6 @@ public class Milestone
     // Navigation properties
     public Project Project { get; set; } = null!;
     public UserRole Creator { get; set; } = null!;
-    public ICollection<Evaluation>? Evaluations { get; set; }
+    public ICollection<EvaluationStage>? EvaluationStages { get; set; }
     public ICollection<Task>? Tasks { get; set; }
 }
