@@ -20,7 +20,8 @@ public interface IUnitOfWork
     IProjectMajorRepository GetProjectMajorRepository();
     IProjectSimilarityRepository GetProjectSimilarityRepository();
     IProjectTagRepository GetProjectTagRepository();
-    IResearchPaperRepository GetResearchPaperRepository();
+    IProjectResultRepository GetProjectResultRepository();
+    IResultPublishRepository GetResultPublishRepository();
     IRoleRepository GetRoleRepository();
     ISignatureRepository GetSignatureRepository();
     ISystemConfigurationRepository GetSystemConfigurationRepository();

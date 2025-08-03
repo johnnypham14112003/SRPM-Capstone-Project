@@ -127,7 +127,8 @@ public static class DIContainer
         services.AddScoped<IProjectMajorRepository, ProjectMajorRepository>();
         services.AddScoped<IProjectSimilarityRepository, ProjectSimilarityRepository>();
         services.AddScoped<IProjectTagRepository, ProjectTagRepository>();
-        services.AddScoped<IResearchPaperRepository, ResearchPaperRepository>();
+        services.AddScoped<IProjectResultRepository, ProjectResultRepository>();
+        services.AddScoped<IResultPublishRepository, ResultPublishRepository>();
         services.AddScoped<IRoleRepository, RoleRepository>();
         services.AddScoped<ISignatureRepository, SignatureRepository>();
         services.AddScoped<ISystemConfigurationRepository, SystemConfigurationRepository>();
@@ -260,7 +261,7 @@ public static class DIContainer
             .Ignore(dest => dest.CreatedAt)
             .Ignore(dest => dest.UpdatedAt)
             .Ignore(dest => dest.Creator)
-            .Ignore(dest => dest.ResearchPaper)
+            .Ignore(dest => dest.ProjectResult)
             .Ignore(dest => dest.Members)
             .Ignore(dest => dest.Milestones)
             .Ignore(dest => dest.Evaluations)
@@ -273,7 +274,7 @@ public static class DIContainer
 
         TypeAdapterConfig<Project, Project>.NewConfig()
             .Ignore(dest => dest.Creator)
-            .Ignore(dest => dest.ResearchPaper)
+            .Ignore(dest => dest.ProjectResult)
             .Ignore(dest => dest.Members)
             .Ignore(dest => dest.Milestones)
             .Ignore(dest => dest.Evaluations)
@@ -347,7 +348,6 @@ public static class DIContainer
             .Ignore(dest => dest.AppraisalCouncil)
             .Ignore(dest => dest.UploadedDocuments)
             .Ignore(dest => dest.Signatures)
-            .Ignore(dest => dest.ResearchPapers)
             .Ignore(dest => dest.IndividualEvaluations)
             .Ignore(dest => dest.CreatedProjects)
             .Ignore(dest => dest.CreatedMilestones)
@@ -377,7 +377,7 @@ public static class DIContainer
             .Ignore(dest => dest.CreatedAt)
             .Ignore(dest => dest.Project)
             .Ignore(dest => dest.Creator)
-            .Ignore(dest => dest.Evaluations)
+            .Ignore(dest => dest.EvaluationStages)
             .Ignore(dest => dest.Tasks)
             .IgnoreNullValues(true);
 

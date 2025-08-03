@@ -30,7 +30,7 @@ public class ProjectRepository : GenericRepository<Project>, IProjectRepository
             .Include(p => p.ProjectTags)
             .Include(p => p.Documents)
             .Include(p => p.Transactions)
-            .Include(p => p.ResearchPaper);
+            .Include(p => p.ProjectResult);
 
         return await query.FirstOrDefaultAsync(p => p.Id == id);
     }

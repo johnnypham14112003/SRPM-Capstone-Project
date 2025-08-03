@@ -55,12 +55,12 @@ public class EvaluationRepository : GenericRepository<Evaluation>, IEvaluationRe
             e.Title.ToLower().Contains(keyWord.ToLower()));
 
         //Phrase Filter
-        if (!string.IsNullOrWhiteSpace(evaPhrase))
-            query = query.Where(e => e.Phrase.ToLower().Equals(evaPhrase.ToLower()));
+        //if (!string.IsNullOrWhiteSpace(evaPhrase))
+        //    query = query.Where(e => e.Phrase.ToLower().Equals(evaPhrase.ToLower()));
 
         //Type Filter
-        if (!string.IsNullOrWhiteSpace(evaType))
-            query = query.Where(e => e.Type.ToLower().Equals(evaType.ToLower()));
+        //if (!string.IsNullOrWhiteSpace(evaType))
+        //    query = query.Where(e => e.Type.ToLower().Equals(evaType.ToLower()));
 
         //Status Filter
         if (!string.IsNullOrWhiteSpace(status))
@@ -86,8 +86,8 @@ public class EvaluationRepository : GenericRepository<Evaluation>, IEvaluationRe
             query = query.Where(e => e.ProjectId == projectId.Value);
 
         //By milestoneId
-        if (milestoneId.HasValue)
-            query = query.Where(es => es.MilestoneId == milestoneId.Value);
+        //if (milestoneId.HasValue)
+        //    query = query.Where(es => es.MilestoneId == milestoneId.Value);
 
         //By appraisalId
         if (appraisalCouncilId.HasValue)
@@ -105,18 +105,18 @@ public class EvaluationRepository : GenericRepository<Evaluation>, IEvaluationRe
             case 3: // CreateTime
                 query = query.OrderByDescending(e => e.CreateDate);
                 break;
-            case 4: // Phrase
-                query = query.OrderBy(e => e.Phrase);
-                break;
-            case 5: // Type
-                query = query.OrderBy(e => e.Type);
-                break;
+            //case 4: // Phrase
+            //    query = query.OrderBy(e => e.Phrase);
+            //    break;
+            //case 5: // Type
+            //    query = query.OrderBy(e => e.Type);
+            //    break;
             case 6: // ProjectId
                 query = query.OrderBy(e => e.ProjectId);
                 break;
-            case 7: // MilestoneId
-                query = query.OrderBy(e => e.MilestoneId);
-                break;
+            //case 7: // MilestoneId
+            //    query = query.OrderBy(e => e.MilestoneId);
+                //break;
             case 8: // AppraisalCouncilId
                 query = query.OrderBy(e => e.AppraisalCouncilId);
                 break;

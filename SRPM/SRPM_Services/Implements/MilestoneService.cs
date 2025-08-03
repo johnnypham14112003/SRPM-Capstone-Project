@@ -50,7 +50,7 @@ public class MilestoneService : IMilestoneService
             include: q => q
                 .Include(m => m.Project)
                 .Include(m => m.Creator).ThenInclude(c => c.Role)
-                .Include(m => m.Evaluations)
+                .Include(m => m.EvaluationStages)
                 .Include(m => m.Tasks),
             hasTrackings: false
         );

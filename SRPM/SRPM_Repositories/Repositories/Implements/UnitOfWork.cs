@@ -23,7 +23,8 @@ public class UnitOfWork : IUnitOfWork
     private readonly Lazy<IProjectSimilarityRepository> _projectSimilarityRepository;
     private readonly Lazy<IProjectRepository> _projectRepository;
     private readonly Lazy<IProjectTagRepository> _projectTagRepository;
-    private readonly Lazy<IResearchPaperRepository> _researchPaperRepository;
+    private readonly Lazy<IProjectResultRepository> _projectResultRepository;
+    private readonly Lazy<IResultPublishRepository> _resultPublishRepository;
     private readonly Lazy<IRoleRepository> _roleRepository;
     private readonly Lazy<ISignatureRepository> _signatureRepository;
     private readonly Lazy<ISystemConfigurationRepository> _systemConfigurationRepository;
@@ -86,8 +87,11 @@ public class UnitOfWork : IUnitOfWork
         _projectTagRepository = new Lazy<IProjectTagRepository>
             (() => new ProjectTagRepository(context));
 
-        _researchPaperRepository = new Lazy<IResearchPaperRepository>
-            (() => new ResearchPaperRepository(context));
+        _projectResultRepository = new Lazy<IProjectResultRepository>
+            (() => new ProjectResultRepository(context));
+
+        _resultPublishRepository = new Lazy<IResultPublishRepository>
+            (() => new ResultPublishRepository(context));
 
         _roleRepository = new Lazy<IRoleRepository>
             (() => new RoleRepository(context));
@@ -148,8 +152,10 @@ public class UnitOfWork : IUnitOfWork
         => _projectRepository.Value;
     public IProjectTagRepository GetProjectTagRepository()
         => _projectTagRepository.Value;
-    public IResearchPaperRepository GetResearchPaperRepository()
-        => _researchPaperRepository.Value;
+    public IProjectResultRepository GetProjectResultRepository()
+        => _projectResultRepository.Value;
+    public IResultPublishRepository GetResultPublishRepository()
+        => _resultPublishRepository.Value;
     public IRoleRepository GetRoleRepository()
         => _roleRepository.Value;
     public ISignatureRepository GetSignatureRepository()
@@ -164,5 +170,4 @@ public class UnitOfWork : IUnitOfWork
         => _userRoleRepository.Value;
     public IFieldRepository GetFieldRepository()
         => _fieldRepository.Value;
-
 }

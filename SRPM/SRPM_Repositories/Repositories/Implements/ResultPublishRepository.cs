@@ -3,10 +3,10 @@ using SRPM_Repositories.Repositories.Interfaces;
 
 namespace SRPM_Repositories.Repositories.Implements;
 
-public class ResearchPaperRepository : GenericRepository<ResearchPaper>, IResearchPaperRepository
+public class ResultPublishRepository : GenericRepository<ResultPublish>, IResultPublishRepository
 {
     private readonly SRPMDbContext _context;
-    public ResearchPaperRepository(SRPMDbContext context) : base(context)
+    public ResultPublishRepository(SRPMDbContext context) : base(context)
     {
         _context = context;
     }
