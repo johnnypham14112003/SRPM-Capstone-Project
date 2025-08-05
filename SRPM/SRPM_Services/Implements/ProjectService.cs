@@ -76,7 +76,11 @@ public class ProjectService : IProjectService
         }
 
         var entity = await _unitOfWork.GetProjectRepository()
-            .GetByIdAsync(id, hasTrackings: false);
+            .GetOneAsync(
+                p => p.Id == id,
+                include: q => q.Include(p => p.ProjectTags),
+                hasTrackings: false
+            );
 
         return new
         {

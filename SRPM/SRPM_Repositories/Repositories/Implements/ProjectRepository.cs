@@ -28,7 +28,6 @@ public class ProjectRepository : GenericRepository<Project>, IProjectRepository
             .Include(p => p.Evaluations)
             .Include(p => p.ProjectsSimilarity)
             .Include(p => p.ProjectTags)
-            .Include(p => p.Documents)
             .Include(p => p.Transactions)
             .Include(p => p.ProjectResult);
 

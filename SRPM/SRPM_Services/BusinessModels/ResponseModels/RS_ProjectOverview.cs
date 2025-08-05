@@ -22,6 +22,7 @@ namespace SRPM_Services.BusinessModels.ResponseModels
         public string? RequirementNote { get; set; }
         public decimal Progress { get; set; } = 0m;
         public string Language { get; set; } = null!;
+        public List<RS_TagBrief>? ProjectTags { get; set; }
     }
 
 }
