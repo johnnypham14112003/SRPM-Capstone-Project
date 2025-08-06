@@ -7,6 +7,7 @@ using SRPM_Services.BusinessModels;
 using SRPM_Services.Interfaces;
 using SRPM_Services.BusinessModels.Others;
 using SRPM_Services.Implements;
+using System.Data;
 
 namespace SRPM_APIServices.Controllers;
 
@@ -40,6 +41,27 @@ public class AccountController : ControllerBase
         return Ok(result);
     }
 
+    [HttpPost]
+    public async Task<IActionResult> CreateAccount([FromBody] RQ_Account request)
+    {
+        if (request == null)
+            return BadRequest("Request body is missing.");
+
+        try
+        {
+            var result = await _service.CreateAsync(request);
+            return CreatedAtAction(nameof(GetById), new { id = result.Id }, result);
+        }
+        catch (DuplicateNameException ex)
+        {
+            return Conflict(new { message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            // Log the exception if needed
+            return StatusCode(500, new { message = "An unexpected error occurred.", detail = ex.Message });
+        }
+    }
 
 
     // GET: api/account/search?input=John

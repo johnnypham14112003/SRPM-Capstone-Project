@@ -12,6 +12,7 @@ using SRPM_Services.Extensions.Enumerables;
 using SRPM_Services.Extensions.Exceptions;
 using SRPM_Services.Extensions.FluentEmail;
 using SRPM_Services.Interfaces;
+using System.Data;
 using System.Diagnostics;
 using System.Security.Cryptography;
 using System.Text;
@@ -267,10 +268,6 @@ public class AccountService : IAccountService
     }
 
 
-
-
-
-
     public async Task<bool> ResetPasswordAsync(RQ_ResetPassword request)
     {
         if (request.NewPassword != request.ConfirmPassword)
@@ -397,22 +394,28 @@ public class AccountService : IAccountService
 
     public async Task<RS_Account> CreateAsync(RQ_Account request)
     {
+        var existing = await _unitOfWork.GetAccountRepository()
+            .GetOneAsync(a => a.Email == request.Email, hasTrackings: false);
+
+        if (existing != null)
+            throw new DuplicateNameException($"An account with email '{request.Email}' already exists.");
+
         var entity = request.Adapt<Account>();
         entity.Id = Guid.NewGuid();
         entity.CreateTime = DateTime.Now;
 
-        // Extract identity code from email — everything before '@'
         var identity = request.Email.Split('@')[0].Trim().ToLowerInvariant();
         entity.IdentityCode = identity;
 
-        // Status conversion
         entity.Status = request.Status.ToStatus().ToString().ToLowerInvariant();
+        entity.Password = HashStringSHA256(request.Password);
 
         await _unitOfWork.GetAccountRepository().AddAsync(entity);
         await _unitOfWork.SaveChangesAsync();
 
         return entity.Adapt<RS_Account>();
     }
+
     public async Task<RS_Account?> GetByIdAsync(Guid id)
     {
         var entity = await _unitOfWork.GetAccountRepository().GetByIdAsync<Guid>(id);

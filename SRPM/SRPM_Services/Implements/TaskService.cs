@@ -130,7 +130,7 @@ public class TaskService : ITaskService
     {
         var repo = _unitOfWork.GetTaskRepository();
         var entity = await repo.GetByIdAsync<Guid>(id);
-        if (entity == null) return false;
+        if (entity == null) return false;   
 
         await repo.DeleteAsync(entity);
         await _unitOfWork.SaveChangesAsync();

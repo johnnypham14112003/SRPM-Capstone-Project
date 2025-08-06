@@ -30,6 +30,8 @@ namespace SRPM_Services.BusinessModels.ResponseModels
 
         public DateTime CreateTime { get; set; }
         public string Status { get; set; } = null!;
+        public Guid? MajorId { get; set; }
+
     }
 
 }
