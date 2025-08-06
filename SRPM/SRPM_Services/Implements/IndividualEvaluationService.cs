@@ -31,13 +31,25 @@ public class IndividualEvaluationService : IIndividualEvaluationService
             ie =>
             {
                 ie.Include(iei => iei.Documents);
-                ie.Include(iei => iei.ProjectsSimilarity);
+                ie.Include(iei => iei.ProjectsSimilarity)
+                    .ThenInclude(ps => ps.Project)
+                    .AsSplitQuery();
                 return ie;
-            },
-            false)
-            ?? throw new NotFoundException("Not found this IndividualEvaluation Id!");
+            }, false)
+            ?? throw new NotFoundException($"Not found this IndividualEvaluation Id: '{id}'!");
 
-        return existIndividualEvaluation.Adapt<RS_IndividualEvaluation>();
+        //Main mapping
+        var individualEva = existIndividualEvaluation.Adapt<RS_IndividualEvaluation>();
+
+        //ProjectsSimilarity => ProjectsSimilarityResult
+        individualEva.ProjectsSimilarityResult = existIndividualEvaluation.ProjectsSimilarity?//if not null -> select
+        .Select(ps => new RS_ProjectSimilarityResult
+        {
+            Id = ps.ProjectId,
+            EnglishTitle = ps.Project.EnglishTitle,
+            Similarity = ps.Similarity
+        }).ToList();
+        return individualEva;
     }
 
     public async Task<PagingResult<RS_IndividualEvaluation>> GetListAsync(Q_IndividualEvaluation queryInput)

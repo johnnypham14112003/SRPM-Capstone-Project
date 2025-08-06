@@ -15,7 +15,7 @@ namespace SRPM_APIServices.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class ProjectController : ControllerBase
+public class ProjectController : Controller
 {
     private readonly IProjectService _service;
 

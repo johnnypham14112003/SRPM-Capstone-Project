@@ -26,16 +26,16 @@ public class EvaluationStageRepository : GenericRepository<EvaluationStage>, IEv
                     .Include(es => es.IndividualEvaluations)
                     .FirstOrDefaultAsync(es => es.Id == id);
 
-            case 3: // Notifications
+            case 3: // Milestone
                 return await _context.EvaluationStage
-                    .Include(es => es.Notifications)
+                    .Include(es => es.Milestone)
                     .FirstOrDefaultAsync(es => es.Id == id);
 
             default: // Include All
                 return await _context.EvaluationStage
                     .Include(es => es.Transactions)
                     .Include(es => es.IndividualEvaluations)
-                    .Include(es => es.Notifications)
+                    .Include(es => es.Milestone)
                     .AsSplitQuery()
                     .AsNoTracking()
                     .FirstOrDefaultAsync(es => es.Id == id);
@@ -43,8 +43,8 @@ public class EvaluationStageRepository : GenericRepository<EvaluationStage>, IEv
     }
 
     public async Task<(List<EvaluationStage>? listStage, int totalFound)> ListStagePaging(
-    string? keyWord, string? status,
-    Guid? evaluationId, Guid? appraisalCouncilId,
+    string? keyWord, string? phrase, string? type, string? status,
+     Guid? milestoneId, Guid? evaluationId, Guid? appraisalCouncilId,
     byte sortBy, int pageIndex, int pageSize)
     {
         var query = _context.EvaluationStage
@@ -57,9 +57,25 @@ public class EvaluationStageRepository : GenericRepository<EvaluationStage>, IEv
         if (!string.IsNullOrWhiteSpace(keyWord))
             query = query.Where(es => es.Name!.ToLower().Contains(keyWord.ToLower()));
 
+        //Phrase Filter
+        if (!string.IsNullOrWhiteSpace(phrase))
+            query = query.Where(e => e.Phrase.ToLower().Equals(phrase.ToLower()));
+
+        //Type Filter
+        if (!string.IsNullOrWhiteSpace(type))
+            query = query.Where(e => e.Type.ToLower().Equals(type.ToLower()));
+
         // Status Filter
         if (!string.IsNullOrWhiteSpace(status))
+        {
             query = query.Where(es => es.Status.ToLower().Equals(status.ToLower()));
+            if (!status.ToLower().Equals("deleted"))
+                query = query.Where(es => !es.Status.ToLower().Equals("deleted"));
+        }
+
+        //By milestoneId
+        if (milestoneId.HasValue)
+            query = query.Where(es => es.MilestoneId == milestoneId.Value);
 
         // EvaluationId Filter
         if (evaluationId.HasValue)
@@ -78,14 +94,23 @@ public class EvaluationStageRepository : GenericRepository<EvaluationStage>, IEv
             case 2: // StageOrder
                 query = query.OrderBy(es => es.StageOrder);
                 break;
-            case 3: // Status
+            case 3: // Phrase
+                query = query.OrderBy(e => e.Phrase);
+                break;
+            case 4: // Type
+                query = query.OrderBy(e => e.Type);
+                break;
+            case 5: // Status
                 query = query.OrderBy(es => es.Status);
                 break;
-            case 4: // EvaluationId
+            case 6: // EvaluationId
                 query = query.OrderBy(es => es.EvaluationId);
                 break;
-            case 5: // AppraisalCouncilId
+            case 7: // AppraisalCouncilId
                 query = query.OrderBy(es => es.AppraisalCouncilId);
+                break;
+            case 8: // MilestoneId
+                query = query.OrderBy(e => e.MilestoneId);
                 break;
         }
 

@@ -46,7 +46,11 @@ public class IndividualEvaluationRepository : GenericRepository<IndividualEvalua
 
         // Status Filter
         if (!string.IsNullOrWhiteSpace(status))
+        {
             query = query.Where(ie => ie.Status.ToLower().Equals(status.ToLower()));
+            if (!status.ToLower().Equals("deleted"))
+                query = query.Where(ie => !ie.Status.ToLower().Equals("deleted"));
+        }
 
         // EvaluationStageId Filter
         if (evaluationStageId.HasValue)
@@ -55,7 +59,7 @@ public class IndividualEvaluationRepository : GenericRepository<IndividualEvalua
         // ReviewerId Filter
         if (reviewerId.HasValue)
             query = query.Where(ie => ie.ReviewerId == reviewerId);
-        
+
         //Filter By Time
         if (fromDate.HasValue)
             query = query.Where(ie => ie.SubmittedAt >= fromDate.Value);
@@ -66,11 +70,11 @@ public class IndividualEvaluationRepository : GenericRepository<IndividualEvalua
         query = sortBy switch
         {
             // TotalRate
-            2 => query.OrderByDescending(ie => ie.TotalRate),
+            1 => query.OrderByDescending(ie => ie.TotalRate),
             // Time
-            3 => query.OrderByDescending(ie => ie.SubmittedAt),
+            2 => query.OrderByDescending(ie => ie.SubmittedAt),
             // Status
-            4 => query.OrderByDescending(ie => ie.Status),
+            3 => query.OrderByDescending(ie => ie.Status),
             // Name
             _ => query.OrderBy(ie => ie.Name),
         };

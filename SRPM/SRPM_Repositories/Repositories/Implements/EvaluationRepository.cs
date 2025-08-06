@@ -37,9 +37,9 @@ public class EvaluationRepository : GenericRepository<Evaluation>, IEvaluationRe
     }
 
     public async Task<(List<Evaluation>? listEvaluation, int totalFound)> ListPaging
-        (string? keyWord, string? evaPhrase, string? evaType, string? status,
+        (string? keyWord, string? status,
         DateTime? fromDate, DateTime? toDate, byte? rating,
-        Guid? projectId,Guid? milestoneId, Guid? appraisalCouncilId,
+        Guid? projectId, Guid? appraisalCouncilId,
         byte sortBy, int pageIndex, int pageSize)
     {
         var query = _context.Evaluation
@@ -54,28 +54,20 @@ public class EvaluationRepository : GenericRepository<Evaluation>, IEvaluationRe
             e.Code.ToLower().Contains(keyWord.ToLower()) ||
             e.Title.ToLower().Contains(keyWord.ToLower()));
 
-        //Phrase Filter
-        //if (!string.IsNullOrWhiteSpace(evaPhrase))
-        //    query = query.Where(e => e.Phrase.ToLower().Equals(evaPhrase.ToLower()));
-
-        //Type Filter
-        //if (!string.IsNullOrWhiteSpace(evaType))
-        //    query = query.Where(e => e.Type.ToLower().Equals(evaType.ToLower()));
-
         //Status Filter
         if (!string.IsNullOrWhiteSpace(status))
+        {
             query = query.Where(e => e.Status.ToLower().Equals(status.ToLower()));
+            if (!status.ToLower().Equals("deleted"))
+                query = query.Where(ie => !ie.Status.ToLower().Equals("deleted"));
+        }
 
         // Date Range Filter
         if (fromDate.HasValue)
-        {
             query = query.Where(e => e.CreateDate >= fromDate.Value);
-        }
 
         if (toDate.HasValue)
-        {
             query = query.Where(e => e.CreateDate <= toDate.Value);
-        }
 
         // Rating Filter
         if (rating.HasValue)
@@ -84,10 +76,6 @@ public class EvaluationRepository : GenericRepository<Evaluation>, IEvaluationRe
         //By ProjectId
         if (projectId.HasValue)
             query = query.Where(e => e.ProjectId == projectId.Value);
-
-        //By milestoneId
-        //if (milestoneId.HasValue)
-        //    query = query.Where(es => es.MilestoneId == milestoneId.Value);
 
         //By appraisalId
         if (appraisalCouncilId.HasValue)
@@ -105,19 +93,10 @@ public class EvaluationRepository : GenericRepository<Evaluation>, IEvaluationRe
             case 3: // CreateTime
                 query = query.OrderByDescending(e => e.CreateDate);
                 break;
-            //case 4: // Phrase
-            //    query = query.OrderBy(e => e.Phrase);
-            //    break;
-            //case 5: // Type
-            //    query = query.OrderBy(e => e.Type);
-            //    break;
-            case 6: // ProjectId
+            case 4: // ProjectId
                 query = query.OrderBy(e => e.ProjectId);
                 break;
-            //case 7: // MilestoneId
-            //    query = query.OrderBy(e => e.MilestoneId);
-                //break;
-            case 8: // AppraisalCouncilId
+            case 5: // AppraisalCouncilId
                 query = query.OrderBy(e => e.AppraisalCouncilId);
                 break;
         }

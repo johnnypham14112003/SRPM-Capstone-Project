@@ -8,7 +8,7 @@ namespace SRPM_APIServices.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class EvaluationController : ControllerBase
+public class EvaluationController : Controller
 {
     //=================================[ Declares ]================================
     private readonly IEvaluationService _evaluationService;
@@ -40,6 +40,20 @@ public class EvaluationController : ControllerBase
         var result = await _evaluationService.CreateAsync(newEvaluation);
         return result.success ? Created(nameof(CreateEvaluation), result.evaluationId)
             : BadRequest("Create Failed!");
+    }
+
+    [HttpPost("first-evaluation")]
+    public async Task<IActionResult> AICreateEvaluation([FromBody] Guid projectId)
+    {
+        string bgTaskId = await _evaluationService.FirstAIEvaluation(projectId);
+        return Ok(bgTaskId);
+    }
+
+    [HttpPost("project-similarity")]
+    public async Task<IActionResult> AIRegenEvaluation([FromBody] RQ_PlagiarismTarget target)
+    {
+        string bgTaskId = await _evaluationService.RegenAIEvaluation(target.ProjectId, target.individualEvalutionId);
+        return Ok(bgTaskId);
     }
 
     [HttpPut]

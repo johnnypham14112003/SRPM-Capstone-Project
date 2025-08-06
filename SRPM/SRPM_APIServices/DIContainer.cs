@@ -21,8 +21,6 @@ using SRPM_Services.Extensions.FluentEmail;
 using SRPM_Services.Extensions.Mapster;
 using SRPM_Services.Extensions.OpenAI;
 using SRPM_Services.Implements;
-using Microsoft.AspNetCore.Authentication.Cookies;
-using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.IdentityModel.Tokens;

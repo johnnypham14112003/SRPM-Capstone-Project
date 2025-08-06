@@ -7,7 +7,7 @@ namespace SRPM_APIServices.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class ProjectTagController : ControllerBase
+public class ProjectTagController : Controller
 {
     private readonly IProjectTagService _service;
 

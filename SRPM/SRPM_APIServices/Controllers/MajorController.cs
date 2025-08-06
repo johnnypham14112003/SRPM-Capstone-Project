@@ -1,7 +1,4 @@
-﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using SRPM_Services.BusinessModels;
 using SRPM_Services.BusinessModels.Others;
 using SRPM_Services.BusinessModels.RequestModels;
@@ -12,7 +9,7 @@ namespace SRPM_APIServices.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class MajorController : ControllerBase
+public class MajorController : Controller
 {
     private readonly IMajorService _service;
 

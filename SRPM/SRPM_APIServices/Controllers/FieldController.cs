@@ -8,7 +8,7 @@ namespace SRPM_APIServices.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class FieldController : ControllerBase
+public class FieldController : Controller
 {
     private readonly IFieldService _service;
 
