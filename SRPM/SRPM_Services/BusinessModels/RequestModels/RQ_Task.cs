@@ -11,6 +11,7 @@
         public decimal Progress { get; set; }
         public int Overdue { get; set; }
         public string? MeetingUrl { get; set; }
+        public string? Status { get; set; } = "created";
         public string? Note { get; set; }
         public Guid MilestoneId { get; set; }
     }

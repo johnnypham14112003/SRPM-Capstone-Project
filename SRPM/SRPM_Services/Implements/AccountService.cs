@@ -1,5 +1,6 @@
 ﻿using Google.Apis.Auth;
 using Mapster;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json;
 using SRPM_Repositories.Models;
@@ -478,11 +479,32 @@ public class AccountService : IAccountService
 
     public async Task<bool> DeleteAsync(Guid id)
     {
-        var entity = await _unitOfWork.GetAccountRepository().GetByIdAsync<Guid>(id);
+        var accountRepo = _unitOfWork.GetAccountRepository();
+        var userRoleRepo = _unitOfWork.GetUserRoleRepository();
+
+        // Include UserRoles when retrieving the account
+        var entity = await accountRepo.GetOneAsync(
+            a => a.Id == id,
+            include: q => q.Include(a => a.UserRoles)
+        );
+
         if (entity == null) return false;
 
-        await _unitOfWork.GetAccountRepository().DeleteAsync(entity);
+        // Delete associated UserRoles
+        if (entity.UserRoles != null && entity.UserRoles.Any())
+        {
+            foreach (var userRole in entity.UserRoles)
+            {
+                await userRoleRepo.DeleteAsync(userRole);
+            }
+        }
+
+        // Delete the account
+        await accountRepo.DeleteAsync(entity);
+
+        // Commit all changes
         await _unitOfWork.SaveChangesAsync();
+
         return true;
     }
 

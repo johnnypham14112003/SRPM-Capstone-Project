@@ -116,7 +116,7 @@ public class TaskService : ITaskService
     public async Task<RS_Task?> UpdateAsync(Guid id, RQ_Task request)
     {
         var repo = _unitOfWork.GetTaskRepository();
-        var entity = await repo.GetByIdAsync<Guid>(id);
+        var entity = await repo.GetOneAsync(p => p.Id == id, hasTrackings: true); 
         if (entity == null) return null;
 
         request.Adapt(entity);
