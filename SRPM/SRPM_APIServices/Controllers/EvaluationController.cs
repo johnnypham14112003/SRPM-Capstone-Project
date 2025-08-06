@@ -42,6 +42,13 @@ public class EvaluationController : ControllerBase
             : BadRequest("Create Failed!");
     }
 
+    [HttpPost("first-evaluation")]
+    public async Task<IActionResult> AICreateEvaluation([FromBody] Guid projectId)
+    {
+        string bgTaskId = await _evaluationService.FirstAIEvaluation(projectId);
+        return Ok(bgTaskId);
+    }
+
     [HttpPut]
     public async Task<ActionResult<RS_Evaluation>> Update([FromBody] RQ_Evaluation newEvaluation)
     {

@@ -21,15 +21,11 @@ public class ProjectService : IProjectService
 {
     private readonly IUnitOfWork _unitOfWork;
     private readonly IUserContextService _userContextService;
-    private readonly IOpenAIService _openAIService;
-    private readonly ITaskQueueHandler _taskQueueHandler;
 
-    public ProjectService(IUnitOfWork unitOfWork, IUserContextService userContextService, IOpenAIService openAIService, ITaskQueueHandler taskQueueHandler)
+    public ProjectService(IUnitOfWork unitOfWork, IUserContextService userContextService)
     {
         _unitOfWork = unitOfWork;
         _userContextService = userContextService;
-        _openAIService = openAIService;
-        _taskQueueHandler = taskQueueHandler;
     }
     public async Task<object?> GetByIdAsync(Guid id)
     {
@@ -198,7 +194,7 @@ public class ProjectService : IProjectService
         );
 
         // Validate role and assign genre + creator
-        var hostRole = userRoles.FirstOrDefault(r => r.Role?.Name == "Host Institution" && r.Status != Status.Deleted.ToString().ToLowerInvariant() );
+        var hostRole = userRoles.FirstOrDefault(r => r.Role?.Name == "Host Institution" && r.Status != Status.Deleted.ToString().ToLowerInvariant());
         var staffRole = userRoles.FirstOrDefault(r => r.Role?.Name == "Staff");
 
         if (hostRole != null)
@@ -224,7 +220,7 @@ public class ProjectService : IProjectService
         return entity.Adapt<RS_Project>();
     }
 
-    public async Task<RS_Project?> UpdateAsync(Guid id, RQ_Project request, [FromBody]string status)
+    public async Task<RS_Project?> UpdateAsync(Guid id, RQ_Project request, [FromBody] string status)
     {
         var repo = _unitOfWork.GetProjectRepository();
         var entity = await repo.GetByIdAsync<Guid>(id);
@@ -305,35 +301,35 @@ public class ProjectService : IProjectService
     }
 
     public async Task<RS_Project> EnrollAsPrincipalAsync(Guid sourceProjectId)
-{
-    Guid principalId = Guid.Parse(_userContextService.GetCurrentUserId());
-
-    // Step 1: Validate source project
-    var sourceProject = await _unitOfWork.GetProjectRepository().GetByIdAsync(sourceProjectId, hasTrackings: false);
-    if (sourceProject == null)
-        throw new NotFoundException("Project to enroll not found.");
-
-    // Step 2: Validate role of Principal Investigator
-    var principal = await _unitOfWork.GetAccountRepository().GetByIdAsync(principalId);
-    var hasPrincipalRole = principal.UserRoles.Any(ur => ur.Role.Name == "Principal Investigator");
-
-    if (!hasPrincipalRole)
-        throw new UnauthorizedAccessException("Account does not have Principal Investigator role.");
-
-    // Step 3: Check for existing proposals with same info
-    var similarProjects = await _unitOfWork.GetProjectRepository().GetListAsync(
-        p =>
-            p.CreatorId == sourceProject.CreatorId &&
-            p.Genre == "proposal" &&
-            p.EnglishTitle == sourceProject.EnglishTitle &&
-            p.VietnameseTitle == sourceProject.VietnameseTitle &&
-            p.StartDate == sourceProject.StartDate,
-        hasTrackings: false,
-        useSplitQuery: true
-    );
-
-    var restrictedStatuses = new[]
     {
+        Guid principalId = Guid.Parse(_userContextService.GetCurrentUserId());
+
+        // Step 1: Validate source project
+        var sourceProject = await _unitOfWork.GetProjectRepository().GetByIdAsync(sourceProjectId, hasTrackings: false);
+        if (sourceProject == null)
+            throw new NotFoundException("Project to enroll not found.");
+
+        // Step 2: Validate role of Principal Investigator
+        var principal = await _unitOfWork.GetAccountRepository().GetByIdAsync(principalId);
+        var hasPrincipalRole = principal.UserRoles.Any(ur => ur.Role.Name == "Principal Investigator");
+
+        if (!hasPrincipalRole)
+            throw new UnauthorizedAccessException("Account does not have Principal Investigator role.");
+
+        // Step 3: Check for existing proposals with same info
+        var similarProjects = await _unitOfWork.GetProjectRepository().GetListAsync(
+            p =>
+                p.CreatorId == sourceProject.CreatorId &&
+                p.Genre == "proposal" &&
+                p.EnglishTitle == sourceProject.EnglishTitle &&
+                p.VietnameseTitle == sourceProject.VietnameseTitle &&
+                p.StartDate == sourceProject.StartDate,
+            hasTrackings: false,
+            useSplitQuery: true
+        );
+
+        var restrictedStatuses = new[]
+        {
         Status.Draft,
         Status.Created,
         Status.Submitted,
@@ -342,14 +338,14 @@ public class ProjectService : IProjectService
         Status.Completed
     };
 
-    var existingDraft = similarProjects.FirstOrDefault(p =>
-        restrictedStatuses.Contains(p.Status.ToStatus()));
+        var existingDraft = similarProjects.FirstOrDefault(p =>
+            restrictedStatuses.Contains(p.Status.ToStatus()));
 
-    if (existingDraft != null)
-    {
-        // ✅ Return the existing draft instead of throwing
-        return existingDraft.Adapt<RS_Project>();
-    }
+        if (existingDraft != null)
+        {
+            // ✅ Return the existing draft instead of throwing
+            return existingDraft.Adapt<RS_Project>();
+        }
 
         // Step 4: Clone as draft
         var draftClone = sourceProject.Adapt<Project>();
@@ -361,32 +357,32 @@ public class ProjectService : IProjectService
 
         await _unitOfWork.GetProjectRepository().AddAsync(draftClone);
 
-    // Step 5: Attach Principal Investigator role to cloned project
-    var piRole = await _unitOfWork.GetRoleRepository()
-        .GetOneAsync(r => r.Name == "Principal Investigator");
+        // Step 5: Attach Principal Investigator role to cloned project
+        var piRole = await _unitOfWork.GetRoleRepository()
+            .GetOneAsync(r => r.Name == "Principal Investigator");
 
-    if (piRole == null)
-        throw new ArgumentException("Role 'Principal Investigator' not found.");
+        if (piRole == null)
+            throw new ArgumentException("Role 'Principal Investigator' not found.");
 
-    var userRole = new UserRole
-    {
-        Id = Guid.NewGuid(),
-        AccountId = principalId,
-        Code = $"UR-{DateTime.Now:yyyy_MM}_{principalId.ToString().Substring(0, 6).ToUpperInvariant()}",
-        RoleId = piRole.Id,
-        ProjectId = draftClone.Id,
-        GroupName = draftClone.EnglishTitle,
-        IsOfficial = false,
-        ExpireDate = draftClone.CreatedAt.AddYears(1),
-        CreatedAt = DateTime.Now,
-        Status = Status.Approved.ToString().ToLowerInvariant()
-    };
+        var userRole = new UserRole
+        {
+            Id = Guid.NewGuid(),
+            AccountId = principalId,
+            Code = $"UR-{DateTime.Now:yyyy_MM}_{principalId.ToString().Substring(0, 6).ToUpperInvariant()}",
+            RoleId = piRole.Id,
+            ProjectId = draftClone.Id,
+            GroupName = draftClone.EnglishTitle,
+            IsOfficial = false,
+            ExpireDate = draftClone.CreatedAt.AddYears(1),
+            CreatedAt = DateTime.Now,
+            Status = Status.Approved.ToString().ToLowerInvariant()
+        };
 
-    await _unitOfWork.GetUserRoleRepository().AddAsync(userRole);
-    await _unitOfWork.SaveChangesAsync();
+        await _unitOfWork.GetUserRoleRepository().AddAsync(userRole);
+        await _unitOfWork.SaveChangesAsync();
 
-    return draftClone.Adapt<RS_Project>();
-}
+        return draftClone.Adapt<RS_Project>();
+    }
 
     //=============================================================================================
     public async Task<bool> CreateFromDocumentAsync(Project project, Document document, Guid creatorId, RQ_MilestoneTaskContent titleContent)
@@ -506,42 +502,5 @@ public class ProjectService : IProjectService
         await _unitOfWork.GetMilestoneRepository().AddRangeAsync(milestonesFromDoc);
         await _unitOfWork.GetTaskRepository().AddRangeAsync(tasksFromDoc);
         return await _unitOfWork.SaveChangesAsync();
-    }
-
-    private async Task<(List<RS_ProjectSimilarityResult>? listSimilarity, string summaryEvaluation, string bgTaskId)>
-        AIReviewAndPlagiarism(Guid evaluationStageId, RQ_ProjectContentForAI projectSummary)
-    {
-        if (string.IsNullOrWhiteSpace(projectSummary.Description)) throw new BadRequestException("Require Project Description!");
-
-        List<RS_ProjectSimilarityResult>? listSimilarity = [];
-        float[]? vectorDescription;
-        string summaryEvaluation = "";
-
-        //BackgroundTask Id
-        string? bgTaskId = _taskQueueHandler.EnqueueTracked(async cancelToken =>
-        {
-            //Query encoded completed Project
-            var projectEncoded = await _unitOfWork.GetProjectRepository().GetListAdvanceAsync(
-                p => p.Status.Equals("completed", StringComparison.OrdinalIgnoreCase) && !string.IsNullOrWhiteSpace(p.EncodedDescription),
-                p => new { p.Id, p.EnglishTitle, p.Description, p.EncodedDescription });
-
-            //Query all completed Project if 'projectEncoded' is null
-            List<Project>? databaseSource = projectEncoded is null ?
-            await _unitOfWork.GetProjectRepository().GetListAsync(p => p.Status.Equals("completed", StringComparison.OrdinalIgnoreCase))
-                : projectEncoded.Adapt<List<Project>>();
-
-            //Final Source
-            //syntheticSource = projectSource + online source
-            var syntheticSource = databaseSource.Adapt<List<RS_ProjectSimilarityResult>>();
-
-            vectorDescription = await _openAIService.EmbedTextAsync(projectSummary.Description, cancelToken);
-
-            summaryEvaluation = await _openAIService.ReviewProjectAsync(projectSummary, cancelToken);
-
-            //Then compare
-            listSimilarity = await _openAIService.CompareWithSourceAsync(vectorDescription, syntheticSource, cancelToken);
-        });
-
-        return (listSimilarity, summaryEvaluation, bgTaskId);
     }
 }
