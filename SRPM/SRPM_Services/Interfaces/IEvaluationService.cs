@@ -13,4 +13,5 @@ public interface IEvaluationService
     Task<bool> UpdateAsync(RQ_Evaluation newEvaluation);
     Task<bool> DeleteAsync(Guid id);
     Task<string> FirstAIEvaluation(Guid projectId);
+    Task<string> RegenAIEvaluation(Guid projectId, Guid individualEvalutionId);
 }

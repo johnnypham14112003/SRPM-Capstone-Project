@@ -164,10 +164,10 @@ public class EvaluationService : IEvaluationService
 
                 //Handle result AI
                 List<RS_ProjectSimilarityResult>? listSimilarity = null;
-                indiEva.Comment = "The proposal's description is null to review!";
+                indiEva.Comment = "The proposal's description is null to generate review!";
                 if (!string.IsNullOrWhiteSpace(projectSummary.Description))
                 {
-                    indiEva.Comment = "This proposal's milestone is null to review!";
+                    indiEva.Comment = "This proposal's milestone is null to generate review!";
                     if (projectSummary.MilestoneContents is not null)
                     {
                         var AIResult = await AIReviewAndPlagiarism(projectSummary, cancelToken);
@@ -186,6 +186,66 @@ public class EvaluationService : IEvaluationService
                     .Select(listResult => new ProjectSimilarity
                     {
                         IndividualEvaluationId = indiEva.Id,
+                        ProjectId = listResult.Id,
+                        Similarity = listResult.Similarity
+                    })
+                    .ToList();
+                    await _unitOfWork.GetProjectSimilarityRepository().AddRangeAsync(projectSimilarities);
+                }
+                await _unitOfWork.SaveChangesAsync();
+            }));
+    }
+
+    public async Task<string> RegenAIEvaluation(Guid projectId, Guid individualEvalutionId)
+    {
+        //Get Project
+        var project = await _unitOfWork.GetProjectRepository().GetOneAsync(
+            p => p.Id == projectId,
+            p => p.Include(pro => pro.Milestones), false)
+        ?? throw new NotFoundException($"Not Found Project Id '{projectId}' to create evaluation!");
+
+        //Get Individual Evaluation
+        var individualEvaluation = await _unitOfWork.GetIndividualEvaluationRepository().GetOneAsync(
+            ie => ie.Id == individualEvalutionId,
+            ie => ie.Include(iev => iev.ProjectsSimilarity))
+        ?? throw new NotFoundException($"Not Found Individual Evaluation Id '{individualEvalutionId}' to regen AI review!");
+
+        //Return backgroundTaskId
+        return await System.Threading.Tasks.Task.FromResult(
+            _taskQueueHandler.EnqueueTracked(async cancelToken =>
+            {
+                //Run AI
+                var projectSummary = project.Adapt<RQ_ProjectContentForAI>();
+                projectSummary.MilestoneContents = project.Milestones.Adapt<ICollection<RQ_MilestoneContentForAI>>();
+
+                //Handle result AI
+                List<RS_ProjectSimilarityResult>? listSimilarity = null;
+                individualEvaluation.Comment = "The proposal's description is null to review!";
+                if (!string.IsNullOrWhiteSpace(projectSummary.Description))
+                {
+                    individualEvaluation.Comment = "This proposal's milestone is null to review!";
+                    if (projectSummary.MilestoneContents is not null)
+                    {
+                        var AIResult = await AIReviewAndPlagiarism(projectSummary, cancelToken);
+                        individualEvaluation.Comment = AIResult.summaryEvaluation;
+                        listSimilarity = AIResult.listSimilarity;
+                    }
+                }
+
+                //If Exist Old Review
+                if (individualEvaluation.ProjectsSimilarity is not null)
+                {
+                    //Delete Old
+                    await _unitOfWork.GetProjectSimilarityRepository()
+                    .DeleteRangeAsync(individualEvaluation.ProjectsSimilarity);
+                }
+
+                if (listSimilarity is not null)
+                {
+                    var projectSimilarities = listSimilarity
+                    .Select(listResult => new ProjectSimilarity
+                    {
+                        IndividualEvaluationId = individualEvalutionId,
                         ProjectId = listResult.Id,
                         Similarity = listResult.Similarity
                     })
