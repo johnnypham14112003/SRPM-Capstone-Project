@@ -103,10 +103,6 @@ public class UserRoleService : IUserRoleService
 
     public async Task<RS_UserRole> CreateAsync(RQ_UserRole request)
     {
-
-        if (request.ProjectId == null && request.AppraisalCouncilId == null)
-            throw new ArgumentException("Either ProjectId or AppraisalCouncilId must be provided.");
-
         var account = await _unitOfWork.GetAccountRepository().GetByIdAsync(request.AccountId);
         if (account == null)
             throw new NotFoundException($"Account with ID {request.AccountId} was not found.");
@@ -116,10 +112,15 @@ public class UserRoleService : IUserRoleService
             throw new NotFoundException($"Role with ID {request.RoleId} was not found.");
 
         string? groupName = null;
-        bool isOfficial;
+        bool isOfficial = false;
         DateTime? expireDate = null;
 
-        if (request.AppraisalCouncilId != null)
+        // 🆕 Direct creation if both IDs are null
+        if (request.AppraisalCouncilId == null && request.ProjectId == null)
+        {
+            // Proceed without council/project validation
+        }
+        else if (request.AppraisalCouncilId != null)
         {
             var council = await _unitOfWork.GetAppraisalCouncilRepository().GetByIdAsync(request.AppraisalCouncilId.Value);
             if (council == null)
@@ -144,10 +145,8 @@ public class UserRoleService : IUserRoleService
             isOfficial = false;
             expireDate = project.EndDate;
             groupName = project.EnglishTitle;
-        }
-        if (request.ProjectId != null)
-        {
-            // Check for single Principal Investigator constraint
+
+            // 🔐 Role constraints for project
             var projectRoles = await _unitOfWork.GetUserRoleRepository().GetListAsync(
                 ur =>
                     ur.ProjectId == request.ProjectId &&
@@ -159,13 +158,13 @@ public class UserRoleService : IUserRoleService
             {
                 bool hasPI = projectRoles.Any(ur =>
                     ur.RoleId == request.RoleId &&
-                    ur.AccountId != request.AccountId); // exclude self if updating
+                    ur.AccountId != request.AccountId);
 
                 if (hasPI)
                     throw new InvalidOperationException("This project already has a Principal Investigator.");
             }
 
-            if (request.ProjectId != null && role.IsGroupRole)
+            if (role.IsGroupRole)
             {
                 var existingGroupRole = await _unitOfWork.GetUserRoleRepository().GetListAsync(
                     ur =>
@@ -180,6 +179,7 @@ public class UserRoleService : IUserRoleService
             }
         }
 
+        // 🔍 Check for existing role
         var existing = await _unitOfWork.GetUserRoleRepository().GetListAsync(
             ur =>
                 ur.AccountId == request.AccountId &&
@@ -194,6 +194,7 @@ public class UserRoleService : IUserRoleService
         if (match != null)
             return match.Adapt<RS_UserRole>();
 
+        // 🆕 Create new role
         var entity = request.Adapt<UserRole>();
         entity.Id = Guid.NewGuid();
         entity.CreatedAt = DateTime.Now;

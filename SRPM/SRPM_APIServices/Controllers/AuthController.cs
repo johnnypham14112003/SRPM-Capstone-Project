@@ -5,6 +5,7 @@ using SRPM_Services.Extensions.Exceptions;
 using SRPM_Services.BusinessModels.Others;
 using SRPM_Services.Extensions;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http.HttpResults;
 
 namespace SRPM_APIServices.Controllers;
 
@@ -36,7 +37,7 @@ public class AuthController : ControllerBase
     {
         var account = await _accountService.HandleGoogleAsync(Token);
         if (account == null)
-            throw new NotFoundException("Account not found during Google login flow.");
+            return BadRequest("Account not found during Google login flow.");
 
         var allRoles = await _roleService.GetAllUserRole(account.Id);
 

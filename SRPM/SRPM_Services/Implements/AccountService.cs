@@ -60,13 +60,29 @@ public class AccountService : IAccountService
             throw new ArgumentException("Email is required for Google login.");
 
         string expectedDomain = "@" + _allowedEmailDomain;
+        var accountRepo = _unitOfWork.GetAccountRepository();
+
         if (!payload.Email.EndsWith(expectedDomain, StringComparison.OrdinalIgnoreCase))
         {
-            string errorRedirect = _configuration["ErrorRedirectUrl"];
-            throw new RedirectException($"{errorRedirect}?reason=invalid_domain", "Invalid email domain.");
+
+            var existingAccount = await accountRepo.GetValidEmailAccountAsync(payload.Email);
+            if (existingAccount == null)
+            {
+                string errorRedirect = _configuration["ErrorRedirectUrl"];
+                throw new RedirectException($"{errorRedirect}?reason=invalid_domain", "Invalid email domain.");
+            }
+
+            if (existingAccount.Status?.ToLower() == "deleted")
+                throw new UnauthorizedException("This account has been deleted. Please contact support.");
+
+            existingAccount.FullName = payload.Name;
+            existingAccount.AvatarURL = payload.Picture;
+            await accountRepo.UpdateAsync(existingAccount);
+            await _unitOfWork.SaveChangesAsync();
+
+            return existingAccount;
         }
 
-        var accountRepo = _unitOfWork.GetAccountRepository();
         var account = await accountRepo.GetValidEmailAccountAsync(payload.Email);
 
         if (account == null)
