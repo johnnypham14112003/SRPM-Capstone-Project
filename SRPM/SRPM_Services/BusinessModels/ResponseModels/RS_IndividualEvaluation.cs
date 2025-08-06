@@ -1,5 +1,4 @@
-﻿using SRPM_Repositories.Models;
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 
 namespace SRPM_Services.BusinessModels.ResponseModels;
 
@@ -20,5 +19,5 @@ public class RS_IndividualEvaluation
     public Guid EvaluationStageId { get; set; }
     public Guid? ReviewerId { get; set; }
     public virtual ICollection<RS_Document>? Documents { get; set; }
-    public virtual ICollection<RS_ProjectSimilarity>? ProjectsSimilarity { get; set; }
+    public virtual ICollection<RS_ProjectSimilarityResult>? ProjectsSimilarityResult { get; set; }
 }
