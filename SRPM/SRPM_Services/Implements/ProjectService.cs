@@ -99,9 +99,9 @@ public class ProjectService : IProjectService
                    p.VietnameseTitle.Contains(query.Title)) &&
                (string.IsNullOrWhiteSpace(query.Category) || p.Category == query.Category) &&
                (string.IsNullOrWhiteSpace(query.Type) || p.Type == query.Type) &&
-               (string.IsNullOrWhiteSpace(query.Genre) || p.Genre == query.Genre) &&
+               (query.Genres == null || query.Genres.Count == 0 || query.Genres.Contains(p.Genre)) &&
+                (query.Statuses == null || query.Statuses.Count == 0 || query.Statuses.Contains(p.Status)) &&
                (string.IsNullOrWhiteSpace(query.Language) || p.Language == query.Language) &&
-               (string.IsNullOrWhiteSpace(query.Status) || p.Status == query.Status) &&
                (!query.MajorId.HasValue ||
                    p.ProjectMajors.Any(pm => pm.MajorId == query.MajorId)) &&
                (!query.FieldId.HasValue ||

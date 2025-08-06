@@ -11,8 +11,8 @@ namespace SRPM_Services.BusinessModels.Others
         public string? Title { get; set; }
         public string? Category { get; set; }
         public string? Type { get; set; }
-        public string? Genre { get; set; }
-        public string? Status { get; set; }
+        public List<string>? Genres { get; set; }
+        public List<string>? Statuses { get; set; }
         public string? Language { get; set; }
 
         public Guid? MajorId { get; set; }
