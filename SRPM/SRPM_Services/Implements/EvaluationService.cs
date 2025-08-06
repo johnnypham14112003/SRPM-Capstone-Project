@@ -115,15 +115,15 @@ public class EvaluationService : IEvaluationService
 
     public async Task<string> FirstAIEvaluation(Guid projectId)
     {
+        var project = await _unitOfWork.GetProjectRepository().GetOneAsync(
+            p => p.Id == projectId,
+            p => p.Include(pro => pro.Milestones), false)
+        ?? throw new NotFoundException($"Not Found Project Id '{projectId}' to create evaluation!");
+
         //Return backgroundTaskId
         return await System.Threading.Tasks.Task.FromResult(
             _taskQueueHandler.EnqueueTracked(async cancelToken =>
             {
-                var project = await _unitOfWork.GetProjectRepository().GetOneAsync(
-                    p => p.Id == projectId,
-                    p => p.Include(pro => pro.Milestones), false)
-                ?? throw new NotFoundException($"Not Found Project Id '{projectId}' to create evaluation!");
-
                 var datePart = DateTime.Now.ToString("ddMMyyyy");
                 var abbreviations = project.Abbreviations;
 
