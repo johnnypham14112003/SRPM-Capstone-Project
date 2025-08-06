@@ -7,7 +7,7 @@ namespace SRPM_APIServices.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class IndividualEvaluationController : ControllerBase
+public class IndividualEvaluationController : Controller
 {
     private readonly IIndividualEvaluationService _individualEvaluationService;
 

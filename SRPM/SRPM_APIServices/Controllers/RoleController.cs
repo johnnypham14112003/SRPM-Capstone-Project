@@ -7,7 +7,7 @@ namespace SRPM_APIServices.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class RoleController : ControllerBase
+public class RoleController : Controller
 {
     private readonly IRoleService _service;
 

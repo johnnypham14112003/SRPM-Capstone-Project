@@ -8,7 +8,7 @@ namespace SRPM_APIServices.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class TaskController : ControllerBase
+public class TaskController : Controller
 {
     private readonly ITaskService _service;
 

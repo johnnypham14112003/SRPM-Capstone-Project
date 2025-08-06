@@ -9,7 +9,7 @@ namespace SRPM_APIServices.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class MilestoneController : ControllerBase
+public class MilestoneController : Controller
 {
     private readonly IMilestoneService _service;
 

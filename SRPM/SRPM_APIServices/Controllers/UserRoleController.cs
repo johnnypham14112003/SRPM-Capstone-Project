@@ -11,7 +11,7 @@ namespace SRPM_APIServices.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class UserRoleController : ControllerBase
+public class UserRoleController : Controller
 {
     private readonly IUserRoleService _service;
 

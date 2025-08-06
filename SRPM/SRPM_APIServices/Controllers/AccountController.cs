@@ -12,7 +12,7 @@ namespace SRPM_APIServices.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class AccountController : ControllerBase
+public class AccountController : Controller
 {
     private readonly IAccountService _service;
 

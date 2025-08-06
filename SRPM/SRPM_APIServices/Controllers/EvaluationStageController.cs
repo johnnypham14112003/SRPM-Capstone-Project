@@ -7,7 +7,7 @@ namespace SRPM_APIServices.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class EvaluationStageController : ControllerBase
+public class EvaluationStageController : Controller
 {
     //=================================[ Declares ]================================
     private readonly IEvaluationStageService _evaluationStageService;

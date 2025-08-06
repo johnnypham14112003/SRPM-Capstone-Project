@@ -8,7 +8,7 @@ namespace SRPM_APIServices.Controllers
     [ApiController]
     [Route("api/[controller]")]
     [Authorize]
-    public class DashboardController : ControllerBase
+    public class DashboardController : Controller
     {
         private readonly IDashboardService _dashboardService;
 

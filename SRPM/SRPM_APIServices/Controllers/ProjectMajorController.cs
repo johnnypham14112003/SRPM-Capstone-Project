@@ -8,7 +8,7 @@ namespace SRPM_APIServices.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class ProjectMajorController : ControllerBase
+public class ProjectMajorController : Controller
 {
     private readonly IProjectMajorService _service;
 
