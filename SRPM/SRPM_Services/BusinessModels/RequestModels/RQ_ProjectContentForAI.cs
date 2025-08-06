@@ -7,7 +7,7 @@ public class RQ_ProjectContentForAI
     public DateTime? StartDate { get; set; }
     public DateTime? EndDate { get; set; }
     public string? RequirementNote { get; set; }
-    public int TotalMember { get; set; } = 1;
+    public int MaximumMember { get; set; } = 1;
     public string Category { get; set; } = null!;//basic || application/implementation
     public string Type { get; set; } = null!;//school level || cooperate
     public string Genre { get; set; } = null!;//normal || proposal || propose

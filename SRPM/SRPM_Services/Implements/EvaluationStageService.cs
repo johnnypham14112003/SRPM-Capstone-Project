@@ -37,8 +37,8 @@ public class EvaluationStageService : IEvaluationStageService
         queryInput.PageSize = queryInput.PageSize < 1 ? 1 : queryInput.PageSize;
 
         var dataResult = await _unitOfWork.GetEvaluationStageRepository().ListStagePaging
-            (queryInput.KeyWord, queryInput.Status,
-            queryInput.EvaluationId, queryInput.AppraisalCouncilId,
+            (queryInput.KeyWord, queryInput.Phrase, queryInput.Type, queryInput.Status,
+            queryInput.MilestoneId, queryInput.EvaluationId, queryInput.AppraisalCouncilId,
             queryInput.SortBy, queryInput.PageIndex, queryInput.PageSize);
 
         // Checking Result
@@ -57,7 +57,7 @@ public class EvaluationStageService : IEvaluationStageService
     public async Task<(bool success, Guid evaluationStageId)> CreateAsync(RQ_EvaluationStage newEvaluationStage)
     {
         //Check Null Data
-        bool hasInvalidFields = new[] { newEvaluationStage.Name, newEvaluationStage.Status }
+        bool hasInvalidFields = new[] { newEvaluationStage.Name, newEvaluationStage.Phrase, newEvaluationStage.Type , newEvaluationStage.Status }
         .Any(string.IsNullOrWhiteSpace);
         if (hasInvalidFields) throw new BadRequestException("EvaluationStage Name or Status cannot be empty!");
 

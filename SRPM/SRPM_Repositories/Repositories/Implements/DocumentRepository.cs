@@ -39,14 +39,18 @@ public class DocumentRepository : GenericRepository<Document>, IDocumentReposito
         //Filter By Type
         if (!string.IsNullOrWhiteSpace(docType))
             query = query.Where(d => d.Type.ToLower().Equals(docType.ToLower()));
-        
+
         //Filter By IsTemplate
         if (isTemplate.HasValue)
             query = query.Where(d => d.IsTemplate == isTemplate);
 
         //Filter By Status
         if (!string.IsNullOrWhiteSpace(status))
+        {
             query = query.Where(d => d.Status.ToLower().Equals(status.ToLower()));
+            if (!status.ToLower().Equals("deleted"))
+                query = query.Where(d => !d.Status.ToLower().Equals("deleted"));
+        }
 
         //Filter By Time
         if (fromDate.HasValue)

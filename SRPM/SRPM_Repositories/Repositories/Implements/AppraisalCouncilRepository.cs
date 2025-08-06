@@ -82,7 +82,11 @@ public class AppraisalCouncilRepository : GenericRepository<AppraisalCouncil>, I
 
         //Status Filter
         if (!string.IsNullOrWhiteSpace(status))
+        {
             query = query.Where(ac => ac.Status.ToLower().Equals(status.ToLower()));
+            if (!status.ToLower().Equals("deleted"))
+                query = query.Where(ac => !ac.Status.ToLower().Equals("deleted"));
+        }
 
         //Date Filter
         if (fromDate.HasValue)

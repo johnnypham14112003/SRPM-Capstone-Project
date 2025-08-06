@@ -44,7 +44,11 @@ public class AccountNotificationRepository : GenericRepository<AccountNotificati
 
         //Status Filter
         if (!string.IsNullOrWhiteSpace(status))
+        {
             query = query.Where(an => an.Notification.Status.ToLower().Equals(status.ToLower()));
+            if (!status.ToLower().Equals("deleted"))
+                query = query.Where(an => !an.Notification.Status.ToLower().Equals("deleted"));
+        }
 
         //Date Filter
         if (fromDate.HasValue)
