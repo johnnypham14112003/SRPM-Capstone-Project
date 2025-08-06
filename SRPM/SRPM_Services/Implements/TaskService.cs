@@ -128,12 +128,24 @@ public class TaskService : ITaskService
 
     public async Task<bool> DeleteAsync(Guid id)
     {
-        var repo = _unitOfWork.GetTaskRepository();
-        var entity = await repo.GetByIdAsync<Guid>(id);
-        if (entity == null) return false;   
+        var taskRepo = _unitOfWork.GetTaskRepository();
+        var memberTaskRepo = _unitOfWork.GetMemberTaskRepository();
 
-        await repo.DeleteAsync(entity);
+        var taskEntity = await taskRepo.GetByIdAsync<Guid>(id);
+        if (taskEntity == null) return false;
+
+        var memberTasks = await memberTaskRepo.GetListAsync(
+            mt => mt.TaskId == id,
+            hasTrackings: false
+        );
+
+        if (memberTasks != null && memberTasks.Any())
+            await memberTaskRepo.DeleteRangeAsync(memberTasks);
+
+        await taskRepo.DeleteAsync(taskEntity);
+
         await _unitOfWork.SaveChangesAsync();
+
         return true;
     }
     public async Task<bool> ChangeTaskStatus(Guid id, string status)

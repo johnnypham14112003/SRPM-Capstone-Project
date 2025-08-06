@@ -103,7 +103,7 @@ public class MemberTaskService : IMemberTaskService
             }
             catch (Exception e)
             {
-                throw new BadRequestException("Failed to create MemberTask");
+                throw new BadRequestException("Failed to create MemberTask, " + e);
             }
         }
 

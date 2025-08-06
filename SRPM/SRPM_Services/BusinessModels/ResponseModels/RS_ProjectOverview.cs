@@ -20,6 +20,7 @@ namespace SRPM_Services.BusinessModels.ResponseModels
         public string? PictureUrl { get; set; } 
         public string? Description { get; set; }
         public string? RequirementNote { get; set; }
+        public int MaximumMember { get; set; }
         public decimal Progress { get; set; } = 0m;
         public string Language { get; set; } = null!;
         public List<RS_TagBrief>? ProjectTags { get; set; }
