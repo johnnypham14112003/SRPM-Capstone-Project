@@ -1,5 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using SRPM_Services.BusinessModels.RequestModels;
+using SRPM_Services.BusinessModels.RequestModels.Query;
+using SRPM_Services.Implements;
 using SRPM_Services.Interfaces;
 
 namespace SRPM_APIServices.Controllers;
@@ -22,6 +24,13 @@ public class TransactionController: Controller
     {
         var result = await _transactionService.NewTransaction(inputData);
         return result.result ? Created(nameof(Add), result.transactionId) : BadRequest("Create Failed!");
+    }
+
+    [HttpPost("list")]
+    public async Task<IActionResult> ListTransaction([FromBody] Q_Transaction inputData)
+    {
+        var result = await _transactionService.ListTransaction(inputData);
+        return Ok(result);
     }
 
     [HttpGet("{id}")]
