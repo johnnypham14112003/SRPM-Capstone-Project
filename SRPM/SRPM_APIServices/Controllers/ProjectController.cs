@@ -27,7 +27,7 @@ public class ProjectController : Controller
     // GET: api/project/filter
     [HttpPost("filter")]
     [Authorize]
-    public async Task<ActionResult<PagingResult<RS_Project>>> GetList([FromBody] RQ_ProjectQuery query)
+    public async Task<ActionResult> GetList([FromBody] RQ_ProjectQuery query)
     {
         try
         {

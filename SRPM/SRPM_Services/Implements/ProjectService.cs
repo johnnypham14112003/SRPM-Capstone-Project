@@ -93,6 +93,7 @@ public class ProjectService : IProjectService
                (string.IsNullOrWhiteSpace(query.Title) ||
                    p.EnglishTitle.Contains(query.Title) ||
                    p.VietnameseTitle.Contains(query.Title)) &&
+               (string.IsNullOrWhiteSpace(query.Code) || p.Code == query.Code)      &&
                (string.IsNullOrWhiteSpace(query.Category) || p.Category == query.Category) &&
                (string.IsNullOrWhiteSpace(query.Type) || p.Type == query.Type) &&
                (query.Genres == null || query.Genres.Count == 0 || query.Genres.Contains(p.Genre)) &&
@@ -368,7 +369,7 @@ public class ProjectService : IProjectService
         {
             Id = Guid.NewGuid(),
             AccountId = principalId,
-            Code = $"UR-{DateTime.Now:yyyy_MM}_{principalId.ToString().Substring(0, 6).ToUpperInvariant()}",
+            Code = $"UR-{DateTime.Now:yyyy_MM_dd}_{principalId.ToString().Substring(0, 6).ToUpperInvariant()}",
             RoleId = piRole.Id,
             ProjectId = draftClone.Id,
             GroupName = draftClone.EnglishTitle,

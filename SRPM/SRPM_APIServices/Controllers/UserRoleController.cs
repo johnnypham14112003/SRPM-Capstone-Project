@@ -11,7 +11,7 @@ namespace SRPM_APIServices.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class UserRoleController : Controller
+public class UserRoleController : ControllerBase
 {
     private readonly IUserRoleService _service;
 
@@ -48,7 +48,7 @@ public class UserRoleController : Controller
 
     // POST: api/userrole
     [HttpPost]
-    public async Task<ActionResult<RS_UserRole>> Create(RQ_UserRole request)
+    public async Task<ActionResult<RS_UserRole>> Create(RQ_UserRole request,string? Status)
     {
         try
         {
