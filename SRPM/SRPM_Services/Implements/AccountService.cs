@@ -216,7 +216,7 @@ public class AccountService : IAccountService
         await _unitOfWork.SaveChangesAsync();
 
         // Step 2: Prepare model for Razor email
-        var model = new PasswordEmailModel
+        var model = new DTO_PasswordEmail
         {
             UserName = account.FullName,
             WebsiteURL = _configuration["WebsiteURL"] ?? "https://SRPM.com",

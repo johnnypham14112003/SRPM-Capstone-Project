@@ -38,6 +38,7 @@ public class TransactionService : ITransactionService
 
         var datePart = DateTime.Now.ToString("ddMMyyyy");
         trans.Code = $"T{datePart}";
+        trans.RequestPersonId = userRoleId;
 
         var transactionDTO = trans.Adapt<Transaction>();
         await _unitOfWork.GetTransactionRepository().AddAsync(transactionDTO);
@@ -77,10 +78,22 @@ public class TransactionService : ITransactionService
         };
     }
 
-    public async Task<bool> UpdateTransaction(Guid id, RQ_Transaction inputData)
+    public async Task<bool> UpdateTransaction(RQ_Transaction inputData)
     {
-        var transaction = await _unitOfWork.GetTransactionRepository().GetByIdAsync(id);
-        if (transaction == null) return false;
+        var transaction = await _unitOfWork.GetTransactionRepository().GetByIdAsync(inputData.Id)
+            ?? throw new NotFoundException("Not Found This Transaction Object To Update!");
+
+        inputData.Code = transaction.Code;
+        inputData.RequestPersonId = transaction.RequestPersonId;
+        if (!string.IsNullOrWhiteSpace(inputData.SenderAccount))
+        {
+            //default get by current session || use id on parameter
+            Guid userRoleId = inputData.RequestPersonId is null ? userRoleId = await GetCurrentMainUserRoleId() : Guid.Empty;
+            if (userRoleId == Guid.Empty)
+                throw new BadRequestException("Unknown Who Is Handle This Transaction!");
+
+            inputData.HandlePersonId = userRoleId;
+        }
 
         await _unitOfWork.GetTransactionRepository().UpdateAsync(inputData.Adapt(transaction));
         return await _unitOfWork.GetTransactionRepository().SaveChangeAsync();

@@ -23,10 +23,10 @@ public class RQ_Transaction
     public DateTime RequestDate { get; set; } = DateTime.Now;
     public DateTime? HandleDate { get; set; }
 
-    public decimal FeeCost { get; set; }
-    public decimal TotalMoney { get; set; }
+    public decimal FeeCost { get; set; } = 0;
+    public decimal TotalMoney { get; set; } = 0;
     public string PayMethod { get; set; } = "transfer";
-    public string Status { get; set; } = "created";
+    public string Status { get; set; } = "pending";
 
     public Guid? RequestPersonId { get; set; }
     public Guid? HandlePersonId { get; set; }

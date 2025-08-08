@@ -40,10 +40,10 @@ public class TransactionController: Controller
         return transaction != null ? Ok(transaction) : NotFound();
     }
 
-    [HttpPut("{id}")]
-    public async Task<IActionResult> Update(Guid id, [FromBody] RQ_Transaction inputData)
+    [HttpPut]
+    public async Task<IActionResult> Update([FromBody] RQ_Transaction inputData)
     {
-        var result = await _transactionService.UpdateTransaction(id, inputData);
+        var result = await _transactionService.UpdateTransaction(inputData);
         return result ? Ok("Update Successfully!") : BadRequest("Update Failed!");
     }
 
