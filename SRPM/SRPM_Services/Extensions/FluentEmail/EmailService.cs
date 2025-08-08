@@ -1,7 +1,6 @@
 ﻿using FluentEmail.Core;
 using FluentEmail.Core.Models;
 using Razor.Templating.Core;
-using SRPM_Repositories.Models;
 using SRPM_Services.BusinessModels.Others;
 
 namespace SRPM_Services.Extensions.FluentEmail;
@@ -10,7 +9,7 @@ public interface IEmailService
 {
     Task<bool> SendEmailAsync(EmailDTO sendEmailDto, bool hasUIBody = true);
 
-    Task<string> RenderPasswordEmail(PasswordEmailModel model);
+    Task<string> RenderPasswordEmail(DTO_PasswordEmail model);
 }
 
 public class EmailService : IEmailService
@@ -53,7 +52,7 @@ public class EmailService : IEmailService
     }
 
     //Render Object Date into UI email
-    public async Task<string> RenderPasswordEmail(PasswordEmailModel model)
+    public async Task<string> RenderPasswordEmail(DTO_PasswordEmail model)
     {
         return await _razorTemplateEngine.RenderAsync("/PasswordEmail.cshtml", model);
     }
