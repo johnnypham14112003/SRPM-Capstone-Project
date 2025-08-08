@@ -78,9 +78,9 @@ public class TransactionService : ITransactionService
         };
     }
 
-    public async Task<bool> UpdateTransaction(Guid id, RQ_Transaction inputData)
+    public async Task<bool> UpdateTransaction(RQ_Transaction inputData)
     {
-        var transaction = await _unitOfWork.GetTransactionRepository().GetByIdAsync(id)
+        var transaction = await _unitOfWork.GetTransactionRepository().GetByIdAsync(inputData.Id)
             ?? throw new NotFoundException("Not Found This Transaction Object To Update!");
 
         inputData.Code = transaction.Code;
@@ -90,7 +90,7 @@ public class TransactionService : ITransactionService
             //default get by current session || use id on parameter
             Guid userRoleId = inputData.RequestPersonId is null ? userRoleId = await GetCurrentMainUserRoleId() : Guid.Empty;
             if (userRoleId == Guid.Empty)
-                throw new BadRequestException("Unknown Who Is Creating This Transaction!");
+                throw new BadRequestException("Unknown Who Is Handle This Transaction!");
 
             inputData.HandlePersonId = userRoleId;
         }

@@ -10,6 +10,6 @@ public interface ITransactionService
     Task<(bool result, Guid transactionId)> NewTransaction(RQ_Transaction inputData);
     Task<RS_Transaction?> GetTransactionById(Guid id);
     Task<PagingResult<RS_Transaction>?> ListTransaction(Q_Transaction queryInput);
-    Task<bool> UpdateTransaction(Guid id, RQ_Transaction inputData);
+    Task<bool> UpdateTransaction(RQ_Transaction inputData);
     Task<bool> DeleteTransaction(Guid id);
 }
