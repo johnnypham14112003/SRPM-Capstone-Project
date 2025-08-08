@@ -126,8 +126,8 @@ public class UserRoleService : IUserRoleService
             if (council == null)
                 throw new NotFoundException($"Appraisal Council with ID {request.AppraisalCouncilId} was not found.");
 
-            if (council.CreatedAt <= DateTime.MinValue)
-                throw new InvalidOperationException("Appraisal Council created date is invalid.");
+            //if (council.CreatedAt <= DateTime.MinValue)
+                //throw new InvalidOperationException("Appraisal Council created date is invalid.");
 
             isOfficial = true;
             expireDate = council.CreatedAt.AddYears(1);
@@ -194,12 +194,23 @@ public class UserRoleService : IUserRoleService
         if (match != null)
             return match.Adapt<RS_UserRole>();
 
-        // 🆕 Create new role
         var entity = request.Adapt<UserRole>();
         entity.Id = Guid.NewGuid();
         entity.CreatedAt = DateTime.Now;
-        entity.Code = $"UR-{Convert.ToBase64String(Guid.NewGuid().ToByteArray()).Replace("=", "").Replace("+", "").Replace("/", "").Substring(0, 6).ToUpperInvariant()}";
-        entity.Status = Status.Pending.ToString().ToLowerInvariant();
+        if (string.IsNullOrWhiteSpace(request.Code))
+        {
+            var initials = string.Join("", role.Name
+                .Split(' ', StringSplitOptions.RemoveEmptyEntries)
+                .Select(word => word[0]))
+                .ToUpperInvariant();
+            var idFragment = entity.Id.ToString().Replace("-", "").Substring(0, 6).ToUpperInvariant();
+            entity.Code = $"{initials}-{idFragment}";
+        }
+        else
+        {
+            entity.Code = request.Code;
+        }
+        entity.Status = request.Status.ToStatus().ToString().ToLower() ?? Status.Pending.ToString().ToLower();
         entity.IsOfficial = isOfficial;
         entity.ExpireDate = expireDate;
         entity.GroupName = groupName;

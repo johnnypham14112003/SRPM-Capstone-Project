@@ -48,7 +48,7 @@ public class UserRoleController : ControllerBase
 
     // POST: api/userrole
     [HttpPost]
-    public async Task<ActionResult<RS_UserRole>> Create(RQ_UserRole request,string? Status)
+    public async Task<ActionResult<RS_UserRole>> Create(RQ_UserRole request)
     {
         try
         {

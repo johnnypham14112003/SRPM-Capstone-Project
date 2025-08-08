@@ -9,6 +9,8 @@ namespace SRPM_Services.BusinessModels.RequestModels
 {
     public class RQ_UserRole
     {
+        public string? Status { get; set; }
+        public string? Code { get; set; } = null!;   
         [Required]public Guid AccountId { get; set; }
         [Required] public Guid RoleId { get; set; }
         public Guid? ProjectId { get; set; }
