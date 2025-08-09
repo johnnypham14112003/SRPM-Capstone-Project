@@ -14,6 +14,7 @@ using SRPM_Services.Extensions.BackgroundService;
 using HtmlAgilityPack;
 using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace SRPM_Services.Implements;
 
@@ -503,5 +504,55 @@ public class ProjectService : IProjectService
         await _unitOfWork.GetMilestoneRepository().AddRangeAsync(milestonesFromDoc);
         await _unitOfWork.GetTaskRepository().AddRangeAsync(tasksFromDoc);
         return await _unitOfWork.SaveChangesAsync();
+    }
+
+    public async Task<List<RS_ProjectOverview>> GetHostProjectHistory()
+    {
+        try
+        {
+            Guid accountId = Guid.Parse(_userContextService.GetCurrentUserId());
+
+            var projectList = await _unitOfWork.GetProjectRepository()
+                .GetListAsync(
+                    expression: p => p.CreatorId == accountId &&
+                                    p.Genre == "normal" &&
+                                    p.Status.ToLowerInvariant() != Status.Deleted.ToString().ToLowerInvariant(),
+                    hasTrackings: false
+                );
+
+            if (projectList == null || !projectList.Any())
+                throw new NotFoundException("No project found for this host account.");
+
+            return projectList.Adapt<List<RS_ProjectOverview>>();
+        }
+
+        catch (Exception ex)
+        {
+            throw new Exception("You are not authorized to access these projects.", ex);
+        }
+    }
+    public async Task<List<RS_ProjectOverview>> GetStaffProjectHistory()
+    {
+        try
+        {
+            Guid accountId = Guid.Parse(_userContextService.GetCurrentUserId());
+
+            var project = await _unitOfWork.GetProjectRepository()
+                .GetListAsync(
+                    expression: p => p.CreatorId == accountId &&
+                                    p.Genre == "propose" &&
+                                    p.Status.ToLowerInvariant() != Status.Deleted.ToString().ToLowerInvariant(),
+                    hasTrackings: false
+                );
+
+            if (project == null)
+                throw new NotFoundException("No project found for this host account.");
+
+            return project.Adapt<List<RS_ProjectOverview>>();
+        }
+        catch (Exception ex)
+        {
+            throw new Exception("You are not authorized to access this project. ", ex);
+        }
     }
 }
