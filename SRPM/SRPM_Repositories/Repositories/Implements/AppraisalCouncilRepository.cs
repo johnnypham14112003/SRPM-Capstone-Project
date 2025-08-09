@@ -76,8 +76,9 @@ public class AppraisalCouncilRepository : GenericRepository<AppraisalCouncil>, I
         //keyword Filter
         if (!string.IsNullOrWhiteSpace(keyWord))
         {
-            query = query.Where(ac => ac.Code.ToLower().Contains(keyWord.ToLower()));
-            query = query.Where(ac => ac.Name.ToLower().Contains(keyWord.ToLower()));
+            query = query.Where(ac =>
+                ac.Code.ToLower().Contains(keyWord.ToLower()) ||
+                ac.Name.ToLower().Contains(keyWord.ToLower()));
         }
 
         //Status Filter

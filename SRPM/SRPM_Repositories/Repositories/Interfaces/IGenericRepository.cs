@@ -1,10 +1,12 @@
-﻿using System.Linq.Expressions;
+﻿using Microsoft.EntityFrameworkCore.ChangeTracking;
+using System.Linq.Expressions;
 using Task = System.Threading.Tasks.Task;
 
 namespace SRPM_Repositories.Repositories.Interfaces;
 
 public interface IGenericRepository<T> where T : class
 {
+    bool HasChanges(T newEntity, T trackedEntity);
     Task<bool> AnyAsync(Expression<Func<T, bool>> expression);
     Task<int> CountAsync(Expression<Func<T, bool>> expression);
 

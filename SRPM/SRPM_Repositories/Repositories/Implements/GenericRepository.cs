@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Query.SqlExpressions;
+using Microsoft.EntityFrameworkCore.ChangeTracking;
+using SRPM_Repositories.Models;
 using SRPM_Repositories.Repositories.Interfaces;
 using System.Linq.Expressions;
 using Task = System.Threading.Tasks.Task;
@@ -15,6 +16,20 @@ public class GenericRepository<T> : IGenericRepository<T> where T : class
     }
 
     //=============================================
+    public bool HasChanges(T newEntity, T trackedEntity)
+    {
+        foreach (var prop in typeof(T).GetProperties())
+        {
+            var val1 = prop.GetValue(trackedEntity);
+            var val2 = prop.GetValue(newEntity);
+
+            //If not equal => true
+            if (!object.Equals(val1, val2)) return true;
+        }
+
+        return false;
+    }
+
     public async Task<bool> AnyAsync(Expression<Func<T, bool>> expression)
     {
         return await _context.Set<T>().AnyAsync(expression);
@@ -29,7 +44,7 @@ public class GenericRepository<T> : IGenericRepository<T> where T : class
         Expression<Func<T, bool>> expression,
         Func<IQueryable<T>, IQueryable<T>>? include = null,
         bool hasTrackings = true,
-        bool useSplitQuery = true 
+        bool useSplitQuery = true
     )
     {
         IQueryable<T> query = _context.Set<T>().Where(expression);
@@ -41,7 +56,7 @@ public class GenericRepository<T> : IGenericRepository<T> where T : class
             query = query.AsNoTracking();
 
         if (useSplitQuery)
-            query = query.AsSplitQuery(); 
+            query = query.AsSplitQuery();
 
         return await query.ToListAsync();
     }
@@ -85,6 +100,7 @@ public class GenericRepository<T> : IGenericRepository<T> where T : class
     {
         return await _context.Set<T>().FindAsync(id);
     }
+
     public Task AddAsync(T TEntity)
     {
         _context.Add(TEntity);
