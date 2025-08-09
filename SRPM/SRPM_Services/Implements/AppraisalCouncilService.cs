@@ -1,4 +1,5 @@
 ﻿using Mapster;
+using Microsoft.EntityFrameworkCore;
 using SRPM_Repositories.Models;
 using SRPM_Repositories.Repositories.Interfaces;
 using SRPM_Services.BusinessModels;
@@ -75,7 +76,10 @@ public class AppraisalCouncilService : IAppraisalCouncilService
         var existCouncil = await _unitOfWork.GetAppraisalCouncilRepository().GetOneAsync(ac => ac.Id == newCouncil.Id)
             ?? throw new NotFoundException("Not found any Council match this Id!");
 
-        //Null data is handled for Patch API in Mapster config
+        //If not change -> true
+        var tempCouncil = newCouncil.Adapt<AppraisalCouncil>();
+        if (_unitOfWork.GetAppraisalCouncilRepository().HasChanges(tempCouncil, existCouncil) == false)
+            return true;
 
         //Transfer new Data to old Data
         newCouncil.Adapt(existCouncil);
