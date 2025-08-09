@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using SRPM_Services.BusinessModels.Others;
 using SRPM_Services.BusinessModels.RequestModels;
 using SRPM_Services.BusinessModels.RequestModels.Query;
 using SRPM_Services.Interfaces;
@@ -37,6 +38,13 @@ public class NotificationController : Controller
     {
         var result = await _notificationService.NotificateToUser(input.ListAccountId, input.NotificationId);
         return Ok(result);
+    }
+
+    [HttpPost("email")]
+    public async Task<IActionResult> Update([FromBody] RQ_NotificationEmail notification)
+    {
+        bool result = await _notificationService.SendNotificationMail(notification);
+        return result ? Ok("Update Successfully!") : BadRequest("Update Failed!");
     }
 
     [HttpPut("status")]
