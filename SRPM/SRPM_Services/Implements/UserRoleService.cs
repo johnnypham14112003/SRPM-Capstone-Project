@@ -210,7 +210,7 @@ public class UserRoleService : IUserRoleService
         {
             entity.Code = request.Code;
         }
-        entity.Status = request.Status.ToStatus().ToString().ToLower() ?? Status.Pending.ToString().ToLower();
+        entity.Status = request.Status != null ? request.Status.ToStatus().ToString().ToLower() : Status.Pending.ToString().ToLower();
         entity.IsOfficial = isOfficial;
         entity.ExpireDate = expireDate;
         entity.GroupName = groupName;
