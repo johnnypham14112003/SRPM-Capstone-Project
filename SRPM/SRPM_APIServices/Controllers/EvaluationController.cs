@@ -43,7 +43,7 @@ public class EvaluationController : Controller
     }
 
     [HttpPost("first-evaluation")]
-    public async Task<IActionResult> AICreateEvaluation([FromBody] Guid projectId)
+    public async Task<IActionResult> AICreateEvaluation([FromQuery] Guid projectId)
     {
         string bgTaskId = await _evaluationService.FirstAIEvaluation(projectId);
         return Ok(bgTaskId);

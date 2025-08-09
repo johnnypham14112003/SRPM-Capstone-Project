@@ -1,4 +1,5 @@
 ﻿using Mapster;
+using Microsoft.AspNetCore.Components.Forms;
 using Microsoft.EntityFrameworkCore;
 using SRPM_Repositories.Models;
 using SRPM_Repositories.Repositories.Interfaces;
@@ -30,9 +31,21 @@ public class TransactionService : ITransactionService
         .Any(string.IsNullOrWhiteSpace);
         if (hasInvalidFields)
             throw new BadRequestException("Transaction Title, Type, ReceiverAccount, ReceiverBankName, ReceiverName cannot be empty!");
-        
+
+        Guid userRoleId = Guid.Empty;
         //default get by current session || use id on parameter
-        Guid userRoleId = trans.RequestPersonId is null ? userRoleId = await GetCurrentMainUserRoleId() : Guid.Empty;
+        if (trans.RequestPersonId is null)
+        {
+            //Get All Available Role Of This Account
+            var userRoles = await GetCurrentUserRoles();
+            foreach (var ur in userRoles)
+            {
+                //Only PI can create transaction
+                var currentRole = await _unitOfWork.GetRoleRepository().GetOneAsync(r => r.Id == ur.RoleId);
+                if (currentRole.Name.ToLower().Equals("principal investigator"))
+                    userRoleId = ur.Id;
+            }
+        }
         if (userRoleId == Guid.Empty)
             throw new BadRequestException("Unknown Who Is Creating This Transaction!");
 
@@ -85,14 +98,23 @@ public class TransactionService : ITransactionService
 
         inputData.Code = transaction.Code;
         inputData.RequestPersonId = transaction.RequestPersonId;
+
+        //If staff is updating
         if (!string.IsNullOrWhiteSpace(inputData.SenderAccount))
         {
-            //default get by current session || use id on parameter
-            Guid userRoleId = inputData.RequestPersonId is null ? userRoleId = await GetCurrentMainUserRoleId() : Guid.Empty;
-            if (userRoleId == Guid.Empty)
+            Guid staffURid = Guid.Empty;
+            var userRoles = await GetCurrentUserRoles();
+            foreach (var ur in userRoles)
+            {
+                var currentRole = await _unitOfWork.GetRoleRepository().GetOneAsync(r => r.Id == ur.RoleId);
+                if (currentRole.Name.ToLower().Equals("principal investigator"))
+                    staffURid = ur.Id;
+            }
+
+            if (staffURid == Guid.Empty)
                 throw new BadRequestException("Unknown Who Is Handle This Transaction!");
 
-            inputData.HandlePersonId = userRoleId;
+            inputData.HandlePersonId = staffURid;
         }
 
         await _unitOfWork.GetTransactionRepository().UpdateAsync(inputData.Adapt(transaction));
@@ -109,21 +131,21 @@ public class TransactionService : ITransactionService
     }
 
     //=================================================================================
-    private async Task<Guid> GetCurrentMainUserRoleId()
+    private async Task<List<UserRole>?> GetCurrentUserRoles()
     {
         _ = Guid.TryParse(_userContextService.GetCurrentUserId(), out Guid accId);
 
         var existAccount = await _unitOfWork.GetAccountRepository().GetOneAsync(a => a.Id == accId, null, false) ??
             throw new NotFoundException("Your current session account Id is not exist in database! Can't find your cv");
 
-        var defaultUserRole = await _unitOfWork.GetUserRoleRepository().GetOneAsync(ur =>
+        var listUserRole = await _unitOfWork.GetUserRoleRepository().GetListAdvanceAsync(ur =>
             ur.AccountId == accId &&
             ur.ProjectId == null &&
             ur.AppraisalCouncilId == null &&
             ur.ExpireDate.HasValue &&
             ur.ExpireDate > DateTime.Now, null, false) ??
-        throw new NotFoundException("Not found your base role Id or it is expired in system!");
+        throw new NotFoundException("Not found your base roles or it is expired in system!");
 
-        return defaultUserRole.Id;
+        return listUserRole;
     }
 }

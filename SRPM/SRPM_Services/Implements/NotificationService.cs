@@ -18,15 +18,15 @@ public class NotificationService : INotificationService
 {
     private readonly IUnitOfWork _unitOfWork;
     private readonly IUserContextService _userContextService;
-    private readonly ITaskQueueHandler _taskQueueHandler;
+    private readonly IEmailService _emailService;
 
     public NotificationService(IUnitOfWork unitOfWork,
         IUserContextService userContextService,
-        ITaskQueueHandler taskQueueHandler)
+        IEmailService emailService)
     {
         _unitOfWork = unitOfWork;
         _userContextService = userContextService;
-        _taskQueueHandler = taskQueueHandler;
+        _emailService = emailService;
     }
 
     //=============================================================================
@@ -239,5 +239,16 @@ public class NotificationService : INotificationService
 
         await _unitOfWork.GetNotificationRepository().DeleteAsync(existNoti);
         return await _unitOfWork.GetNotificationRepository().SaveChangeAsync();
+    }
+
+    public async Task<bool> SendNotificationMail(RQ_NotificationEmail notiEmail)
+    {
+        var notification = notiEmail.Adapt<DTO_NotificationEmail>();
+        var body = await _emailService.RenderNotificationEmail(notification);
+        if (string.IsNullOrWhiteSpace(body)) throw new BadRequestException("Failed to render email body!");
+
+        var email = notiEmail.Adapt<EmailDTO>();
+        email.Body = body;
+        return await _emailService.SendEmailAsync(email);
     }
 }
