@@ -15,7 +15,6 @@ using SRPM_Services.BusinessModels.Others;
 using SRPM_Services.BusinessModels.RequestModels;
 using SRPM_Services.BusinessModels.ResponseModels;
 using SRPM_Services.Extensions;
-using SRPM_Services.Extensions.BackgroundService;
 using SRPM_Services.Extensions.Enumerables;
 using SRPM_Services.Extensions.FluentEmail;
 using SRPM_Services.Extensions.Mapster;
@@ -29,6 +28,7 @@ using System.Text;
 using SRPM_Services.Interfaces;
 using OpenAI.Chat;
 using System.Collections.Generic;
+using SRPM_Services.Extensions.MicrosoftBackgroundService;
 
 namespace SRPM_APIServices;
 
@@ -451,8 +451,10 @@ public static class DIContainer
 
     private static IServiceCollection ConfigBackgroundService(this IServiceCollection services)
     {
+        services.AddSingleton<IBackgroundTaskQueue, BackgroundTaskQueue>();
         services.AddSingleton<ITaskQueueHandler, TaskQueueHandler>();
-        services.AddHostedService<BackgroundServiceProvider>();
+        services.AddSingleton<ITaskTracker, TaskTracker>();
+        services.AddHostedService<BackgroundTaskService>();
         return services;
     }
 

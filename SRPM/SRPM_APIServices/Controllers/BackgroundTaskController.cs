@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using SRPM_Services.Extensions.BackgroundService;
+using SRPM_Services.Extensions.Enumerables;
+using SRPM_Services.Extensions.MicrosoftBackgroundService;
 
 namespace SRPM_APIServices.Controllers;
 
@@ -7,30 +8,39 @@ namespace SRPM_APIServices.Controllers;
 [Route("api/[controller]")]
 public class BackgroundTaskController : Controller
 {
-    private readonly ITaskQueueHandler _taskQueueHandler;
+    private readonly ITaskTracker _tracker;
 
-    public BackgroundTaskController(ITaskQueueHandler taskQueueHandler)
+    public BackgroundTaskController(ITaskTracker tracker)
     {
-        _taskQueueHandler = taskQueueHandler;
+        _tracker = tracker;
     }
 
     [HttpGet("{taskId}")]
-    public IActionResult GetStatus([FromRoute] string taskId)
+    public IActionResult GetTaskStatus(string taskId)
     {
-        var meta = _taskQueueHandler.GetTaskMetadata(taskId);
-        if (meta == null) return NotFound();
-        return Ok(new
+        if (_tracker.TryGetTask(taskId, out var info))
         {
-            TaskId = meta.TaskId,
-            Status = meta.Status.ToString()
-        });
+            return Ok(new
+            {
+                info.TaskId,
+                info.Status,
+                info.Progress,
+                info.ErrorMessage
+            });
+        }
+
+        return NotFound(new { message = "Task not found" });
     }
 
     [HttpDelete("{taskId}")]
-    public IActionResult Cancel([FromRoute] string taskId)
+    public IActionResult CancelTask(string taskId)
     {
-        var success = _taskQueueHandler.CancelTask(taskId);
-        if (!success) return NotFound("Cannot Cancel Or It Has Been Completed!");
-        return Ok("Cancelled Task");
+        if (_tracker.TryGetTask(taskId, out var info))
+        {
+            info.CancellationTokenSource.Cancel();
+            return Ok(new { message = "Task cancelled" });
+        }
+
+        return NotFound(new { message = "Task not found" });
     }
 }
