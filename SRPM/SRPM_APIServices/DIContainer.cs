@@ -94,6 +94,7 @@ public static class DIContainer
         services.AddScoped<ITransactionService, TransactionService>();
         services.AddScoped<IFieldService, FieldService>();
         services.AddScoped<IDashboardService, DashboardService>();
+        services.AddScoped<ISignatureService, SignatureService>();
 
         //Extensions Services
         services.AddScoped<IEmailService, EmailService>();
