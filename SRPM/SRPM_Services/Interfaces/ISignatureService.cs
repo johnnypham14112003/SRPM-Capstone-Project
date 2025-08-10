@@ -14,6 +14,7 @@ namespace SRPM_Services.Interfaces
         Task<List<RS_Signature>> ReviewSignatureInDocumentAsync(Guid documentId);
         Task<List<RS_Signature>> GetAllSignature();
         Task<bool> ValidateSignatureAsync(Guid documentId, IFormFile signatureImage);
+        Task<bool> DeleteSignatureAsync(Guid signatureId);
     }
 
 }

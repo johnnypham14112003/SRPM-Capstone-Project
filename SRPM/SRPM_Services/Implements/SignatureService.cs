@@ -2,6 +2,7 @@
 using SRPM_Repositories.Models;
 using SRPM_Repositories.Repositories.Interfaces;
 using SRPM_Services.BusinessModels.ResponseModels;
+using SRPM_Services.Extensions.Enumerables;
 using SRPM_Services.Interfaces;
 using System;
 using System.Collections.Generic;
@@ -29,21 +30,32 @@ namespace SRPM_Services.Implements
             await signatureImage.CopyToAsync(ms);
             byte[] imageBytes = ms.ToArray();
             var accountId = Guid.Parse(_userContext.GetCurrentUserId());
+            var currentRole = _userContext.GetCurrentUserRole();
             var SignerName = _unitOfWork.GetAccountRepository().GetByIdAsync(accountId)?.Result?.FullName ?? "Unknown Signer";
 
             string hashBase64 = Convert.ToBase64String(SHA256.Create().ComputeHash(imageBytes));
-
+            var userRole = await _unitOfWork.GetUserRoleRepository()
+                .GetOneAsync(r =>
+                    r.AccountId == accountId &&
+                    r.Role != null &&
+                    r.Role.Name == currentRole &&
+                    r.Status.ToLower() != Status.Deleted.ToString().ToLower() &&
+                    r.ProjectId == null &&
+                    r.AppraisalCouncilId == null,
+                    hasTrackings: false
+                );
             var signature = new Signature
             {
                 Id = Guid.NewGuid(),
                 DocumentId = documentId,
-                SignerId = accountId,
+                SignerId = userRole.Id,
                 SignerName = SignerName,
                 SignatureHash = hashBase64,
                 SignedDate = DateTime.UtcNow
             };
 
             await _unitOfWork.GetSignatureRepository().AddAsync(signature);
+            await _unitOfWork.SaveChangesAsync();
             return true;
         }
 
@@ -84,7 +96,17 @@ namespace SRPM_Services.Implements
 
             return existingSignatures.Any(sig => sig.SignatureHash == uploadedHash);
         }
+        public async Task<bool> DeleteSignatureAsync(Guid signatureId)
+        {
+            var signatureRepo = _unitOfWork.GetSignatureRepository();
+            var signature = await signatureRepo.GetByIdAsync(signatureId);
 
+            if (signature == null)
+                return false;
+
+            await signatureRepo.DeleteAsync(signature);
+            return true;
+        }
     }
 
 }

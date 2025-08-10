@@ -36,5 +36,5 @@ public class RS_Transaction
 
     public Guid? ProjectId { get; set; }
     public Guid? EvaluationStageId { get; set; }
-    public ICollection<Document>? Documents { get; set; }
+    public ICollection<RS_Document>? Documents { get; set; }
 }

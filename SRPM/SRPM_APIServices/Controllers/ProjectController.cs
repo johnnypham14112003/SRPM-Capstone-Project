@@ -74,7 +74,7 @@ public class ProjectController : Controller
     // POST: api/project
     [HttpPost]
     [Authorize]
-    public async Task<ActionResult<RS_Project>> Create(RQ_Project request)
+    public async Task<ActionResult> Create(RQ_Project request)
     {
         try
         {
@@ -98,7 +98,7 @@ public class ProjectController : Controller
     // PUT: api/project/{id}
     [HttpPut("{id}")]
     [Authorize]
-    public async Task<ActionResult<RS_Project>> Update(Guid id, RQ_Project request, string status)
+    public async Task<ActionResult> Update(Guid id, RQ_Project request, string status)
     {
         try
         {
@@ -176,7 +176,7 @@ public class ProjectController : Controller
     // GET: api/project/overview
     [HttpGet("my-project")]
     [Authorize]
-    public async Task<ActionResult<List<RS_ProjectOverview>>> GetMyProject()
+    public async Task<ActionResult> GetMyProject()
     {
         try
         {
@@ -190,7 +190,7 @@ public class ProjectController : Controller
     }
 
     [HttpGet("host")]
-    public async Task<ActionResult<List<RS_ProjectOverview>>> GetHostProjectHistory()
+    public async Task<ActionResult> GetHostProjectHistory()
     {
         try
         {
@@ -215,7 +215,7 @@ public class ProjectController : Controller
     /// Get all projects proposed by the current Staff account.
     /// </summary>
     [HttpGet("staff")]
-    public async Task<ActionResult<List<RS_ProjectOverview>>> GetStaffProjectHistory()
+    public async Task<ActionResult> GetStaffProjectHistory()
     {
         try
         {

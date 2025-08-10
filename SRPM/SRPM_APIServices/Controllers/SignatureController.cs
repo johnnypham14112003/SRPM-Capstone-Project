@@ -62,4 +62,17 @@ public class SignatureController : ControllerBase
         var isValid = await _signatureService.ValidateSignatureAsync(documentId, signatureImage);
         return Ok(new { isValid });
     }
+    /// <summary>
+    /// Deletes a signature by its ID.
+    /// </summary>
+    [HttpDelete("{signatureId}")]
+    public async Task<IActionResult> DeleteSignature(Guid signatureId)
+    {
+        var result = await _signatureService.DeleteSignatureAsync(signatureId);
+
+        if (!result)
+            return NotFound("Signature not found.");
+
+        return Ok("Signature deleted successfully.");
+    }
 }

@@ -204,7 +204,7 @@ public class ProjectService : IProjectService
             entity.Genre = "normal";
             entity.CreatorId = hostRole.Id;
         }
-        else if (staffRole != null)
+        if (staffRole != null)
         {
             entity.Genre = "propose";
             entity.CreatorId = staffRole.Id;

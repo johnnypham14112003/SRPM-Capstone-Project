@@ -1,30 +1,14 @@
-# This workflow will build a .NET Core project and deploy it to an Azure Functions App on Windows or Linux when a commit is pushed to your default branch.
-#
-# This workflow assumes you have already created the target Azure Functions app.
-# For instructions see https://learn.microsoft.com/en-us/azure/azure-functions/create-first-function-vs-code-csharp?tabs=in-process
-#
-# To configure this workflow:
-# 1. Set up the following secrets in your repository:
-#   - AZURE_FUNCTIONAPP_PUBLISH_PROFILE
-# 2. Change env variables for your configuration.
-#
-# For more information on:
-#   - GitHub Actions for Azure: https://github.com/Azure/Actions
-#   - Azure Functions Action: https://github.com/Azure/functions-action
-#   - Publish Profile: https://github.com/Azure/functions-action#using-publish-profile-as-deployment-credential-recommended
-#   - Azure Service Principal for RBAC: https://github.com/Azure/functions-action#using-azure-service-principal-for-rbac-as-deployment-credential
-#
-# For more samples to get started with GitHub Action workflows to deploy to Azure: https://github.com/Azure/actions-workflow-samples/tree/master/FunctionApp
 
-name: Deploy DotNet project to Azure Function App
+
+name: Deploy DotNet project to Azure WebApp
 
 on:
   push:
     branches: ["main"]
 
 env:
-  AZURE_WEBAPP_NAME: 'SRPM'  # set this to your function app name on Azure
-  AZURE_WEBAPP_PACKAGE_PATH: './SRPM_APIServices/publish'       # set this to the path to your function app project, defaults to the repository root
+  AZURE_WEBAPP_NAME: 'SRPM'  # set this to your web app name on Azure
+  AZURE_WEBAPP_PACKAGE_PATH: './SRPM_APIServices/publish'       # set this to the path to your web app project, defaults to the repository root
   DOTNET_VERSION: '8.0.x'                   # set this to the dotnet version to use (e.g. '2.1.x', '3.1.x', '5.0.x')
 
 jobs:
@@ -45,13 +29,13 @@ jobs:
       uses: actions/setup-dotnet@v4
       with:
         dotnet-version: ${{ env.DOTNET_VERSION }}
-
-    - name: 'Resolve Project Dependencies Using Dotnet'
-      shell: pwsh # For Linux, use bash
+    - name: 'Clean publish folder'
       run: |
-        pushd './${{ env.AZURE_WEBAPP_PACKAGE_PATH }}'
-        dotnet build --configuration Release --output ./output
-        popd
+        if (Test-Path "./SRPM_APIServices/publish") { Remove-Item -Recurse -Force "./SRPM_APIServices/publish" }
+    - name: 'Publish .NET Project'
+      shell: pwsh
+      run: |
+        dotnet publish ./SRPM_APIServices/SRPM_APIServices.csproj --configuration Release --output ./SRPM_APIServices/publish
 
     - name: 'Run Azure Deploy Action'
       uses: Azure/webapps-deploy@v2
