@@ -8,7 +8,7 @@ on:
 
 env:
   AZURE_WEBAPP_NAME: 'SRPM'  # set this to your web app name on Azure
-  AZURE_WEBAPP_PACKAGE_PATH: './SRPM_APIServices/publish'       # set this to the path to your web app project, defaults to the repository root
+  AZURE_WEBAPP_PACKAGE_PATH: './SRPM/SRPM_APIServices/publish'       # set this to the path to your web app project, defaults to the repository root
   DOTNET_VERSION: '8.0.x'                   # set this to the dotnet version to use (e.g. '2.1.x', '3.1.x', '5.0.x')
 
 jobs:
@@ -31,16 +31,16 @@ jobs:
         dotnet-version: ${{ env.DOTNET_VERSION }}
     - name: 'Clean publish folder'
       run: |
-        if (Test-Path "./SRPM_APIServices/publish") { Remove-Item -Recurse -Force "./SRPM_APIServices/publish" }
+        if (Test-Path "./SRPM/SRPM_APIServices/publish") { Remove-Item -Recurse -Force "./SRPM/SRPM_APIServices/publish" }
     - name: 'Publish .NET Project'
       shell: pwsh
       run: |
-        dotnet publish ./SRPM_APIServices/SRPM_APIServices.csproj --configuration Release --output ./SRPM_APIServices/publish
+        dotnet publish ./SRPM/SRPM_APIServices/SRPM_APIServices.csproj --configuration Release --output ./SRPM/SRPM_APIServices/publish
 
     - name: 'Run Azure Deploy Action'
       uses: Azure/webapps-deploy@v2
       id: fa
       with:
         app-name: ${{ env.AZURE_WEBAPP_NAME }}
-        package: ./publish
+        package: ./SRPM/SRPM_APIServices/publish
         publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }} # Remove publish-profile to use Azure RBAC
