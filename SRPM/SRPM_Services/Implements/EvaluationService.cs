@@ -1,14 +1,15 @@
 ﻿using Mapster;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using SRPM_Repositories.Models;
 using SRPM_Repositories.Repositories.Interfaces;
 using SRPM_Services.BusinessModels;
 using SRPM_Services.BusinessModels.RequestModels;
 using SRPM_Services.BusinessModels.RequestModels.Query;
 using SRPM_Services.BusinessModels.ResponseModels;
-using SRPM_Services.Extensions.BackgroundService;
 using SRPM_Services.Extensions.Enumerables;
 using SRPM_Services.Extensions.Exceptions;
+using SRPM_Services.Extensions.MicrosoftBackgroundService;
 using SRPM_Services.Extensions.OpenAI;
 using SRPM_Services.Interfaces;
 
@@ -115,50 +116,90 @@ public class EvaluationService : IEvaluationService
 
     public async Task<string> FirstAIEvaluation(Guid projectId)
     {
-        var project = await _unitOfWork.GetProjectRepository().GetOneAsync(
-            p => p.Id == projectId,
-            p => p.Include(pro => pro.Milestones), false)
-        ?? throw new NotFoundException($"Not Found Project Id '{projectId}' to create evaluation!");
-
-        //Return backgroundTaskId
+        //Return backgroundTaskI
         return await System.Threading.Tasks.Task.FromResult(
-            _taskQueueHandler.EnqueueTracked(async cancelToken =>
+
+            //Wrap code logic need to run in a queue
+            _taskQueueHandler.EnqueueTracked(async (serviceProvider, cancelToken, progress) =>
             {
+                //Get new Scope life time serperate from constructor scope
+                var unitOfWork = serviceProvider.GetRequiredService<IUnitOfWork>();
+                var openAIService = serviceProvider.GetRequiredService<IOpenAIService>();
+
+                //===========================[ Use new scope to do task ]===========================
+                var project = await unitOfWork.GetProjectRepository().GetOneAsync(
+                    p => p.Id == projectId,
+                    p => p.Include(pro => pro.Milestones), false)
+                ?? throw new NotFoundException($"Not Found Project Id '{projectId}' to create evaluation!");
+
                 var datePart = DateTime.Now.ToString("ddMMyyyy");
                 var abbreviations = project.Abbreviations;
 
                 //EVA-SRPM13072025
                 var formatCode = $"EVA-{abbreviations}{datePart}";
 
-                //Create Evaluation
-                Guid evaId = Guid.NewGuid();
-                await _unitOfWork.GetEvaluationRepository().AddAsync(new Evaluation
-                {
-                    Id = evaId,
-                    Code = formatCode,
-                    Title = $"Evaluation Of {abbreviations}",
-                    ProjectId = projectId
-                });
+                //========================[ Create Evaluation ]========================
+                var existEva = await unitOfWork.GetEvaluationRepository().GetOneAsync(
+                    eva => eva.Title.Equals($"Evaluation Of {abbreviations}") &&
+                    eva.ProjectId == projectId);
 
-                //Create Evaluation Stage
-                Guid evaStageId = Guid.NewGuid();
-                await _unitOfWork.GetEvaluationStageRepository().AddAsync(new EvaluationStage
+                //Check if exist Evaluation
+                Guid evaId = existEva.Id;
+                if (existEva is null)
                 {
-                    Id = evaStageId,
-                    Name = "Outline Approval",
-                    Phrase = "Approval",
-                    EvaluationId = evaId
-                });
+                    evaId = Guid.NewGuid();
+                    await unitOfWork.GetEvaluationRepository().AddAsync(new Evaluation
+                    {
+                        Id = evaId,
+                        Code = formatCode,
+                        Title = $"Evaluation Of {abbreviations}",
+                        ProjectId = projectId
+                    });
+                }
 
-                //Create Individual Evaluation
-                var indiEva = new IndividualEvaluation
+                //========================[ Create Evaluation Stage ]========================
+                var existEvaStage = await unitOfWork.GetEvaluationStageRepository().GetOneAsync(
+                    evaS => evaS.EvaluationId == evaId &&
+                    evaS.Name.Equals("Outline Approval") &&
+                    evaS.Phrase.Equals("Approval"));
+
+                //Check if exist EvaluationStage
+                Guid evaStageId = existEvaStage.Id;
+                if (existEvaStage is null)
                 {
-                    Name = "AI Review",
-                    IsAIReport = true,
-                    EvaluationStageId = evaStageId
-                };
+                    evaStageId = Guid.NewGuid();
+                    await unitOfWork.GetEvaluationStageRepository().AddAsync(new EvaluationStage
+                    {
+                        Id = evaStageId,
+                        Name = "Outline Approval",
+                        Phrase = "Approval",
+                        EvaluationId = evaId
+                    });
+                }
 
-                //Run AI
+                //========================[ Create Individual Evaluation ]========================
+                var existIndividualEva = await unitOfWork.GetIndividualEvaluationRepository().GetOneAsync(
+                    inEva => inEva.EvaluationStageId == evaStageId &&
+                    inEva.Name.Equals("AI Review") &&
+                    inEva.IsAIReport == true);
+
+                //Check if exist EvaluationStage
+                Guid inEvaId = existIndividualEva.Id;
+                IndividualEvaluation indiEva = default;
+                if (existIndividualEva is null)
+                {
+                    inEvaId = Guid.NewGuid();
+                    indiEva = new IndividualEvaluation
+                    {
+                        Id = inEvaId,
+                        Name = "AI Review",
+                        IsAIReport = true,
+                        EvaluationStageId = evaStageId
+                    };
+                }
+
+
+                ////========================[ Run AI ]========================
                 var projectSummary = project.Adapt<RQ_ProjectContentForAI>();
                 projectSummary.MilestoneContents = project.Milestones.Adapt<ICollection<RQ_MilestoneContentForAI>>();
 
@@ -170,14 +211,14 @@ public class EvaluationService : IEvaluationService
                     indiEva.Comment = "This proposal's milestone is null to generate review!";
                     if (projectSummary.MilestoneContents is not null)
                     {
-                        var AIResult = await AIReviewAndPlagiarism(projectSummary, cancelToken);
+                        var AIResult = await AIReviewAndPlagiarism(projectSummary, cancelToken, unitOfWork, openAIService);
                         indiEva.Comment = AIResult.summaryEvaluation;
                         listSimilarity = AIResult.listSimilarity;
                     }
                 }
 
                 //Create AI Evaluation as Individual Evaluation
-                await _unitOfWork.GetIndividualEvaluationRepository().AddAsync(indiEva);
+                await unitOfWork.GetIndividualEvaluationRepository().AddAsync(indiEva);
 
                 //Map list AI Result to Db Model
                 if (listSimilarity is not null)
@@ -190,30 +231,36 @@ public class EvaluationService : IEvaluationService
                         Similarity = listResult.Similarity
                     })
                     .ToList();
-                    await _unitOfWork.GetProjectSimilarityRepository().AddRangeAsync(projectSimilarities);
+                    await unitOfWork.GetProjectSimilarityRepository().AddRangeAsync(projectSimilarities);
                 }
-                await _unitOfWork.SaveChangesAsync();
+                await unitOfWork.SaveChangesAsync();
             }));
     }
 
     public async Task<string> RegenAIEvaluation(Guid projectId, Guid individualEvalutionId)
     {
-        //Get Project
-        var project = await _unitOfWork.GetProjectRepository().GetOneAsync(
-            p => p.Id == projectId,
-            p => p.Include(pro => pro.Milestones), false)
-        ?? throw new NotFoundException($"Not Found Project Id '{projectId}' to create evaluation!");
-
-        //Get Individual Evaluation
-        var individualEvaluation = await _unitOfWork.GetIndividualEvaluationRepository().GetOneAsync(
-            ie => ie.Id == individualEvalutionId,
-            ie => ie.Include(iev => iev.ProjectsSimilarity))
-        ?? throw new NotFoundException($"Not Found Individual Evaluation Id '{individualEvalutionId}' to regen AI review!");
-
-        //Return backgroundTaskId
+        //Return backgroundTaskI
         return await System.Threading.Tasks.Task.FromResult(
-            _taskQueueHandler.EnqueueTracked(async cancelToken =>
+
+            //Wrap code logic need to run in a queue
+            _taskQueueHandler.EnqueueTracked(async (serviceProvider, cancelToken, progress) =>
             {
+                //Get new Scope life time serperate from constructor scope
+                var unitOfWork = serviceProvider.GetRequiredService<IUnitOfWork>();
+                var openAIService = serviceProvider.GetRequiredService<IOpenAIService>();
+
+                //Get Project
+                var project = await unitOfWork.GetProjectRepository().GetOneAsync(
+                    p => p.Id == projectId,
+                    p => p.Include(pro => pro.Milestones), false)
+                ?? throw new NotFoundException($"Not Found Project Id '{projectId}' to create evaluation!");
+
+                //Get Individual Evaluation
+                var individualEvaluation = await unitOfWork.GetIndividualEvaluationRepository().GetOneAsync(
+                    ie => ie.Id == individualEvalutionId,
+                    ie => ie.Include(iev => iev.ProjectsSimilarity))
+                ?? throw new NotFoundException($"Not Found Individual Evaluation Id '{individualEvalutionId}' to regen AI review!");
+
                 //Run AI
                 var projectSummary = project.Adapt<RQ_ProjectContentForAI>();
                 projectSummary.MilestoneContents = project.Milestones.Adapt<ICollection<RQ_MilestoneContentForAI>>();
@@ -226,7 +273,7 @@ public class EvaluationService : IEvaluationService
                     individualEvaluation.Comment = "This proposal's milestone is null to review!";
                     if (projectSummary.MilestoneContents is not null)
                     {
-                        var AIResult = await AIReviewAndPlagiarism(projectSummary, cancelToken);
+                        var AIResult = await AIReviewAndPlagiarism(projectSummary, cancelToken, unitOfWork, openAIService);
                         individualEvaluation.Comment = AIResult.summaryEvaluation;
                         listSimilarity = AIResult.listSimilarity;
                     }
@@ -236,7 +283,7 @@ public class EvaluationService : IEvaluationService
                 if (individualEvaluation.ProjectsSimilarity is not null)
                 {
                     //Delete Old
-                    await _unitOfWork.GetProjectSimilarityRepository()
+                    await unitOfWork.GetProjectSimilarityRepository()
                     .DeleteRangeAsync(individualEvaluation.ProjectsSimilarity);
                 }
 
@@ -250,41 +297,45 @@ public class EvaluationService : IEvaluationService
                         Similarity = listResult.Similarity
                     })
                     .ToList();
-                    await _unitOfWork.GetProjectSimilarityRepository().AddRangeAsync(projectSimilarities);
+                    await unitOfWork.GetProjectSimilarityRepository().AddRangeAsync(projectSimilarities);
                 }
-                await _unitOfWork.SaveChangesAsync();
+                await unitOfWork.SaveChangesAsync();
             }));
     }
 
     //=============================================================================================
     private async Task<(List<RS_ProjectSimilarityResult>? listSimilarity, string summaryEvaluation)>
-        AIReviewAndPlagiarism(RQ_ProjectContentForAI projectSummary, CancellationToken cancelToken)
+        AIReviewAndPlagiarism(
+            RQ_ProjectContentForAI projectSummary,
+            CancellationToken cancelToken,
+            IUnitOfWork unitOfWork,
+            IOpenAIService openAIService)
     {
         List<RS_ProjectSimilarityResult>? listSimilarity = [];
         float[]? vectorDescription;
         string summaryEvaluation = "";
 
         //Query encoded completed Project
-        var projectEncoded = await _unitOfWork.GetProjectRepository().GetListAdvanceAsync(
+        var projectEncoded = await unitOfWork.GetProjectRepository().GetListAdvanceAsync(
             p => p.Status.Equals(Status.Completed.ToString(), StringComparison.OrdinalIgnoreCase) && !string.IsNullOrWhiteSpace(p.EncodedDescription),
             p => new { p.Id, p.EnglishTitle, p.Description, p.EncodedDescription });
 
         //Query all completed Project if 'projectEncoded' is null
         List<Project>? databaseSource = projectEncoded is null ?
-        await _unitOfWork.GetProjectRepository().GetListAsync(p => p.Status.Equals(Status.Completed.ToString(), StringComparison.OrdinalIgnoreCase))
+        await unitOfWork.GetProjectRepository().GetListAsync(p => p.Status.Equals(Status.Completed.ToString(), StringComparison.OrdinalIgnoreCase))
             : projectEncoded.Adapt<List<Project>>();
 
         //Final Source
         //syntheticSource = projectSource + online source
         var syntheticSource = databaseSource.Adapt<List<RS_ProjectSimilarityResult>>();
 
-        vectorDescription = await _openAIService.EmbedTextAsync(projectSummary.Description!, cancelToken);
+        vectorDescription = await openAIService.EmbedTextAsync(projectSummary.Description!, cancelToken);
 
         //Overview
-        summaryEvaluation = await _openAIService.ReviewProjectAsync(projectSummary, cancelToken);
+        summaryEvaluation = await openAIService.ReviewProjectAsync(projectSummary, cancelToken);
 
         //Compare Similarity
-        listSimilarity = await _openAIService.CompareWithSourceAsync(vectorDescription!, syntheticSource, cancelToken);
+        listSimilarity = await openAIService.CompareWithSourceAsync(vectorDescription!, syntheticSource, cancelToken);
 
 
         return (listSimilarity, summaryEvaluation);
