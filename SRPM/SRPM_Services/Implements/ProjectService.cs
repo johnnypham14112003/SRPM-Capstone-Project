@@ -196,8 +196,8 @@ public class ProjectService : IProjectService
         );
 
         // Validate role and assign genre + creator
-        var hostRole = userRoles.FirstOrDefault(r => r.Role?.Name == "Host Institution" && r.Status != Status.Deleted.ToString().ToLowerInvariant());
-        var staffRole = userRoles.FirstOrDefault(r => r.Role?.Name == "Staff");
+        var hostRole = userRoles.FirstOrDefault(r => r.Role?.Name == "Host Institution" && r.Status != Status.Deleted.ToString().ToLowerInvariant() && r.ProjectId == null && r.AppraisalCouncil == null);
+        var staffRole = userRoles.FirstOrDefault(r => r.Role?.Name == "Staff" && r.Status != Status.Deleted.ToString().ToLowerInvariant() && r.ProjectId == null && r.AppraisalCouncil == null);
 
         if (hostRole != null)
         {
@@ -512,23 +512,37 @@ public class ProjectService : IProjectService
         {
             Guid accountId = Guid.Parse(_userContextService.GetCurrentUserId());
 
-            var projectList = await _unitOfWork.GetProjectRepository()
-                .GetListAsync(
-                    expression: p => p.CreatorId == accountId &&
-                                    p.Genre == "normal" &&
-                                    p.Status.ToLowerInvariant() != Status.Deleted.ToString().ToLowerInvariant(),
+            // Step 1: Get user roles for Host Institution
+            var userRoles = await _unitOfWork.GetUserRoleRepository()
+                .GetOneAsync(r =>
+                    r.AccountId == accountId &&
+                    r.Role != null &&
+                    r.Role.Name == "Host Institution" &&
+                    r.Status.ToLower() != Status.Deleted.ToString().ToLower() &&
+                    r.ProjectId == null &&
+                    r.AppraisalCouncilId == null,
                     hasTrackings: false
                 );
 
-            if (projectList == null || !projectList.Any())
-                throw new NotFoundException("No project found for this host account.");
+            if (userRoles == null)
+                throw new NotFoundException("No Host Institution roles found for this account.");
 
-            return projectList.Adapt<List<RS_ProjectOverview>>();
+            var projects = await _unitOfWork.GetProjectRepository()
+                .GetListAsync(p =>
+                    p.CreatorId == userRoles.Id &&
+                    p.Genre == "normal" &&
+                    p.Status.ToLower() != Status.Deleted.ToString().ToLower(),
+                    hasTrackings: false
+                );
+
+            if (projects == null || !projects.Any())
+                throw new NotFoundException("No host projects found for this account.");
+
+            return projects.Adapt<List<RS_ProjectOverview>>();
         }
-
         catch (Exception ex)
         {
-            throw new Exception("You are not authorized to access these projects.", ex);
+            throw new Exception("Error getting host project history.", ex);
         }
     }
     public async Task<List<RS_ProjectOverview>> GetStaffProjectHistory()
@@ -537,22 +551,36 @@ public class ProjectService : IProjectService
         {
             Guid accountId = Guid.Parse(_userContextService.GetCurrentUserId());
 
-            var project = await _unitOfWork.GetProjectRepository()
-                .GetListAsync(
-                    expression: p => p.CreatorId == accountId &&
-                                    p.Genre == "propose" &&
-                                    p.Status.ToLowerInvariant() != Status.Deleted.ToString().ToLowerInvariant(),
+            var userRoles = await _unitOfWork.GetUserRoleRepository()
+                .GetOneAsync(r =>
+                    r.AccountId == accountId &&
+                    r.Role != null &&
+                    r.Role.Name == "Staff" &&
+                    r.Status.ToLower() != Status.Deleted.ToString().ToLower() &&
+                    r.ProjectId == null &&
+                    r.AppraisalCouncilId == null,
                     hasTrackings: false
                 );
 
-            if (project == null)
-                throw new NotFoundException("No project found for this host account.");
+            if (userRoles == null )
+                throw new NotFoundException("No Staff roles found for this account.");
 
-            return project.Adapt<List<RS_ProjectOverview>>();
+            var projects = await _unitOfWork.GetProjectRepository()
+                .GetListAsync(p =>
+                    p.CreatorId == userRoles.Id &&
+                    p.Genre == "propose" &&
+                    p.Status.ToLower() != Status.Deleted.ToString().ToLower(),
+                    hasTrackings: false
+                );
+
+            if (projects == null || !projects.Any())
+                throw new NotFoundException("No staff projects found for this account.");
+
+            return projects.Adapt<List<RS_ProjectOverview>>();
         }
         catch (Exception ex)
         {
-            throw new Exception("You are not authorized to access this project. ", ex);
+            throw new Exception("Error getting staff project history. " + ex);
         }
     }
 }

@@ -1,6 +1,8 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using SRPM_Services.BusinessModels.RequestModels;
 using SRPM_Services.BusinessModels.RequestModels.Query;
+using SRPM_Services.Extensions.Exceptions;
+using SRPM_Services.Implements;
 using SRPM_Services.Interfaces;
 
 namespace SRPM_APIServices.Controllers;
@@ -54,4 +56,31 @@ public class AppraisalCouncilController : Controller
         bool result = await _appraisalCouncilService.DeleteCouncil(id);
         return result ? Ok("Delete Successfully!") : BadRequest("Delete Failed!");
     }
+    [HttpPost("assign-council")]
+    public async Task<IActionResult> AssignCouncilToClonedStages([FromQuery] Guid sourceProjectId, Guid appraisalCouncilId)
+    {
+        if (!ModelState.IsValid)
+            return BadRequest(ModelState);
+
+        try
+        {
+            var result = await _appraisalCouncilService.AssignCouncilToClonedStages(
+                sourceProjectId,
+                appraisalCouncilId
+            );
+
+            return result
+                ? Ok("Appraisal Council assigned successfully.")
+                : StatusCode(500, "Failed to assign Appraisal Council.");
+        }
+        catch (NotFoundException ex)
+        {
+            return NotFound(ex.Message);
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, $"Unexpected error: {ex.Message}");
+        }
+    }
+
 }

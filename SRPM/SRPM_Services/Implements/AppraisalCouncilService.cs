@@ -83,6 +83,7 @@ public class AppraisalCouncilService : IAppraisalCouncilService
 
         //Transfer new Data to old Data
         newCouncil.Adapt(existCouncil);
+        await _unitOfWork.GetAppraisalCouncilRepository().UpdateAsync(existCouncil);
         return await _unitOfWork.GetAppraisalCouncilRepository().SaveChangeAsync();
     }
 
@@ -97,5 +98,45 @@ public class AppraisalCouncilService : IAppraisalCouncilService
 
         existCouncil.Status = "deleted";
         return await _unitOfWork.GetAppraisalCouncilRepository().SaveChangeAsync();
+    }
+    public async Task<bool> AssignCouncilToClonedStages(Guid sourceProjectId, Guid appraisalCouncilId)
+    {
+        // Step 1: Validate council exists
+        var council = await _unitOfWork.GetAppraisalCouncilRepository()
+            .GetOneAsync(c => c.Id == appraisalCouncilId)
+            ?? throw new NotFoundException("Appraisal Council not found.");
+
+        // Step 2: Find cloned projects
+        var sourceProject = await _unitOfWork.GetProjectRepository()
+            .GetByIdAsync(sourceProjectId, hasTrackings: true)
+            ?? throw new NotFoundException("Source project not found.");
+        var clonedProjects = await _unitOfWork.GetProjectRepository()
+            .GetListAsync(p =>
+                p.Genre == "proposal" &&
+                (p.Status == "approved" || p.Status == "submitted" || p.Status == "inprogress") &&
+                p.Code == sourceProject.Code,
+                hasTrackings: true // We need tracking to update entities
+            );
+
+        if (clonedProjects == null || !clonedProjects.Any())
+            throw new NotFoundException("No cloned projects found for the given source project.");
+
+        // Step 3: Loop through each project and assign council to its evaluation stages
+        foreach (var project in clonedProjects)
+        {
+            var evaluation = project.Evaluations?.FirstOrDefault();
+            if (evaluation == null) continue;
+
+            var stages = evaluation.EvaluationStages;
+            if (stages == null || !stages.Any()) continue;
+
+            foreach (var stage in stages)
+            {
+                stage.AppraisalCouncilId = appraisalCouncilId;
+            }
+        }
+
+        // Step 4: Save changes
+        return await _unitOfWork.GetEvaluationStageRepository().SaveChangeAsync();
     }
 }
