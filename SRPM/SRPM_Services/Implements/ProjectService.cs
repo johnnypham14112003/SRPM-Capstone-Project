@@ -118,7 +118,8 @@ public class ProjectService : IProjectService
         q = q.Include(p => p.ProjectTags); // always included — adjust if needed
 
         if (query.IncludeCreator)
-            q = q.Include(p => p.Creator).ThenInclude(c => c.Role);
+            q = q.Include(p => p.Creator).ThenInclude(c => c.Role)
+            .Include(p => p.Creator).ThenInclude(a => a.Account);
 
         if (query.IncludeMembers)
             q = q.Include(p => p.Members!).ThenInclude(m => m.Account);
