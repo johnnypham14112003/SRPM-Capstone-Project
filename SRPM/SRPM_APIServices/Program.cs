@@ -4,9 +4,9 @@ using SRPM_APIServices.Middlewares;
 var builder = WebApplication.CreateBuilder(args);
 var config = builder.Configuration;
 var env = builder.Environment;
-
+var configBuild = builder.Configuration;
 // Add services to the container.
-builder.Services.RegisterServices(config, env);
+builder.Services.RegisterServices(config, env, configBuild);
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();

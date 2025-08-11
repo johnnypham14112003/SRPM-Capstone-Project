@@ -34,12 +34,13 @@ using Microsoft.Extensions.Configuration.AzureKeyVault;
 using Azure.Identity;
 using Azure.Security.KeyVault.Secrets;
 using SRPM_Services.Extensions.MicrosoftBackgroundService;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace SRPM_APIServices;
 
 public static class DIContainer
 {
-    public static IServiceCollection RegisterServices(this IServiceCollection services, IConfiguration configuration, IWebHostEnvironment env)
+    public static IServiceCollection RegisterServices(this IServiceCollection services, IConfiguration configuration, IWebHostEnvironment env, IConfigurationBuilder configBuild)
     {
         //System Services
         services.InjectDbContext(configuration);
@@ -57,9 +58,9 @@ public static class DIContainer
 
         //Third Party Services
         services.ConfigMapster();
-        services.ConfigFluentEmail(configuration);
+        services.ConfigFluentEmail(configuration, configBuild);
         services.ConfigRazorTemplate(configuration, env);
-        services.ConfigOpenAI(configuration);
+        services.ConfigOpenAI(configuration, configBuild);
         //...
 
         return services;
@@ -69,10 +70,17 @@ public static class DIContainer
     //XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
     private static IServiceCollection InjectDbContext(this IServiceCollection services, IConfiguration configuration)
     {
-        var connectionString = configuration.GetConnectionString("DefaultConnection");
-        services.AddDbContext<SRPMDbContext>(options => options.UseSqlServer(connectionString));
+        var keyVaultUrl = configuration["KeyVault:KeyVaultURL"];
+        var secretClient = new SecretClient(new Uri(keyVaultUrl), new DefaultAzureCredential());
+        var secret = secretClient.GetSecret("ProdConnection");
+        var connectionString = secret.Value.Value;
+
+        services.AddDbContext<SRPMDbContext>(options =>
+            options.UseSqlServer(connectionString));
+
         return services;
     }
+
 
     private static IServiceCollection InjectBusinessServices(this IServiceCollection services)
     {
@@ -503,14 +511,18 @@ public static class DIContainer
         return services;
     }
 
-    private static IServiceCollection ConfigFluentEmail(this IServiceCollection services, IConfiguration configuration)
+    private static IServiceCollection ConfigFluentEmail(this IServiceCollection services, IConfiguration configuration, IConfigurationBuilder configBuild)
     {
         //strong-typed config
         /*prevent compile error if missing appsettings vars*/
         var feOpts = new FluentEmailOptionModel();
+        var keyVaultURL = configuration.GetSection("KeyVault:KeyVaultURL");
+        var keyVaultClient = new KeyVaultClient(new KeyVaultClient.AuthenticationCallback(new AzureServiceTokenProvider().KeyVaultTokenCallback));
+        configBuild.AddAzureKeyVault(keyVaultURL.Value!.ToString(), new DefaultKeyVaultSecretManager());
+        var client = new SecretClient(new Uri(keyVaultURL.Value!.ToString()), new DefaultAzureCredential());
         configuration.GetSection("FluentEmail").Bind(feOpts);
 
-        services.AddFluentEmail(feOpts.Address).AddSmtpSender(feOpts.Host, feOpts.Port, feOpts.Address, feOpts.AppPassword);
+        services.AddFluentEmail(feOpts.Address).AddSmtpSender(feOpts.Host, feOpts.Port, feOpts.Address, client.GetSecret("FluentEmail-AppPassword").Value.Value.ToString());
         return services;
     }
 
@@ -591,18 +603,22 @@ public static class DIContainer
         return app;
     }
 
-    private static IServiceCollection ConfigOpenAI(this IServiceCollection services, IConfiguration configuration)
+    private static IServiceCollection ConfigOpenAI(this IServiceCollection services, IConfiguration configuration, IConfigurationBuilder configBuild)
     {
         //strong-typed config
         /*prevent compile error if missing appsettings vars*/
         var oaiOpts = new OpenAIOptionModel();
+        var keyVaultURL = configuration.GetSection("KeyVault:KeyVaultURL");
+        var keyVaultClient = new KeyVaultClient(new KeyVaultClient.AuthenticationCallback(new AzureServiceTokenProvider().KeyVaultTokenCallback));
+        configBuild.AddAzureKeyVault(keyVaultURL.Value!.ToString(), new DefaultKeyVaultSecretManager());
+        var client = new SecretClient(new Uri(keyVaultURL.Value!.ToString()), new DefaultAzureCredential());
         configuration.GetSection("OpenAI").Bind(oaiOpts);
 
         //new instance OpenAIOptionModel
         services.AddSingleton(oaiOpts);
 
         //new instance ChatClient
-        services.AddSingleton(new ChatClient(oaiOpts.ChatModel, oaiOpts.ApiKey));
+        services.AddSingleton(new ChatClient(oaiOpts.ChatModel, client.GetSecret("OpenAI-APIKey").Value.Value.ToString()));
         //new instance EmbeddingClient
         services.AddSingleton(new EmbeddingClient(oaiOpts.EmbeddingModel, oaiOpts.ApiKey));
 
