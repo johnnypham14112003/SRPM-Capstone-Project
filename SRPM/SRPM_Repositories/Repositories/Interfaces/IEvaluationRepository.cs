@@ -5,7 +5,6 @@ namespace SRPM_Repositories.Repositories.Interfaces;
 public interface IEvaluationRepository : IGenericRepository<Evaluation>
 {
     Task<Evaluation?> GetDetailWithInclude(Guid id, byte includeNo);
-    Task<AppraisalCouncil?> GetCouncilBelongToProject(Guid projectId);
     Task<(List<Evaluation>? listEvaluation, int totalFound)> ListPaging
         (string? keyWord, string? status,
         DateTime? fromDate, DateTime? toDate, byte? rating,

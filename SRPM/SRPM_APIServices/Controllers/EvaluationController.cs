@@ -34,14 +34,6 @@ public class EvaluationController : Controller
         return Ok(evaluation);
     }
 
-    [HttpGet("council-of-project/{projectId}")]
-    public async Task<IActionResult> ViewDetailEvaluation([FromRoute] Guid projectId)
-    {
-        var council = await _evaluationService.GetCouncilInEvaluationAsync(projectId);
-
-        return Ok(council);
-    }
-
     [HttpPost]
     public async Task<IActionResult> CreateEvaluation([FromBody] RQ_Evaluation newEvaluation)
     {

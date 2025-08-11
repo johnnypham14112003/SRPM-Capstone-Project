@@ -99,6 +99,15 @@ public class AppraisalCouncilService : IAppraisalCouncilService
         existCouncil.Status = "deleted";
         return await _unitOfWork.GetAppraisalCouncilRepository().SaveChangeAsync();
     }
+
+    public async Task<RS_AppraisalCouncil?> GetCouncilInEvaluationAsync(Guid projectId)
+    {
+        var appraisalCouncil = await _unitOfWork.GetAppraisalCouncilRepository()
+        .GetCouncilBelongToProject(projectId);
+
+        return appraisalCouncil.Adapt<RS_AppraisalCouncil?>();
+    }
+
     public async Task<bool> AssignCouncilToClonedStages(Guid sourceProjectId, Guid appraisalCouncilId)
     {
         // Step 1: Validate council exists

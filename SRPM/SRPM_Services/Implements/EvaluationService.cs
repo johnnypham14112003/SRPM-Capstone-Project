@@ -39,15 +39,6 @@ public class EvaluationService : IEvaluationService
         return existEvaluation.Adapt<RS_Evaluation>();
     }
 
-    public async Task<RS_AppraisalCouncil> GetCouncilInEvaluationAsync(Guid projectId)
-    {
-        var appraisalCouncil = await _unitOfWork.GetEvaluationRepository()
-        .GetCouncilBelongToProject(projectId) ??
-        throw new NotFoundException("Not found any Appraisal Council belong to this ProjectId");
-
-        return appraisalCouncil.Adapt<RS_AppraisalCouncil>();
-    }
-
     public async Task<PagingResult<RS_Evaluation>> GetListAsync(Q_Evaluation queryInput)
     {
         //Re-assign value if it smaller than 1

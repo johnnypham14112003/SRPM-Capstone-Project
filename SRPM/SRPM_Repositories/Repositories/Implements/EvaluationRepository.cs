@@ -36,15 +36,6 @@ public class EvaluationRepository : GenericRepository<Evaluation>, IEvaluationRe
         }
     }
 
-    public async Task<AppraisalCouncil?> GetCouncilBelongToProject(Guid projectId)
-    {
-        return await _context.Evaluation
-            .Where(e => e.ProjectId == projectId && e.AppraisalCouncilId != null)
-            .Select(e => e.AppraisalCouncil)
-            .Distinct()
-            .FirstOrDefaultAsync();
-    }
-
     public async Task<(List<Evaluation>? listEvaluation, int totalFound)> ListPaging
         (string? keyWord, string? status,
         DateTime? fromDate, DateTime? toDate, byte? rating,

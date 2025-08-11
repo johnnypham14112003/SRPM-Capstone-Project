@@ -56,6 +56,15 @@ public class AppraisalCouncilController : Controller
         bool result = await _appraisalCouncilService.DeleteCouncil(id);
         return result ? Ok("Delete Successfully!") : BadRequest("Delete Failed!");
     }
+
+    [HttpGet("project/{projectId}")]
+    public async Task<IActionResult> GetCouncilOfProject([FromRoute] Guid projectId)
+    {
+        var council = await _appraisalCouncilService.GetCouncilInEvaluationAsync(projectId);
+
+        return council is not null? Ok(council) : NotFound("Not found any Appraisal Council belong to this ProjectId");
+    }
+
     [HttpPost("assign-council")]
     public async Task<IActionResult> AssignCouncilToClonedStages([FromQuery] Guid sourceProjectId, Guid appraisalCouncilId)
     {
