@@ -144,7 +144,7 @@ public class EvaluationService : IEvaluationService
                     eva.ProjectId == projectId);
 
                 //Check if exist Evaluation
-                Guid evaId = existEva.Id;
+                Guid evaId;
                 if (existEva is null)
                 {
                     evaId = Guid.NewGuid();
@@ -156,6 +156,7 @@ public class EvaluationService : IEvaluationService
                         ProjectId = projectId
                     });
                 }
+                else { evaId = existEva.Id; }
 
                 //========================[ Create Evaluation Stage ]========================
                 var existEvaStage = await unitOfWork.GetEvaluationStageRepository().GetOneAsync(
@@ -164,7 +165,7 @@ public class EvaluationService : IEvaluationService
                     evaS.Phrase.Equals("Approval"));
 
                 //Check if exist EvaluationStage
-                Guid evaStageId = existEvaStage.Id;
+                Guid evaStageId;
                 if (existEvaStage is null)
                 {
                     evaStageId = Guid.NewGuid();
@@ -176,6 +177,7 @@ public class EvaluationService : IEvaluationService
                         EvaluationId = evaId
                     });
                 }
+                else { evaStageId = existEvaStage.Id; }
 
                 //========================[ Create Individual Evaluation ]========================
                 var existIndividualEva = await unitOfWork.GetIndividualEvaluationRepository().GetOneAsync(
@@ -184,8 +186,8 @@ public class EvaluationService : IEvaluationService
                     inEva.IsAIReport == true);
 
                 //Check if exist EvaluationStage
-                Guid inEvaId = existIndividualEva.Id;
-                IndividualEvaluation indiEva = default;
+                Guid inEvaId;
+                IndividualEvaluation indiEva;
                 if (existIndividualEva is null)
                 {
                     inEvaId = Guid.NewGuid();
@@ -196,6 +198,11 @@ public class EvaluationService : IEvaluationService
                         IsAIReport = true,
                         EvaluationStageId = evaStageId
                     };
+                }
+                else
+                {
+                    inEvaId = existIndividualEva.Id;
+                    indiEva = existIndividualEva;
                 }
 
 
@@ -261,7 +268,7 @@ public class EvaluationService : IEvaluationService
                     ie => ie.Include(iev => iev.ProjectsSimilarity))
                 ?? throw new NotFoundException($"Not Found Individual Evaluation Id '{individualEvalutionId}' to regen AI review!");
 
-                //Run AI
+                //Prepare data before send to AI
                 var projectSummary = project.Adapt<RQ_ProjectContentForAI>();
                 projectSummary.MilestoneContents = project.Milestones.Adapt<ICollection<RQ_MilestoneContentForAI>>();
 
