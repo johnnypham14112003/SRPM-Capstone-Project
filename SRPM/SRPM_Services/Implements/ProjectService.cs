@@ -2,6 +2,7 @@
 using Mapster;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using SRPM_Repositories.Models;
 using SRPM_Repositories.Repositories.Interfaces;
 using SRPM_Services.BusinessModels;
@@ -11,9 +12,9 @@ using SRPM_Services.BusinessModels.ResponseModels;
 using SRPM_Services.Extensions.Enumerables;
 using SRPM_Services.Extensions.Exceptions;
 using SRPM_Services.Extensions.MicrosoftBackgroundService;
+using SRPM_Services.Extensions.OpenAI;
 using SRPM_Services.Interfaces;
 using System.Text.RegularExpressions;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace SRPM_Services.Implements;
 
@@ -389,123 +390,136 @@ public class ProjectService : IProjectService
     }
 
     //=============================================================================================
-    public async Task<bool> CreateFromDocumentAsync(Project project, Document document, Guid creatorId, RQ_MilestoneTaskContent titleContent)
+    //Create Milestone, task
+    public async Task<string> CreateFromDocumentAsync(RQ_MilestoneTaskContent content)
     {
-        var documentContent = document.ContentHtml;
-        if (string.IsNullOrWhiteSpace(documentContent)) return false;
+        if (string.IsNullOrWhiteSpace(content.DocumentContent)) throw new NotFoundException("Not found document content");
+        var contentHtml = content.DocumentContent;
 
-        var doc = new HtmlDocument();
-        doc.LoadHtml(documentContent);
+        //Return backgroundTaskI
+        return await System.Threading.Tasks.Task.FromResult(
 
-        // Find section match SectionTitle
-        var sectionNode = doc.DocumentNode.SelectSingleNode($"//*[contains(text(), '{titleContent.SectionTitle}')]") ??
-            throw new NotFoundException("Not found that section content to identify data!");
-
-        // Find nearest data table
-        var tableNode = sectionNode.SelectSingleNode("following::table[1]") ??
-            throw new NotFoundException("Not found any data table below the title!");
-
-        var rows = tableNode.SelectNodes(".//tr");
-        if (rows is null || rows.Count == 0) throw new NotFoundException("Not found any row data in this table!");
-
-        //Map table into array
-        var headerRow = rows.FirstOrDefault(r => r.SelectNodes("th") != null) ??
-            throw new Exception("Không tìm thấy dòng tiêu đề bảng!");
-
-        var headerCells = headerRow.SelectNodes("th");
-        var columnMap = new Dictionary<string, int>();
-        for (int i = 0; i < headerCells.Count; i++)
-        {
-            var headerText = headerCells[i].InnerText.Trim();
-            columnMap[headerText] = i;
-        }
-
-        if (!columnMap.TryGetValue(titleContent.Description, out var descriptionIndex))
-            throw new NotFoundException($"Not found column '{titleContent.Description}' in table.");
-        if (!columnMap.TryGetValue(titleContent.Objective, out var objectiveIndex))
-            throw new NotFoundException($"Not found column '{titleContent.Objective}' in table.");
-        if (!columnMap.TryGetValue(titleContent.TimeEstimate, out var timeIndex))
-            throw new NotFoundException($"Not found column '{titleContent.TimeEstimate}' in table.");
-        if (!columnMap.TryGetValue(titleContent.CostEstimate, out var costIndex))
-            throw new NotFoundException($"Not found column '{titleContent.CostEstimate}' in table.");
-
-        var milestonesFromDoc = new List<Milestone>();
-        var tasksFromDoc = new List<SRPM_Repositories.Models.Task>();
-        Milestone? currentMilestone = null;
-        var yyyymm = DateTime.Now.ToString("yyyyMM");
-
-        //loop through table cell skip first row (header title)
-        foreach (var row in rows.Skip(1))
-        {
-            //Regex Code
-            var sequence = new Random().Next(1, 999).ToString("D3");
-
-            var cells = row.SelectNodes("td");
-            if (cells == null || cells.Count == 0) continue;
-
-            //Get data from Document
-            var description = cells.ElementAtOrDefault(descriptionIndex)?.InnerText.Trim() ?? "";
-            var title = description.Length <= 20 ? description : description.Substring(0, 20).Trim() + "...";
-            var objective = cells.ElementAtOrDefault(objectiveIndex)?.InnerText.Trim() ?? "";
-            var timeRaw = cells.ElementAtOrDefault(timeIndex)?.InnerText.Trim() ?? "";
-            var costRaw = cells.ElementAtOrDefault(costIndex)?.InnerText.Trim() ?? "";
-
-            var contentHtml = cells[descriptionIndex].InnerHtml.Trim();
-
-            // Parse Time From Regex
-            DateTime? startDate = null;
-            DateTime? endDate = null;
-            var timeMatch = Regex.Match(timeRaw, @"(\d{2}/\d{2}/\d{4})\s*,\s*(\d{2}/\d{2}/\d{4})");
-            if (timeMatch.Success)
+            //Wrap code logic need to run in a queue
+            _taskQueueHandler.EnqueueTracked(async (serviceProvider, cancelToken, progress) =>
             {
-                if (DateTime.TryParseExact(timeMatch.Groups[1].Value, "dd/MM/yyyy", null, System.Globalization.DateTimeStyles.None, out var start))
-                    startDate = start;
-                if (DateTime.TryParseExact(timeMatch.Groups[2].Value, "dd/MM/yyyy", null, System.Globalization.DateTimeStyles.None, out var end))
-                    endDate = end;
-            }
+                //Get new Scope life time serperate from constructor scope
+                var unitOfWork = serviceProvider.GetRequiredService<IUnitOfWork>();
 
-            // Parse Cost
-            decimal cost = 0m;
-            decimal.TryParse(costRaw.Replace(",", "").Replace(".", ""), out cost);
+                //===========================[ Use new scope to do task ]===========================
 
-            if (contentHtml.Contains("<b>")) // Milestone
-            {
-                currentMilestone = new Milestone
+                var doc = new HtmlDocument();
+                doc.LoadHtml(contentHtml);
+
+                // Find section match SectionTitle
+                var sectionNode = doc.DocumentNode.SelectSingleNode($"//*[contains(text(), '{content.SectionTitle}')]") ??
+                    throw new NotFoundException("Not found that section content to identify data!");
+
+                // Find nearest data table
+                var tableNode = sectionNode.SelectSingleNode("following::table[1]") ??
+                    throw new NotFoundException("Not found any data table below the title!");
+
+                var rows = tableNode.SelectNodes(".//tr");
+                if (rows is null || rows.Count == 0) throw new NotFoundException("Not found any row data in this table!");
+
+                //Map table into array
+                var headerRow = rows.FirstOrDefault(r => r.SelectNodes("th") != null) ??
+                    throw new Exception("Không tìm thấy dòng tiêu đề bảng!");
+
+                var headerCells = headerRow.SelectNodes("th");
+                var columnMap = new Dictionary<string, int>();
+                for (int i = 0; i < headerCells.Count; i++)
                 {
-                    Code = $"MS-{yyyymm}-{sequence}",
-                    Title = title,
-                    Description = description,
-                    Objective = objective,
-                    StartDate = startDate,
-                    EndDate = endDate,
-                    Cost = cost,
-                    ProjectId = project.Id,
-                    CreatorId = creatorId
-                };
+                    var headerText = headerCells[i].InnerText.Trim();
+                    columnMap[headerText] = i;
+                }
 
-                milestonesFromDoc.Add(currentMilestone);
-            }
-            else if (!string.IsNullOrWhiteSpace(description) && currentMilestone != null) // Task
-            {
-                tasksFromDoc.Add(new SRPM_Repositories.Models.Task
+                if (!columnMap.TryGetValue(content.Description, out var descriptionIndex))
+                    throw new NotFoundException($"Not found column '{content.Description}' in table.");
+                if (!columnMap.TryGetValue(content.Objective, out var objectiveIndex))
+                    throw new NotFoundException($"Not found column '{content.Objective}' in table.");
+                if (!columnMap.TryGetValue(content.TimeEstimate, out var timeIndex))
+                    throw new NotFoundException($"Not found column '{content.TimeEstimate}' in table.");
+                if (!columnMap.TryGetValue(content.CostEstimate, out var costIndex))
+                    throw new NotFoundException($"Not found column '{content.CostEstimate}' in table.");
+
+                var milestonesFromDoc = new List<Milestone>();
+                var tasksFromDoc = new List<SRPM_Repositories.Models.Task>();
+                Milestone? currentMilestone = null;
+                var yyyymm = DateTime.Now.ToString("yyyyMM");
+
+                //loop through table cell skip first row (header title)
+                foreach (var row in rows.Skip(1))
                 {
-                    Code = $"TS-{yyyymm}-{sequence}",
-                    Name = title,
-                    Description = description,
-                    Objective = objective,
-                    StartDate = startDate,
-                    EndDate = endDate,
-                    Cost = cost,
-                    MilestoneId = currentMilestone.Id,
-                    CreatorId = creatorId
-                });
-            }
-        }
+                    //Regex Code
+                    var sequence = new Random().Next(1, 999).ToString("D3");
 
-        // Insert into database
-        await _unitOfWork.GetMilestoneRepository().AddRangeAsync(milestonesFromDoc);
-        await _unitOfWork.GetTaskRepository().AddRangeAsync(tasksFromDoc);
-        return await _unitOfWork.SaveChangesAsync();
+                    var cells = row.SelectNodes("td");
+                    if (cells == null || cells.Count == 0) continue;
+
+                    //Get data from Document
+                    var description = cells.ElementAtOrDefault(descriptionIndex)?.InnerText.Trim() ?? "";
+                    var title = description.Length <= 20 ? description : description.Substring(0, 20).Trim() + "...";
+                    var objective = cells.ElementAtOrDefault(objectiveIndex)?.InnerText.Trim() ?? "";
+                    var timeRaw = cells.ElementAtOrDefault(timeIndex)?.InnerText.Trim() ?? "";
+                    var costRaw = cells.ElementAtOrDefault(costIndex)?.InnerText.Trim() ?? "";
+
+                    var contentHtml = cells[descriptionIndex].InnerHtml.Trim();
+
+                    // Parse Time From Regex
+                    DateTime? startDate = null;
+                    DateTime? endDate = null;
+                    var timeMatch = Regex.Match(timeRaw, @"(\d{2}/\d{2}/\d{4})\s*,\s*(\d{2}/\d{2}/\d{4})");
+                    if (timeMatch.Success)
+                    {
+                        if (DateTime.TryParseExact(timeMatch.Groups[1].Value, "dd/MM/yyyy", null, System.Globalization.DateTimeStyles.None, out var start))
+                            startDate = start;
+                        if (DateTime.TryParseExact(timeMatch.Groups[2].Value, "dd/MM/yyyy", null, System.Globalization.DateTimeStyles.None, out var end))
+                            endDate = end;
+                    }
+
+                    // Parse Cost
+                    decimal cost = 0m;
+                    decimal.TryParse(costRaw.Replace(",", "").Replace(".", ""), out cost);
+
+                    if (contentHtml.Contains("<b>")) // Milestone
+                    {
+                        currentMilestone = new Milestone
+                        {
+                            Code = $"MS-{yyyymm}-{sequence}",
+                            Title = title,
+                            Description = description,
+                            Objective = objective,
+                            StartDate = startDate,
+                            EndDate = endDate,
+                            Cost = cost,
+                            ProjectId = content.ProjectId,
+                            CreatorId = content.CreatorId
+                        };
+
+                        milestonesFromDoc.Add(currentMilestone);
+                    }
+                    else if (!string.IsNullOrWhiteSpace(description) && currentMilestone != null) // Task
+                    {
+                        tasksFromDoc.Add(new SRPM_Repositories.Models.Task
+                        {
+                            Code = $"TS-{yyyymm}-{sequence}",
+                            Name = title,
+                            Description = description,
+                            Objective = objective,
+                            StartDate = startDate,
+                            EndDate = endDate,
+                            Cost = cost,
+                            MilestoneId = currentMilestone.Id,
+                            CreatorId = content.CreatorId
+                        });
+                    }
+                }
+
+                // Insert into database
+                await unitOfWork.GetMilestoneRepository().AddRangeAsync(milestonesFromDoc);
+                await unitOfWork.GetTaskRepository().AddRangeAsync(tasksFromDoc);
+                await unitOfWork.SaveChangesAsync();
+            }));
     }
 
     public async Task<List<RS_ProjectOverview>> GetHostProjectHistory()
@@ -564,7 +578,7 @@ public class ProjectService : IProjectService
                     hasTrackings: false
                 );
 
-            if (userRoles == null )
+            if (userRoles == null)
                 throw new NotFoundException("No Staff roles found for this account.");
 
             var projects = await _unitOfWork.GetProjectRepository()

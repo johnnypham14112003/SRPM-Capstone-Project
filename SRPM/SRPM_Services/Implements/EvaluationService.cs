@@ -116,7 +116,7 @@ public class EvaluationService : IEvaluationService
 
     public async Task<string> FirstAIEvaluation(Guid projectId)
     {
-        //Return backgroundTaskI
+        //Return backgroundTaskId
         return await System.Threading.Tasks.Task.FromResult(
 
             //Wrap code logic need to run in a queue

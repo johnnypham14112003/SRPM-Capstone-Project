@@ -19,6 +19,7 @@ public interface IProjectService
     Task<bool> DeleteAsync(Guid id);
     Task<List<RS_ProjectOverview>> GetAllOnlineUserProjectAsync();
     Task<RS_Project> EnrollAsPrincipalAsync(Guid sourceProjectId);
+    Task<string> CreateFromDocumentAsync(RQ_MilestoneTaskContent content);
     Task<List<RS_ProjectOverview>> GetHostProjectHistory();
     Task<List<RS_ProjectOverview>> GetStaffProjectHistory();
 }
