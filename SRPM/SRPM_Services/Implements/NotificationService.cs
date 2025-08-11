@@ -7,7 +7,6 @@ using SRPM_Services.BusinessModels.Others;
 using SRPM_Services.BusinessModels.RequestModels;
 using SRPM_Services.BusinessModels.RequestModels.Query;
 using SRPM_Services.BusinessModels.ResponseModels;
-using SRPM_Services.Extensions.BackgroundService;
 using SRPM_Services.Extensions.Exceptions;
 using SRPM_Services.Extensions.FluentEmail;
 using SRPM_Services.Interfaces;
