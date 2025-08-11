@@ -620,7 +620,7 @@ public static class DIContainer
         //new instance ChatClient
         services.AddSingleton(new ChatClient(oaiOpts.ChatModel, client.GetSecret("OpenAI-APIKey").Value.Value.ToString()));
         //new instance EmbeddingClient
-        services.AddSingleton(new EmbeddingClient(oaiOpts.EmbeddingModel, oaiOpts.ApiKey));
+        services.AddSingleton(new EmbeddingClient(oaiOpts.EmbeddingModel, client.GetSecret("OpenAI-APIKey").Value.Value.ToString()));
 
         services.AddSingleton(new ChatCompletionOptions { Temperature = 0.7f, MaxOutputTokenCount = 8100 });
 
