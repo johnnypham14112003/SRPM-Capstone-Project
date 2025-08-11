@@ -110,10 +110,10 @@ public class AccountService : IAccountService
         var response = await httpClient.GetAsync($"https://www.googleapis.com/oauth2/v2/userinfo?access_token={accessToken}");
 
         if (!response.IsSuccessStatusCode)
-            return null;
+            return null!;
 
         var json = await response.Content.ReadAsStringAsync();
-        return JsonConvert.DeserializeObject<GoogleJsonWebSignature.Payload>(json);
+        return JsonConvert.DeserializeObject<GoogleJsonWebSignature.Payload>(json)!;
     }
 
     private async Task<Account> CreateNewAccountAsync(GoogleJsonWebSignature.Payload payload)
@@ -195,7 +195,7 @@ public class AccountService : IAccountService
         var lastOtp = await _unitOfWork.GetOTPCodeRepository()
             .GetListAsync(o => o.AccountId == account.Id);
 
-        var recentOtp = lastOtp
+        var recentOtp = lastOtp!
             .OrderByDescending(o => o.ExpiresAt)
             .FirstOrDefault();
 
@@ -253,7 +253,7 @@ public class AccountService : IAccountService
         var otpCodes = await _unitOfWork.GetOTPCodeRepository()
             .GetListAsync(o => o.AccountId == account.Id);
 
-        var otpCode = otpCodes
+        var otpCode = otpCodes!
             .OrderByDescending(o => o.ExpiresAt)
             .FirstOrDefault();
 
@@ -354,9 +354,9 @@ public class AccountService : IAccountService
         // Apply sorting
         list = query.SortBy?.ToLower() switch
         {
-            "fullname" => query.Desc ? list.OrderByDescending(x => x.FullName).ToList() : list.OrderBy(x => x.FullName).ToList(),
-            "email" => query.Desc ? list.OrderByDescending(x => x.Email).ToList() : list.OrderBy(x => x.Email).ToList(),
-            "identitycode" => query.Desc ? list.OrderByDescending(x => x.IdentityCode).ToList() : list.OrderBy(x => x.IdentityCode).ToList(),
+            "fullname" => query.Desc ? list!.OrderByDescending(x => x.FullName).ToList() : list!.OrderBy(x => x.FullName).ToList(),
+            "email" => query.Desc ? list!.OrderByDescending(x => x.Email).ToList() : list!.OrderBy(x => x.Email).ToList(),
+            "identitycode" => query.Desc ? list!.OrderByDescending(x => x.IdentityCode).ToList() : list!.OrderBy(x => x.IdentityCode).ToList(),
             _ => list.OrderBy(x => x.FullName).ToList() // Default sort
         };
 
@@ -394,7 +394,7 @@ public class AccountService : IAccountService
             );
         }
 
-        var projected = results
+        var projected = results!
             .Select(a => new
             {
                 a.Id,

@@ -156,7 +156,7 @@ public class UserRoleService : IUserRoleService
 
             if (role.Name == "Principal Investigator")
             {
-                bool hasPI = projectRoles.Any(ur =>
+                bool hasPI = projectRoles!.Any(ur =>
                     ur.RoleId == request.RoleId &&
                     ur.AccountId != request.AccountId);
 

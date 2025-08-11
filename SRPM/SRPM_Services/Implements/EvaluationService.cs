@@ -161,7 +161,7 @@ public class EvaluationService : IEvaluationService
                 //========================[ Create Evaluation Stage ]========================
                 var existEvaStage = await unitOfWork.GetEvaluationStageRepository().GetOneAsync(
                     evaS => evaS.EvaluationId == evaId &&
-                    evaS.Name.Equals("Outline Approval") &&
+                    evaS.Name!.Equals("Outline Approval") &&
                     evaS.Phrase.Equals("Approval"));
 
                 //Check if exist EvaluationStage

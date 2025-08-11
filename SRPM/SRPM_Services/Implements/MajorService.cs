@@ -35,7 +35,7 @@ public class MajorService : IMajorService
             hasTrackings: false
         );
 
-        majors = query.Desc ? majors.OrderByDescending(m => m.Name).ToList() : majors.OrderBy(m => m.Name).ToList();
+        majors = query.Desc ? majors!.OrderByDescending(m => m.Name).ToList() : majors!.OrderBy(m => m.Name).ToList();
 
         var total = majors.Count;
         var paged = majors

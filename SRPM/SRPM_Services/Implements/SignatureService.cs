@@ -63,7 +63,7 @@ namespace SRPM_Services.Implements
         {
             var signatures = await _unitOfWork.GetSignatureRepository().GetListAsync(s => s.DocumentId == documentId);
 
-            return signatures.Select(s => new RS_Signature
+            return signatures!.Select(s => new RS_Signature
             {
                 Id = s.Id,
                 SignerName = s.SignerName,
@@ -76,7 +76,7 @@ namespace SRPM_Services.Implements
         {
             var allSignatures = await _unitOfWork.GetSignatureRepository().GetListAsync(p => true,hasTrackings:false);
 
-            return allSignatures.Select(s => new RS_Signature
+            return allSignatures!.Select(s => new RS_Signature
             {
                 Id = s.Id,
                 SignerName = s.SignerName,

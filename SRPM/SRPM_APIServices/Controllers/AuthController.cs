@@ -80,7 +80,7 @@ public class AuthController : Controller
     {
         var account = await _accountService.GetOnlineUserInfoAsync();
         var currentRole = _userContextService.GetCurrentUserRole();
-        var allRoles = await _roleService.GetAllUserRole(account.Id);
+        var allRoles = await _roleService.GetAllUserRole(account!.Id);
 
         var isAuthorized = await _roleService.UserHasRoleAsync(account.Id, selectedSwitchRole);
          if (!isAuthorized)

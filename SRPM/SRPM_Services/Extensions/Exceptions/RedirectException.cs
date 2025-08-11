@@ -10,7 +10,7 @@ namespace SRPM_Services.Extensions.Exceptions
     {
         public string RedirectUrl { get; }
 
-        public RedirectException(string redirectUrl, string message = null) : base(message)
+        public RedirectException(string redirectUrl, string message = null!) : base(message)
         {
             RedirectUrl = redirectUrl;
         }

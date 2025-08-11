@@ -58,12 +58,12 @@ public class MilestoneService : IMilestoneService
         // 🔄 Apply Sorting
         list = query.SortBy?.ToLower() switch
         {
-            "title" => query.Desc ? list.OrderByDescending(x => x.Title).ToList() : list.OrderBy(x => x.Title).ToList(),
-            "objective" => query.Desc ? list.OrderByDescending(x => x.Objective).ToList() : list.OrderBy(x => x.Objective).ToList(),
-            "cost" => query.Desc ? list.OrderByDescending(x => x.Cost).ToList() : list.OrderBy(x => x.Cost).ToList(),
-            "type" => query.Desc ? list.OrderByDescending(x => x.Type).ToList() : list.OrderBy(x => x.Type).ToList(),
-            "startdate" => query.Desc ? list.OrderByDescending(x => x.StartDate).ToList() : list.OrderBy(x => x.StartDate).ToList(),
-            "enddate" => query.Desc ? list.OrderByDescending(x => x.EndDate).ToList() : list.OrderBy(x => x.EndDate).ToList(),
+            "title" => query.Desc ? list!.OrderByDescending(x => x.Title).ToList() : list!.OrderBy(x => x.Title).ToList(),
+            "objective" => query.Desc ? list!.OrderByDescending(x => x.Objective).ToList() : list!.OrderBy(x => x.Objective).ToList(),
+            "cost" => query.Desc ? list!.OrderByDescending(x => x.Cost).ToList() : list!.OrderBy(x => x.Cost).ToList(),
+            "type" => query.Desc ? list!.OrderByDescending(x => x.Type).ToList() : list!.OrderBy(x => x.Type).ToList(),
+            "startdate" => query.Desc ? list!.OrderByDescending(x => x.StartDate).ToList() : list!.OrderBy(x => x.StartDate).ToList(),
+            "enddate" => query.Desc ? list!.OrderByDescending(x => x.EndDate).ToList() : list!.OrderBy(x => x.EndDate).ToList(),
             _ => list.OrderBy(x => x.Title).ToList() // Default
         };
 

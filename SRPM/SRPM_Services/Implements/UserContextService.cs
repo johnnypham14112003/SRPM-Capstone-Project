@@ -40,7 +40,7 @@ public class UserContextService : IUserContextService
             }
         }
         var user = httpContext.User;
-        if (user == null || !user.Identity.IsAuthenticated)
+        if (user == null || !user.Identity!.IsAuthenticated)
         {
             throw new ArgumentException("User is not authenticated or token is invalid");
         }
@@ -61,7 +61,7 @@ public class UserContextService : IUserContextService
             throw new ArgumentException("Http context is null. Please login.");
         }
         var user = httpContext.User;
-        if (user == null || !user.Identity.IsAuthenticated)
+        if (user == null || !user.Identity!.IsAuthenticated)
         {
             throw new ArgumentException("User is not authenticated or token is invalid");
         }

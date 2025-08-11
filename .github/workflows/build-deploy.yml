@@ -29,6 +29,10 @@ jobs:
       uses: actions/setup-dotnet@v4
       with:
         dotnet-version: ${{ env.DOTNET_VERSION }}
+    - name: 'Build .NET Project'
+      shell: pwsh
+      run: |
+        dotnet build ./SRPM/SRPM_APIServices/SRPM_APIServices.csproj --configuration Release
     - name: 'Clean publish folder'
       run: |
         if (Test-Path "./SRPM/SRPM_APIServices/publish") { Remove-Item -Recurse -Force "./SRPM/SRPM_APIServices/publish" }

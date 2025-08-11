@@ -13,7 +13,6 @@ using SRPM_Services.Extensions.Exceptions;
 using SRPM_Services.Extensions.MicrosoftBackgroundService;
 using SRPM_Services.Interfaces;
 using System.Text.RegularExpressions;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace SRPM_Services.Implements;
@@ -43,17 +42,17 @@ public class ProjectService : IProjectService
                 include: q => q.Include(ur => ur.Role)
             );
 
-        var isMember = userRoles.Any();
+        var isMember = userRoles!.Any();
 
         // Group roles: Leader, Secretary, etc.
-        var groupRoles = userRoles
+        var groupRoles = userRoles!
             .Where(ur => ur.Role != null && ur.Role.IsGroupRole == true)
             .Select(ur => ur.Role.Name)
             .Distinct()
             .ToList();
 
         // Non-group roles: Researcher, Principal, etc.
-        var fallbackRoles = userRoles
+        var fallbackRoles = userRoles!
             .Where(ur => ur.Role != null && ur.Role.IsGroupRole == false)
             .Select(ur => ur.Role.Name)
             .Distinct()
@@ -103,16 +102,16 @@ public class ProjectService : IProjectService
                 (query.Statuses == null || query.Statuses.Count == 0 || query.Statuses.Contains(p.Status)) &&
                (string.IsNullOrWhiteSpace(query.Language) || p.Language == query.Language) &&
                (!query.MajorId.HasValue ||
-                   p.ProjectMajors.Any(pm => pm.MajorId == query.MajorId)) &&
+                   p.ProjectMajors!.Any(pm => pm.MajorId == query.MajorId)) &&
                (!query.FieldId.HasValue ||
-                   p.ProjectMajors.Any(pm => pm.Major.FieldId == query.FieldId)) &&
+                   p.ProjectMajors!.Any(pm => pm.Major.FieldId == query.FieldId)) &&
                (query.TagNames == null ||
                 query.TagNames.Count == 0 ||
                 !query.TagNames.Any(tag => !string.IsNullOrWhiteSpace(tag)) ||
-                p.ProjectTags.Any(t => query.TagNames.Any(tag => tag == t.Name && !string.IsNullOrWhiteSpace(tag)))),
+                p.ProjectTags!.Any(t => query.TagNames.Any(tag => tag == t.Name && !string.IsNullOrWhiteSpace(tag)))),
     include: q =>
     {
-        q = q.Include(p => p.ProjectMajors)
+        q = q.Include(p => p.ProjectMajors!)
                 .ThenInclude(pm => pm.Major)
                     .ThenInclude(m => m.Field);
 
@@ -122,7 +121,7 @@ public class ProjectService : IProjectService
             q = q.Include(p => p.Creator).ThenInclude(c => c.Role);
 
         if (query.IncludeMembers)
-            q = q.Include(p => p.Members).ThenInclude(m => m.Account);
+            q = q.Include(p => p.Members!).ThenInclude(m => m.Account);
 
         if (query.IncludeMilestones)
             q = q.Include(p => p.Milestones);
@@ -147,10 +146,10 @@ public class ProjectService : IProjectService
 
         projects = query.SortBy?.ToLower() switch
         {
-            "englishtitle" => query.Desc ? projects.OrderByDescending(p => p.EnglishTitle).ToList() : projects.OrderBy(p => p.EnglishTitle).ToList(),
-            "vietnamesetitle" => query.Desc ? projects.OrderByDescending(p => p.VietnameseTitle).ToList() : projects.OrderBy(p => p.VietnameseTitle).ToList(),
-            "createdate" => query.Desc ? projects.OrderByDescending(p => p.CreatedAt).ToList() : projects.OrderBy(p => p.CreatedAt).ToList(),
-            _ => projects.OrderBy(p => p.CreatedAt).ToList()
+            "englishtitle" => query.Desc ? projects!.OrderByDescending(p => p.EnglishTitle).ToList() : projects!.OrderBy(p => p.EnglishTitle).ToList(),
+            "vietnamesetitle" => query.Desc ? projects!.OrderByDescending(p => p.VietnameseTitle).ToList() : projects!.OrderBy(p => p.VietnameseTitle).ToList(),
+            "createdate" => query.Desc ? projects!.OrderByDescending(p => p.CreatedAt).ToList() : projects!.OrderBy(p => p.CreatedAt).ToList(),
+            _ => projects!.OrderBy(p => p.CreatedAt).ToList()
         };
 
         var total = projects.Count;
@@ -279,7 +278,7 @@ public class ProjectService : IProjectService
             );
 
         // Filter by matching role name
-        var matchingRoles = userRoles
+        var matchingRoles = userRoles!
             .Where(ur => ur.Role != null && ur.Role.Name == currentRoleName)
             .ToList();
 
@@ -297,7 +296,7 @@ public class ProjectService : IProjectService
                 hasTrackings: false
             );
 
-        var overviewList = projects
+        var overviewList = projects!
             .OrderByDescending(p => p.CreatedAt)
             .Adapt<List<RS_ProjectOverview>>();
 
@@ -315,7 +314,7 @@ public class ProjectService : IProjectService
 
         // Step 2: Validate role of Principal Investigator
         var principal = await _unitOfWork.GetAccountRepository().GetByIdAsync(principalId);
-        var hasPrincipalRole = principal.UserRoles.Any(ur => ur.Role.Name == "Principal Investigator");
+        var hasPrincipalRole = principal.UserRoles!.Any(ur => ur.Role.Name == "Principal Investigator");
 
         if (!hasPrincipalRole)
             throw new UnauthorizedAccessException("Account does not have Principal Investigator role.");
@@ -342,7 +341,7 @@ public class ProjectService : IProjectService
         Status.Completed
     };
 
-        var existingDraft = similarProjects.FirstOrDefault(p =>
+        var existingDraft = similarProjects!.FirstOrDefault(p =>
             restrictedStatuses.Contains(p.Status.ToStatus()));
 
         if (existingDraft != null)

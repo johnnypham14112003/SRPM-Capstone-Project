@@ -31,7 +31,7 @@ public class FieldService : IFieldService
             hasTrackings: false
         );
 
-        var total = list.Count;
+        var total = list!.Count;
         var paged = list
             .OrderBy(f => f.Name)
             .Skip((pageIndex - 1) * pageSize)

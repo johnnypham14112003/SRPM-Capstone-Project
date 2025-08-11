@@ -28,6 +28,11 @@ using System.Text;
 using SRPM_Services.Interfaces;
 using OpenAI.Chat;
 using System.Collections.Generic;
+using Microsoft.Azure.KeyVault;
+using Microsoft.Azure.Services.AppAuthentication;
+using Microsoft.Extensions.Configuration.AzureKeyVault;
+using Azure.Identity;
+using Azure.Security.KeyVault.Secrets;
 using SRPM_Services.Extensions.MicrosoftBackgroundService;
 
 namespace SRPM_APIServices;
@@ -258,30 +263,30 @@ public static class DIContainer
         TypeAdapterConfig<RQ_Project, Project>.NewConfig()
             .Ignore(dest => dest.Id)
             .Ignore(dest => dest.CreatedAt)
-            .Ignore(dest => dest.UpdatedAt)
+            .Ignore(dest => dest.UpdatedAt!)
             .Ignore(dest => dest.Creator)
-            .Ignore(dest => dest.ProjectResult)
-            .Ignore(dest => dest.Members)
-            .Ignore(dest => dest.Milestones)
-            .Ignore(dest => dest.Evaluations)
-            .Ignore(dest => dest.ProjectsSimilarity)
-            .Ignore(dest => dest.Documents)
-            .Ignore(dest => dest.ProjectMajors)
-            .Ignore(dest => dest.ProjectTags)
-            .Ignore(dest => dest.Transactions)
+            .Ignore(dest => dest.ProjectResult!)
+            .Ignore(dest => dest.Members!)
+            .Ignore(dest => dest.Milestones!)
+            .Ignore(dest => dest.Evaluations!)
+            .Ignore(dest => dest.ProjectsSimilarity!)
+            .Ignore(dest => dest.Documents!)
+            .Ignore(dest => dest.ProjectMajors!)
+            .Ignore(dest => dest.ProjectTags!)
+            .Ignore(dest => dest.Transactions!)
             .IgnoreNullValues(true);
 
         TypeAdapterConfig<Project, Project>.NewConfig()
             .Ignore(dest => dest.Creator)
-            .Ignore(dest => dest.ProjectResult)
-            .Ignore(dest => dest.Members)
-            .Ignore(dest => dest.Milestones)
-            .Ignore(dest => dest.Evaluations)
-            .Ignore(dest => dest.ProjectsSimilarity)
-            .Ignore(dest => dest.ProjectMajors)
-            .Ignore(dest => dest.ProjectTags)
-            .Ignore(dest => dest.Documents)
-            .Ignore(dest => dest.Transactions);
+            .Ignore(dest => dest.ProjectResult!)
+            .Ignore(dest => dest.Members!)
+            .Ignore(dest => dest.Milestones!)
+            .Ignore(dest => dest.Evaluations!)
+            .Ignore(dest => dest.ProjectsSimilarity!)
+            .Ignore(dest => dest.ProjectMajors!)
+            .Ignore(dest => dest.ProjectTags!)
+            .Ignore(dest => dest.Documents!)
+            .Ignore(dest => dest.Transactions!);
 
         TypeAdapterConfig<Project, RS_Project>.NewConfig()
             .Map(dest => dest.Majors, src =>
@@ -324,15 +329,15 @@ public static class DIContainer
         TypeAdapterConfig<RQ_Major, Major>.NewConfig()
             .Ignore(dest => dest.Id)
             .Ignore(dest => dest.Field)
-            .Ignore(dest => dest.Accounts)
-            .Ignore(dest => dest.ProjectMajors)
+            .Ignore(dest => dest.Accounts!)
+            .Ignore(dest => dest.ProjectMajors!)
             .IgnoreNullValues(true);
 
         TypeAdapterConfig<Major, RS_Major>.NewConfig();
 
         TypeAdapterConfig<RQ_Role, Role>.NewConfig()
             .Ignore(dest => dest.Id)
-            .Ignore(dest => dest.UserRoles)
+            .Ignore(dest => dest.UserRoles!)
             .IgnoreNullValues(true);
 
         TypeAdapterConfig<Role, RS_Role>.NewConfig()
@@ -343,18 +348,18 @@ public static class DIContainer
             .Ignore(dest => dest.CreatedAt)
             .Ignore(dest => dest.Account)
             .Ignore(dest => dest.Role)
-            .Ignore(dest => dest.Project)
-            .Ignore(dest => dest.AppraisalCouncil)
-            .Ignore(dest => dest.UploadedDocuments)
-            .Ignore(dest => dest.Signatures)
-            .Ignore(dest => dest.IndividualEvaluations)
-            .Ignore(dest => dest.CreatedProjects)
-            .Ignore(dest => dest.CreatedMilestones)
-            .Ignore(dest => dest.CreatedTasks)
-            .Ignore(dest => dest.MemberTasks)
-            .Ignore(dest => dest.RequestTransactions)
-            .Ignore(dest => dest.HandleTransactions)
-            .Ignore(dest => dest.Notifications)
+            .Ignore(dest => dest.Project!)
+            .Ignore(dest => dest.AppraisalCouncil!)
+            .Ignore(dest => dest.UploadedDocuments!)
+            .Ignore(dest => dest.Signatures!)
+            .Ignore(dest => dest.IndividualEvaluations!)
+            .Ignore(dest => dest.CreatedProjects!)
+            .Ignore(dest => dest.CreatedMilestones!)
+            .Ignore(dest => dest.CreatedTasks!)
+            .Ignore(dest => dest.MemberTasks!)
+            .Ignore(dest => dest.RequestTransactions!)
+            .Ignore(dest => dest.HandleTransactions!)
+            .Ignore(dest => dest.Notifications!)
             .IgnoreNullValues(true);
 
         TypeAdapterConfig<UserRole, RS_UserRole>.NewConfig()
@@ -366,8 +371,8 @@ public static class DIContainer
             .Ignore(dest => dest.Id)
             .Ignore(dest => dest.Milestone)
             .Ignore(dest => dest.Creator)
-            .Ignore(dest => dest.MemberTasks)
-            .Ignore(dest => dest.Notifications)
+            .Ignore(dest => dest.MemberTasks!)
+            .Ignore(dest => dest.Notifications!)
             .IgnoreNullValues(true);
 
         TypeAdapterConfig<SRPM_Repositories.Models.Task, RS_Task>.NewConfig();
@@ -376,12 +381,12 @@ public static class DIContainer
             .Ignore(dest => dest.CreatedAt)
             .Ignore(dest => dest.Project)
             .Ignore(dest => dest.Creator)
-            .Ignore(dest => dest.EvaluationStages)
-            .Ignore(dest => dest.Tasks)
+            .Ignore(dest => dest.EvaluationStages!)
+            .Ignore(dest => dest.Tasks!)
             .IgnoreNullValues(true);
 
         TypeAdapterConfig<Milestone, RS_Milestone>.NewConfig()
-            .Ignore(m => m.Project) // prevents recursive loop
+            .Ignore(m => m.Project!) // prevents recursive loop
             .IgnoreNullValues(true);
 
 
@@ -391,7 +396,7 @@ public static class DIContainer
             .Ignore(dest => dest.JoinedAt)
             .Ignore(dest => dest.Member)
             .Ignore(dest => dest.Task)
-            .Ignore(dest => dest.Notifications)
+            .Ignore(dest => dest.Notifications!)
             .IgnoreNullValues(true);
 
         TypeAdapterConfig<MemberTask, RS_MemberTask>.NewConfig()
@@ -401,7 +406,7 @@ public static class DIContainer
         TypeAdapterConfig<RQ_Account, Account>.NewConfig()
             .Ignore(dest => dest.Id)
             .Ignore(dest => dest.CreateTime)
-            .Ignore(dest => dest.DeleteTime)
+            .Ignore(dest => dest.DeleteTime!)
             .IgnoreNullValues(true);
 
         TypeAdapterConfig<Account, RS_Account>.NewConfig();
@@ -547,7 +552,7 @@ public static class DIContainer
                 ValidAudience = config["Jwt:Audience"],
                 ValidateLifetime = true,
                 IssuerSigningKey = new SymmetricSecurityKey(
-                    Encoding.UTF8.GetBytes(config["Jwt:Key"])),
+                    Encoding.UTF8.GetBytes(config["Jwt:Key"]!)),
                 RoleClaimType = ClaimTypes.Role
             };
         });

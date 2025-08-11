@@ -60,7 +60,7 @@ public class TaskService : ITaskService
             hasTrackings: false
         );
 
-        var total = allTasks.Count;
+        var total = allTasks!.Count;
 
         if (total == 0)
             throw new NotFoundException("No Task records found matching the query.");
