@@ -1,4 +1,6 @@
-﻿using Mapster;
+﻿using HtmlAgilityPack;
+using Mapster;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using SRPM_Repositories.Models;
 using SRPM_Repositories.Repositories.Interfaces;
@@ -8,10 +10,8 @@ using SRPM_Services.BusinessModels.RequestModels;
 using SRPM_Services.BusinessModels.ResponseModels;
 using SRPM_Services.Extensions.Enumerables;
 using SRPM_Services.Extensions.Exceptions;
+using SRPM_Services.Extensions.MicrosoftBackgroundService;
 using SRPM_Services.Interfaces;
-using SRPM_Services.Extensions.OpenAI;
-using SRPM_Services.Extensions.BackgroundService;
-using HtmlAgilityPack;
 using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -22,11 +22,13 @@ public class ProjectService : IProjectService
 {
     private readonly IUnitOfWork _unitOfWork;
     private readonly IUserContextService _userContextService;
+    private readonly ITaskQueueHandler _taskQueueHandler;
 
-    public ProjectService(IUnitOfWork unitOfWork, IUserContextService userContextService)
+    public ProjectService(IUnitOfWork unitOfWork, IUserContextService userContextService, ITaskQueueHandler taskQueueHandler)
     {
         _unitOfWork = unitOfWork;
         _userContextService = userContextService;
+        _taskQueueHandler = taskQueueHandler;
     }
     public async Task<object?> GetByIdAsync(Guid id)
     {
@@ -94,7 +96,7 @@ public class ProjectService : IProjectService
                (string.IsNullOrWhiteSpace(query.Title) ||
                    p.EnglishTitle.Contains(query.Title) ||
                    p.VietnameseTitle.Contains(query.Title)) &&
-               (string.IsNullOrWhiteSpace(query.Code) || p.Code == query.Code)      &&
+               (string.IsNullOrWhiteSpace(query.Code) || p.Code == query.Code) &&
                (string.IsNullOrWhiteSpace(query.Category) || p.Category == query.Category) &&
                (string.IsNullOrWhiteSpace(query.Type) || p.Type == query.Type) &&
                (query.Genres == null || query.Genres.Count == 0 || query.Genres.Contains(p.Genre)) &&

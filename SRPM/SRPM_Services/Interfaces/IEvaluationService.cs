@@ -8,6 +8,7 @@ namespace SRPM_Services.Interfaces;
 public interface IEvaluationService
 {
     Task<RS_Evaluation?> ViewDetail(Guid id, byte includeNum);
+    Task<RS_AppraisalCouncil> GetCouncilInEvaluationAsync(Guid projectId);
     Task<PagingResult<RS_Evaluation>> GetListAsync(Q_Evaluation queryInput);
     Task<(bool success, Guid evaluationId)> CreateAsync(RQ_Evaluation newEvaluation);
     Task<bool> UpdateAsync(RQ_Evaluation newEvaluation);
