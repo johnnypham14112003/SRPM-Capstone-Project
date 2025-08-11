@@ -1,6 +1,5 @@
 ﻿using Mapster;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
 using SRPM_Repositories.Models;
 using SRPM_Repositories.Repositories.Interfaces;
 using SRPM_Services.BusinessModels;
@@ -8,8 +7,6 @@ using SRPM_Services.BusinessModels.RequestModels;
 using SRPM_Services.BusinessModels.RequestModels.Query;
 using SRPM_Services.BusinessModels.ResponseModels;
 using SRPM_Services.Extensions.Exceptions;
-using SRPM_Services.Extensions.MicrosoftBackgroundService;
-using SRPM_Services.Extensions.OpenAI;
 using SRPM_Services.Interfaces;
 
 namespace SRPM_Services.Implements;
@@ -18,14 +15,10 @@ public class AppraisalCouncilService : IAppraisalCouncilService
 {
     private readonly IUnitOfWork _unitOfWork;
     private readonly IEvaluationService _evaluationService;
-    private readonly ITaskQueueHandler _taskQueueHandler;
-
-    public AppraisalCouncilService(IUnitOfWork unitOfWork, IEvaluationService evaluationService, ITaskQueueHandler taskQueueHandler)
+    public AppraisalCouncilService(IUnitOfWork unitOfWork, IEvaluationService evaluationService)
     {
         _unitOfWork = unitOfWork;
         _evaluationService = evaluationService;
-        _taskQueueHandler = taskQueueHandler;
-
     }
 
     //=============================================================================
@@ -111,11 +104,12 @@ public class AppraisalCouncilService : IAppraisalCouncilService
 
     public async Task<RS_AppraisalCouncil?> GetCouncilInEvaluationAsync(Guid projectId)
     {
-        //Get the source project
-        var appraisalCouncil = await _unitOfWork.GetAppraisalCouncilRepository()
+        var result = await _unitOfWork.GetAppraisalCouncilRepository()
         .GetCouncilBelongToProject(projectId);
 
-        return appraisalCouncil.Adapt<RS_AppraisalCouncil?>();
+        if (result.council is null) throw new NotFoundException(result.error);
+
+        return result.council.Adapt<RS_AppraisalCouncil?>();
     }
 
     public async Task<string> AssignCouncilToClonedStages(Guid sourceProjectId, Guid appraisalCouncilId)
