@@ -105,7 +105,9 @@ public class NotificationService : INotificationService
         var saveSuccess = await _unitOfWork.GetNotificationRepository().SaveChangeAsync();
 
         //If is global send then do it instancely
-        if (notificationDTO.IsGlobalSend) await NotificateToUser(null, notificationDTO.Id);
+        if (notificationDTO.IsGlobalSend) { await NotificateToUser(null, notificationDTO.Id); }
+        else { await NotificateToUser(newNotification.ListAccountId, notificationDTO.Id); }
+
         return (saveSuccess, notificationDTO.Id);
     }
 
@@ -129,6 +131,34 @@ public class NotificationService : INotificationService
 
         await _unitOfWork.GetAccountNotificationRepository().AddRangeAsync(accountNotificationDTOs);
         return await _unitOfWork.GetAccountNotificationRepository().SaveChangeAsync();
+    }
+
+    public async Task<PagingResult<RS_Notification>?> ListRequestNotification(Q_RequestNoti queryInput)
+    {
+        //Re-assign value if it smaller than 1
+        queryInput.PageIndex = queryInput.PageIndex < 1 ? 1 : queryInput.PageIndex;
+        queryInput.PageSize = queryInput.PageSize < 1 ? 1 : queryInput.PageSize;
+
+        var dataResult = await _unitOfWork.GetNotificationRepository().ListPaging
+            (queryInput.KeyWord, queryInput.Type, queryInput.Status, queryInput.SortBy,
+            queryInput.IsRequest, queryInput.IsGlobalSend,
+            queryInput.FromDate, queryInput.ToDate, queryInput.PageIndex, queryInput.PageSize,
+            queryInput.ProjectId, queryInput.AppraisalCouncilId, queryInput.EvaluationId,
+            queryInput.EvaluationStageId, queryInput.IndividualEvaluationId, queryInput.DocumentId,
+            queryInput.SignatureId, queryInput.TaskId, queryInput.MemberTaskId, queryInput.TransactionId,
+            queryInput.SystemConfigurationId, queryInput.UserRoleId);
+
+        // Checking Result
+        if (dataResult.listNotification is null || dataResult.listNotification.Count == 0)
+            throw new NotFoundException("Not Found Any Notification!");
+
+        return new PagingResult<RS_Notification>
+        {
+            PageIndex = queryInput.PageIndex,
+            PageSize = queryInput.PageSize,
+            TotalCount = dataResult.totalFound,
+            DataList = dataResult.listNotification.Adapt<List<RS_Notification>>()
+        };
     }
 
     public async Task<PagingResult<RS_AccountNotification>?> ListNotificationOfUser(Q_AccountNotification queryInput)
@@ -233,6 +263,7 @@ public class NotificationService : INotificationService
         //delete reference
         var relateUserNoti = await _unitOfWork.GetAccountNotificationRepository()
             .GetListAdvanceAsync(an => an.NotificationId == id, null, false);
+
         if (relateUserNoti is not null)
             await _unitOfWork.GetAccountNotificationRepository().DeleteRangeAsync(relateUserNoti);
 

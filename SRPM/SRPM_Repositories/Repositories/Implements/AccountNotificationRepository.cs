@@ -20,7 +20,6 @@ public class AccountNotificationRepository : GenericRepository<AccountNotificati
             .ToListAsync();
     }
 
-
     public async Task<(List<NotificationWithReadStatus>? listNotificationWithStatus, int totalCount)> ListAccountNotification
             (Guid? accountId, string? email, string? keyWord, DateTime? fromDate, DateTime? toDate,
             bool? isRead, string? type, string? status, int pageIndex, int pageSize)
