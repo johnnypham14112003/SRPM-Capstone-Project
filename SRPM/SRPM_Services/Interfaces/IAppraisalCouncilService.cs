@@ -13,5 +13,5 @@ public interface IAppraisalCouncilService
     Task<bool> UpdateCouncilInfo(RQ_AppraisalCouncil newCouncil);
     Task<bool> DeleteCouncil(Guid id);
     Task<RS_AppraisalCouncil?> GetCouncilInEvaluationAsync(Guid projectId);
-    Task<bool> AssignCouncilToClonedStages(Guid sourceProjectId, Guid appraisalCouncilId);
+    Task<string> AssignCouncilToClonedStages(Guid sourceProjectId, Guid appraisalCouncilId);
 }

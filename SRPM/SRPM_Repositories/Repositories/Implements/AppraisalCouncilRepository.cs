@@ -64,13 +64,28 @@ public class AppraisalCouncilRepository : GenericRepository<AppraisalCouncil>, I
         }
     }
 
-    public async Task<AppraisalCouncil?> GetCouncilBelongToProject(Guid projectId)
+    public async Task<(AppraisalCouncil? council, string? error)> GetCouncilBelongToProject(Guid projectId)
     {
-        return await _context.Evaluation
-            .Where(e => e.ProjectId == projectId && e.AppraisalCouncilId != null)
-            .Select(e => e.AppraisalCouncil)
-            .Distinct()
-            .FirstOrDefaultAsync();
+        var project = await _context.Project.FirstOrDefaultAsync(p => p.Id == projectId);
+        if (project is null) return (null, "Not found this project Id");
+
+        var proposals = await _context.Project
+            .Where(p =>
+            p.Code.Equals(project.Code) &&
+            p.Genre.ToLower().Equals("proposal") &&
+            (p.Status.ToLower().Equals("approved") || p.Status.ToLower().Equals("submitted") || p.Status.ToLower().Equals("inprogress")))
+            .Select(p => p.Id)
+            .ToListAsync();
+        if (!proposals.Any() || proposals is null) return (null, "No proposals found for this project");
+
+        var council = await _context.Evaluation
+        .Where(e => e.ProjectId == projectId && e.AppraisalCouncilId != null)
+        .Select(e => e.AppraisalCouncil)
+        .Distinct()
+        .FirstOrDefaultAsync();
+
+        if (council is null) return (null, "No council found for this project");
+        return (council, null);
     }
 
     public async Task<(List<AppraisalCouncil>? listCouncil, int totalCount)> ListPaging

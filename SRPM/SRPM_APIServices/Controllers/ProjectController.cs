@@ -1,12 +1,9 @@
 ﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using SRPM_Services.BusinessModels;
 using SRPM_Services.BusinessModels.Others;
 using SRPM_Services.BusinessModels.RequestModels;
-using SRPM_Services.BusinessModels.ResponseModels;
 using SRPM_Services.Extensions.Exceptions;
-using SRPM_Services.Implements;
 using SRPM_Services.Interfaces;
 
 // For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
@@ -93,6 +90,12 @@ public class ProjectController : Controller
         {
             return StatusCode(500, $"Unexpected error: {ex.Message}");
         }
+    }
+
+    [HttpPost("document")]
+    public async Task<IActionResult> CreateMilestoneTaskFromDocument(RQ_MilestoneTaskContent request)
+    {
+        return Ok(await _service.CreateFromDocumentAsync(request));
     }
 
     // PUT: api/project/{id}

@@ -6,7 +6,7 @@ public interface IAppraisalCouncilRepository : IGenericRepository<AppraisalCounc
 {
     Task<AppraisalCouncil?> GetDetailWithInclude(Guid id, byte includeNo);
 
-    Task<AppraisalCouncil?> GetCouncilBelongToProject(Guid projectId);
+    Task<(AppraisalCouncil? council, string? error)> GetCouncilBelongToProject(Guid projectId);
 
     Task<(List<AppraisalCouncil>? listCouncil, int totalCount)> ListPaging
         (string? keyWord, DateTime? fromDate, DateTime? toDate,
