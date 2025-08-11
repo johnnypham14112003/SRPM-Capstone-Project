@@ -78,9 +78,7 @@ public class AppraisalCouncilController : Controller
                 appraisalCouncilId
             );
 
-            return result
-                ? Ok("Appraisal Council assigned successfully.")
-                : StatusCode(500, "Failed to assign Appraisal Council.");
+            return Ok(result);
         }
         catch (NotFoundException ex)
         {

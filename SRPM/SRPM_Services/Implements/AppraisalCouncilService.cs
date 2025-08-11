@@ -1,5 +1,6 @@
 ﻿using Mapster;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using SRPM_Repositories.Models;
 using SRPM_Repositories.Repositories.Interfaces;
 using SRPM_Services.BusinessModels;
@@ -7,6 +8,7 @@ using SRPM_Services.BusinessModels.RequestModels;
 using SRPM_Services.BusinessModels.RequestModels.Query;
 using SRPM_Services.BusinessModels.ResponseModels;
 using SRPM_Services.Extensions.Exceptions;
+using SRPM_Services.Extensions.MicrosoftBackgroundService;
 using SRPM_Services.Interfaces;
 
 namespace SRPM_Services.Implements;
@@ -15,10 +17,12 @@ public class AppraisalCouncilService : IAppraisalCouncilService
 {
     private readonly IUnitOfWork _unitOfWork;
     private readonly IEvaluationService _evaluationService;
-    public AppraisalCouncilService(IUnitOfWork unitOfWork, IEvaluationService evaluationService)
+    private readonly ITaskQueueHandler _taskQueueHandler;
+    public AppraisalCouncilService(IUnitOfWork unitOfWork, IEvaluationService evaluationService, ITaskQueueHandler taskQueueHandler)
     {
         _unitOfWork = unitOfWork;
         _evaluationService = evaluationService;
+        _taskQueueHandler = taskQueueHandler;
     }
 
     //=============================================================================
