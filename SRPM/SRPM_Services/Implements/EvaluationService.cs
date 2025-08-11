@@ -324,12 +324,12 @@ public class EvaluationService : IEvaluationService
 
         //Query encoded completed Project
         var projectEncoded = await unitOfWork.GetProjectRepository().GetListAdvanceAsync(
-            p => p.Status.Equals(Status.Completed.ToString(), StringComparison.OrdinalIgnoreCase) && !string.IsNullOrWhiteSpace(p.EncodedDescription),
+            p => p.Status.ToLower().Equals(Status.Completed.ToString().ToLower()) && !string.IsNullOrWhiteSpace(p.EncodedDescription),
             p => new { p.Id, p.EnglishTitle, p.Description, p.EncodedDescription });
 
         //Query all completed Project if 'projectEncoded' is null
         List<Project>? databaseSource = projectEncoded is null ?
-        await unitOfWork.GetProjectRepository().GetListAsync(p => p.Status.Equals(Status.Completed.ToString(), StringComparison.OrdinalIgnoreCase))
+        await unitOfWork.GetProjectRepository().GetListAsync(p => p.Status.ToLower().Equals(Status.Completed.ToString().ToLower()))
             : projectEncoded.Adapt<List<Project>>();
 
         //Final Source
