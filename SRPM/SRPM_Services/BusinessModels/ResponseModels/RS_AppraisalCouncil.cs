@@ -11,7 +11,7 @@ public class RS_AppraisalCouncil
     public DateTime? UpdatedAt { get; set; }
     public string Status { get; set; } = "created";
 
-    //public virtual ICollection<Evaluation>? Evaluations { get; set; }
-    //public virtual ICollection<EvaluationStage>? EvaluationStages { get; set; }
-    //public virtual ICollection<UserRole>? CouncilMembers { get; set; }
+    public virtual ICollection<RS_Evaluation>? Evaluations { get; set; }
+    public virtual ICollection<RS_EvaluationStage>? EvaluationStages { get; set; }
+    public virtual ICollection<RS_UserRole>? CouncilMembers { get; set; }
 }
