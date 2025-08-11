@@ -112,74 +112,86 @@ public class AppraisalCouncilService : IAppraisalCouncilService
 
     public async Task<bool> AssignCouncilToClonedStages(Guid sourceProjectId, Guid appraisalCouncilId)
     {
-        // Step 1: Validate council exists
-        var council = await _unitOfWork.GetAppraisalCouncilRepository()
-            .GetOneAsync(c => c.Id == appraisalCouncilId)
-            ?? throw new NotFoundException("Appraisal Council not found.");
-
-        // Step 2: Find cloned projects
-        var sourceProject = await _unitOfWork.GetProjectRepository()
-            .GetByIdAsync(sourceProjectId, hasTrackings: true)
-            ?? throw new NotFoundException("Source project not found.");
-        var clonedProjects = await _unitOfWork.GetProjectRepository()
-            .GetListAsync(p =>
-                p.Genre == "proposal" &&
-                (p.Status == "approved" || p.Status == "submitted" || p.Status == "inprogress") &&
-                p.Code == sourceProject.Code,
-                hasTrackings: true // We need tracking to update entities
-            );
-
-        if (clonedProjects == null || !clonedProjects.Any())
-            throw new NotFoundException("No cloned projects found for the given source project.");
-
-        // Step 3: Loop through each project and assign council to its evaluation stages
-        foreach (var project in clonedProjects)
+        try
         {
-            var existCouncil = GetCouncilInEvaluationAsync(project.Id);
+            // Step 1: Validate council exists
+            var council = await _unitOfWork.GetAppraisalCouncilRepository()
+                .GetOneAsync(c => c.Id == appraisalCouncilId)
+                ?? throw new NotFoundException("Appraisal Council not found.");
 
-            //If don't have, then create
-            if (existCouncil is null)
+            // Step 2: Find cloned projects
+            var sourceProject = await _unitOfWork.GetProjectRepository()
+                .GetOneAsync(p => p.Id == sourceProjectId && (p.Genre == "propose" || p.Genre == "normal"), hasTrackings: true)
+                ?? throw new NotFoundException("Source project not found.");
+            var clonedProjects = await _unitOfWork.GetProjectRepository()
+                .GetListAsync(p =>
+                    p.Genre == "proposal" &&
+                    (p.Status == "approved" || p.Status == "submitted" || p.Status == "inprogress") &&
+                    p.Code == sourceProject.Code,
+                    hasTrackings: true // We need tracking to update entities
+                );
+
+            if (clonedProjects == null || !clonedProjects.Any())
+                throw new NotFoundException("No cloned projects found for the given source project.");
+
+            // Step 3: Loop through each project and assign council to its evaluation stages
+            foreach (var project in clonedProjects)
             {
-                var listEvaOfProjectWithoutCouncil = await _unitOfWork.GetEvaluationRepository()
-                .GetListAdvanceAsync(
-                    e => e.ProjectId == project.Id && e.AppraisalCouncilId == null,
-                    q => q.Include(ei => ei.EvaluationStages), false);
+                var existCouncil = await GetCouncilInEvaluationAsync(project.Id);
 
-                //If no other eva of project -> create new
-                if (listEvaOfProjectWithoutCouncil is null)
+                //If don't have, then create
+                if (existCouncil is null)
                 {
-                    var evaluation = await _evaluationService.CreateAsync(new RQ_Evaluation
-                    {
-                        Title = "Evaluation With Appraisal Council",
-                        ProjectId = project.Id,
-                        AppraisalCouncilId = appraisalCouncilId
-                    });
-                }
-                else
-                {//Other exist eva don't have council
-                    foreach (var eva in listEvaOfProjectWithoutCouncil)
-                    {
-                        eva.AppraisalCouncilId = appraisalCouncilId;
+                    var listEvaOfProjectWithoutCouncil = await _unitOfWork.GetEvaluationRepository()
+                    .GetListAdvanceAsync(
+                        e => e.ProjectId == project.Id && e.AppraisalCouncilId == null,
+                        q => q.Include(ei => ei.EvaluationStages), true);
 
-                        //Then if eva have stage which don't have council -> assign council to each stage
-                        var stagesWithoutCouncil = eva.EvaluationStages?
-                            .Where(stage => stage.AppraisalCouncilId == null)
-                            .ToList();
-
-                        if (stagesWithoutCouncil is not null)
+                    //If no other eva of project -> create new
+                    if (listEvaOfProjectWithoutCouncil is null || listEvaOfProjectWithoutCouncil.Count == 0)
+                    {
+                        var evaluation = await _evaluationService.CreateAsync(new RQ_Evaluation
                         {
-                            foreach (var stage in stagesWithoutCouncil)
-                            {
-                                stage.AppraisalCouncilId = appraisalCouncilId;
-                            }
+                            Title = "Evaluation With Appraisal Council",
+                            ProjectId = project.Id,
+                            AppraisalCouncilId = appraisalCouncilId
+                        });
+                    }
+                    else
+                    {//Other exist eva don't have council
+                        foreach (var eva in listEvaOfProjectWithoutCouncil)
+                        {
+                            eva.AppraisalCouncilId = appraisalCouncilId;
 
+                            //Then if eva have stage which don't have council -> assign council to each stage
+                            var stagesWithoutCouncil = eva.EvaluationStages?
+                                .Where(stage => stage.AppraisalCouncilId == null)
+                                .ToList();
+
+                            if (stagesWithoutCouncil is not null && stagesWithoutCouncil.Count != 0)
+                            {
+                                foreach (var stage in stagesWithoutCouncil)
+                                {
+                                    stage.AppraisalCouncilId = appraisalCouncilId;
+                                }
+
+                            }
                         }
                     }
                 }
             }
-        }
 
-        // Step 4: Save changes
-        return await _unitOfWork.SaveChangesAsync();
+            // Step 4: Save changes
+            await _unitOfWork.SaveChangesAsync();
+            return true;
+        }
+        catch (NotFoundException)
+        {
+            throw; // Re-throw to handle in controller
+        }
+        catch (Exception ex)
+        {
+            throw new BadRequestException($"Failed to assign Appraisal Council: {ex.Message}");
+        }
     }
 }
