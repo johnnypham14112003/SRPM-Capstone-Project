@@ -146,13 +146,13 @@ public class NotificationService : INotificationService
             _ = Guid.TryParse(_userContextService.GetCurrentUserId(), out accId);
 
             (listNoti, totalCount) = await _unitOfWork.GetAccountNotificationRepository().ListAccountNotification
-                (accId, queryInput.KeyWord, queryInput.FromDate, queryInput.ToDate,
+                (accId, null, queryInput.KeyWord, queryInput.FromDate, queryInput.ToDate,
                 queryInput.IsRead, queryInput.Type, queryInput.Status, queryInput.PageIndex, queryInput.PageSize);
         }
         else
         {
             (listNoti, totalCount) = await _unitOfWork.GetAccountNotificationRepository().ListAccountNotification
-                (queryInput.Email, queryInput.KeyWord, queryInput.FromDate, queryInput.ToDate,
+                (null, queryInput.Email, queryInput.KeyWord, queryInput.FromDate, queryInput.ToDate,
                 queryInput.IsRead, queryInput.Type, queryInput.Status, queryInput.PageIndex, queryInput.PageSize);
         }
 
