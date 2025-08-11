@@ -10,6 +10,7 @@ public interface INotificationService
 {
     Task<(bool, Guid)> CreateNew(RQ_Notification newNotification);
     Task<bool> NotificateToUser(List<Guid>? ListAccountId, Guid notificationId);
+    Task<PagingResult<RS_Notification>?> ListRequestNotification(Q_RequestNoti queryInput);
     Task<PagingResult<RS_AccountNotification>?> ListNotificationOfUser(Q_AccountNotification queryInput);
     Task<bool> ReadNotification(Guid? notificationId);
     Task<bool> UpdateNotification(RQ_Notification newNotification);

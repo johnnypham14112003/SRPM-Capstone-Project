@@ -9,4 +9,5 @@ public class RQ_Notification
     public DateTime CreateDate { get; set; } = DateTime.Now;
     public string Status { get; set; } = "created";
     public Guid? ObjecNotificationId { get; set; }
+    public List<Guid>? ListAccountId { get; set; }
 }

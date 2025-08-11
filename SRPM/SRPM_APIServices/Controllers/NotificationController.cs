@@ -27,6 +27,13 @@ public class NotificationController : Controller
     }
 
     [HttpPost("list")]
+    public async Task<IActionResult> ListNotiOfUser([FromBody] Q_RequestNoti queryInput)
+    {
+        var result = await _notificationService.ListRequestNotification(queryInput);
+        return Ok(result);
+    }
+
+    [HttpPost("user-notification")]
     public async Task<IActionResult> ListNotiOfUser([FromBody] Q_AccountNotification queryInput)
     {
         var result = await _notificationService.ListNotificationOfUser(queryInput);
