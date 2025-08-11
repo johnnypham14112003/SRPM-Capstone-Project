@@ -264,8 +264,10 @@ public class EvaluationService : IEvaluationService
 
                 //Get Individual Evaluation
                 var individualEvaluation = await unitOfWork.GetIndividualEvaluationRepository().GetOneAsync(
-                    ie => ie.Id == individualEvalutionId,
-                    ie => ie.Include(iev => iev.ProjectsSimilarity))
+                    ie => ie.Id == individualEvalutionId &&
+                    ie.Name.Equals("AI Review") &&
+                    ie.IsAIReport == true,
+                    q => q.Include(iev => iev.ProjectsSimilarity))
                 ?? throw new NotFoundException($"Not Found Individual Evaluation Id '{individualEvalutionId}' to regen AI review!");
 
                 //Prepare data before send to AI
@@ -305,6 +307,7 @@ public class EvaluationService : IEvaluationService
                     })
                     .ToList();
                     await unitOfWork.GetProjectSimilarityRepository().AddRangeAsync(projectSimilarities);
+                    individualEvaluation.SubmittedAt = DateTime.Now;
                 }
                 await unitOfWork.SaveChangesAsync();
             }));
