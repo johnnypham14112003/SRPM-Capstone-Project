@@ -14,9 +14,11 @@ namespace SRPM_Services.Implements;
 public class AppraisalCouncilService : IAppraisalCouncilService
 {
     private readonly IUnitOfWork _unitOfWork;
-    public AppraisalCouncilService(IUnitOfWork unitOfWork)
+    private readonly IEvaluationService _evaluationService;
+    public AppraisalCouncilService(IUnitOfWork unitOfWork, IEvaluationService evaluationService)
     {
         _unitOfWork = unitOfWork;
+        _evaluationService = evaluationService;
     }
 
     //=============================================================================
@@ -133,19 +135,51 @@ public class AppraisalCouncilService : IAppraisalCouncilService
         // Step 3: Loop through each project and assign council to its evaluation stages
         foreach (var project in clonedProjects)
         {
-            var evaluation = project.Evaluations?.FirstOrDefault();
-            if (evaluation == null) continue;
+            var existCouncil = GetCouncilInEvaluationAsync(project.Id);
 
-            var stages = evaluation.EvaluationStages;
-            if (stages == null || !stages.Any()) continue;
-
-            foreach (var stage in stages)
+            //If don't have, then create
+            if (existCouncil is null)
             {
-                stage.AppraisalCouncilId = appraisalCouncilId;
+                var listEvaOfProjectWithoutCouncil = await _unitOfWork.GetEvaluationRepository()
+                .GetListAdvanceAsync(
+                    e => e.ProjectId == project.Id && e.AppraisalCouncilId == null,
+                    q => q.Include(ei => ei.EvaluationStages), false);
+
+                //If no other eva of project -> create new
+                if (listEvaOfProjectWithoutCouncil is null)
+                {
+                    var evaluation = await _evaluationService.CreateAsync(new RQ_Evaluation
+                    {
+                        Title = "Evaluation With Appraisal Council",
+                        ProjectId = project.Id,
+                        AppraisalCouncilId = appraisalCouncilId
+                    });
+                }
+                else
+                {//Other exist eva don't have council
+                    foreach (var eva in listEvaOfProjectWithoutCouncil)
+                    {
+                        eva.AppraisalCouncilId = appraisalCouncilId;
+
+                        //Then if eva have stage which don't have council -> assign council to each stage
+                        var stagesWithoutCouncil = eva.EvaluationStages?
+                            .Where(stage => stage.AppraisalCouncilId == null)
+                            .ToList();
+
+                        if (stagesWithoutCouncil is not null)
+                        {
+                            foreach (var stage in stagesWithoutCouncil)
+                            {
+                                stage.AppraisalCouncilId = appraisalCouncilId;
+                            }
+
+                        }
+                    }
+                }
             }
         }
 
         // Step 4: Save changes
-        return await _unitOfWork.GetEvaluationStageRepository().SaveChangeAsync();
+        return await _unitOfWork.SaveChangesAsync();
     }
 }
