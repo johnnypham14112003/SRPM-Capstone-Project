@@ -71,12 +71,7 @@ public class OpenAIService : IOpenAIService
         }
         else
         {
-            //Hanlde if text to long => divide into chunks
-            for (int i = 0; i < tokenIds.Count; i += maxTokens)
-            {
-                var slice = tokenIds.Skip(i).Take(maxTokens).ToList();
-                chunks.Add(tokenizer.Decode(slice));
-            }
+            chunks.AddRange(ChunkBySentence(inputText, 7500));
         }
 
         //List encoded chunks
