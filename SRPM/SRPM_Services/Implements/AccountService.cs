@@ -15,6 +15,7 @@ using SRPM_Services.Extensions.FluentEmail;
 using SRPM_Services.Interfaces;
 using System.Data;
 using System.Diagnostics;
+using System.Linq.Expressions;
 using System.Security.Cryptography;
 using System.Text;
 
@@ -374,25 +375,27 @@ public class AccountService : IAccountService
             DataList = paged.Adapt<List<RS_Account>>()
         };
     }
-    public async Task<List<object>> SearchByNameOrEmailAsync(string? input)
+    public async Task<List<object>> SearchByNameOrEmailAsync(string? input, string? userRole)
     {
         var keyword = input?.Trim();
+        var roleKeyword = userRole?.Trim();
 
         List<Account> results;
 
-        if (string.IsNullOrWhiteSpace(keyword))
-        {
-            // Return all accounts
-            results = await _unitOfWork.GetAccountRepository().GetListAsync(p => true, hasTrackings: false);
-        }
-        else
-        {
-            // Search by name or email
-            results = await _unitOfWork.GetAccountRepository().GetListAsync(
-                a => a.FullName.Contains(keyword) || a.Email.Contains(keyword),
-                hasTrackings: false
-            );
-        }
+        // Build dynamic predicate
+        Expression<Func<Account, bool>> predicate = a =>
+            (string.IsNullOrWhiteSpace(keyword) ||
+             (!string.IsNullOrEmpty(a.FullName) && a.FullName.Contains(keyword)) ||
+             (!string.IsNullOrEmpty(a.Email) && a.Email.Contains(keyword))) &&
+            (string.IsNullOrWhiteSpace(roleKeyword) ||
+             (a.UserRoles != null &&
+              a.UserRoles.Any(ur => ur.Role != null &&
+                                    !string.IsNullOrEmpty(ur.Role.Name) &&
+                                    ur.Role.Name.Contains(roleKeyword))));
+
+        results = await _unitOfWork.GetAccountRepository()
+            .GetListAsync(predicate, hasTrackings: false,
+                include: q => q.Include(a => a.UserRoles).ThenInclude(ur => ur.Role));
 
         var projected = results!
             .Select(a => new

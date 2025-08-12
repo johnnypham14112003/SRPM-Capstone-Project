@@ -21,5 +21,5 @@ public interface IAccountService
     Task<RS_Account?> UpdateAsync(Guid id, RQ_Account request);
     Task<RS_Account?> ToggleStatusAsync(Guid id);
     Task<bool> DeleteAsync(Guid id);
-    Task<List<object>> SearchByNameOrEmailAsync(string? input);
+    Task<List<object>> SearchByNameOrEmailAsync(string? input, string? userRole);
 }

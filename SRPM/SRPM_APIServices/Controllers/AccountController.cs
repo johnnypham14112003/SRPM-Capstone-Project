@@ -66,11 +66,11 @@ public class AccountController : Controller
 
     // GET: api/account/search?input=John
     [HttpGet("search")]
-    public async Task<IActionResult> SearchByInput([FromQuery] string? input)
+    public async Task<IActionResult> SearchByInput([FromQuery] string? input, string? roleUser)
     {
         try
         {
-            var results = await _service.SearchByNameOrEmailAsync(input);
+            var results = await _service.SearchByNameOrEmailAsync(input, roleUser);
             return Ok(results);
         }
         catch (Exception ex)
