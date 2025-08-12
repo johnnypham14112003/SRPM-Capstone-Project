@@ -7,6 +7,7 @@ using SRPM_Services.BusinessModels;
 using SRPM_Services.BusinessModels.RequestModels;
 using SRPM_Services.BusinessModels.RequestModels.Query;
 using SRPM_Services.BusinessModels.ResponseModels;
+using SRPM_Services.Extensions.Enumerables;
 using SRPM_Services.Extensions.Exceptions;
 using SRPM_Services.Interfaces;
 
@@ -16,10 +17,12 @@ public class AppraisalCouncilService : IAppraisalCouncilService
 {
     private readonly IUnitOfWork _unitOfWork;
     private readonly IEvaluationService _evaluationService;
-    public AppraisalCouncilService(IUnitOfWork unitOfWork, IEvaluationService evaluationService)
+    private readonly IUserContextService _userContextService;
+    public AppraisalCouncilService(IUnitOfWork unitOfWork, IEvaluationService evaluationService, IUserContextService userContextService)
     {
         _unitOfWork = unitOfWork;
         _evaluationService = evaluationService;
+        _userContextService = userContextService;
     }
 
     //=============================================================================
@@ -211,5 +214,61 @@ public class AppraisalCouncilService : IAppraisalCouncilService
         {
             throw new BadRequestException($"Failed to assign Appraisal Council: {ex.Message}");
         }
+    }
+    public async Task<PagingResult<RS_AppraisalCouncil>> GetAllOnlineUserAppraisalCouncilAsync(int pageIndex, int pageSize)
+    {
+        var accountId = Guid.Parse(_userContextService.GetCurrentUserId());
+        var currentRoleName = _userContextService.GetCurrentUserRole();
+
+        // Fetch all UserRoles for current user with Role included
+        var userRoles = await _unitOfWork.GetUserRoleRepository()
+            .GetListAsync(
+                ur => ur.AccountId == accountId && ur.Status.ToLower() != Status.Deleted.ToString().ToLower() ,
+                include: q => q.Include(ur => ur.Role)
+            );
+
+        // Filter roles by matching role name and ensure AppraisalCouncilId is present
+        var matchingRoles = userRoles!
+            .Where(ur => ur.Role != null && ur.Role.Name == currentRoleName && ur.AppraisalCouncilId.HasValue)
+            .ToList();
+
+        var appraisalCouncilIds = matchingRoles
+            .Select(ur => ur.AppraisalCouncilId!.Value)
+            .Distinct()
+            .ToList();
+
+        if (!appraisalCouncilIds.Any())
+        {
+            return new PagingResult<RS_AppraisalCouncil>
+            {
+                PageIndex = pageIndex,
+                PageSize = pageSize,
+                TotalCount = 0,
+                DataList = []
+            };
+        }
+
+        // Fetch AppraisalCouncils by IDs
+        var councils = await _unitOfWork.GetAppraisalCouncilRepository()
+            .GetListAsync(
+                ac => appraisalCouncilIds.Contains(ac.Id),
+                hasTrackings: false
+            );
+
+        var totalCount = councils!.Count;
+
+        var pagedCouncils = councils
+            .OrderByDescending(ac => ac.CreatedAt)
+            .Skip((pageIndex - 1) * pageSize)
+            .Take(pageSize)
+            .Adapt<List<RS_AppraisalCouncil>>();
+
+        return new PagingResult<RS_AppraisalCouncil>
+        {
+            PageIndex = pageIndex,
+            PageSize = pageSize,
+            TotalCount = totalCount,
+            DataList = pagedCouncils
+        };
     }
 }

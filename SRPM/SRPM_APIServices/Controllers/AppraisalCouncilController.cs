@@ -1,6 +1,8 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using SRPM_Services.BusinessModels;
 using SRPM_Services.BusinessModels.RequestModels;
 using SRPM_Services.BusinessModels.RequestModels.Query;
+using SRPM_Services.BusinessModels.ResponseModels;
 using SRPM_Services.Extensions.Exceptions;
 using SRPM_Services.Implements;
 using SRPM_Services.Interfaces;
@@ -97,5 +99,18 @@ public class AppraisalCouncilController : Controller
             return StatusCode(500, $"Unexpected error: {ex.Message}");
         }
     }
+    [HttpGet("online-user")]
+    public async Task<ActionResult<PagingResult<RS_AppraisalCouncil>>> GetOnlineUserCouncils(
+        [FromQuery] int pageIndex = 1,
+        [FromQuery] int pageSize = 10)
+    {
+        if (pageIndex <= 0 || pageSize <= 0)
+            return BadRequest("PageIndex and PageSize must be greater than zero.");
+
+        var result = await _appraisalCouncilService.GetAllOnlineUserAppraisalCouncilAsync(pageIndex, pageSize);
+
+        return Ok(result);
+    }
+
 
 }
