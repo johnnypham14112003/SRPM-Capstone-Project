@@ -152,10 +152,11 @@ public class AppraisalCouncilService : IAppraisalCouncilService
                 // Step 3: Loop through each project and assign council to its evaluation stages
                 foreach (var project in clonedProjects)
                 {
-                    var existCouncil = await GetCouncilInEvaluationAsync(project.Id);
+                    var resultCouncil = await unitOfWork.GetAppraisalCouncilRepository()
+                    .GetCouncilBelongToProject(project.Id);
 
                     //If don't have, then create
-                    if (existCouncil is null)
+                    if (resultCouncil.council is null)
                     {
                         var listEvaOfProjectWithoutCouncil = await unitOfWork.GetEvaluationRepository()
                         .GetListAdvanceAsync(
