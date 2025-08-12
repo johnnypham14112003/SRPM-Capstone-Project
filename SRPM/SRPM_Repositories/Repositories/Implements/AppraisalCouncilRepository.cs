@@ -63,6 +63,40 @@ public class AppraisalCouncilRepository : GenericRepository<AppraisalCouncil>, I
             default: return await _context.AppraisalCouncil.FirstOrDefaultAsync(ac => ac.Id == id);
         }
     }
+    public async Task<(List<Project>? srcProject, List<Project>? proposals, string? error)> GetProjectOfCouncil(Guid councilId)
+    {
+        var council = await _context.AppraisalCouncil
+            .Include(c => c.Evaluations)
+                .ThenInclude(e => e.Project)
+            .AsNoTracking()
+            .FirstOrDefaultAsync(c => c.Id == councilId);
+        if (council is null) return (null, null, "Not found any council with that councilId");
+
+        //get proposal from evaluation
+        var proposals = council.Evaluations
+            .Where(e => e.Project != null && e.Project.Genre.ToLower().Equals("proposal"))
+            .GroupBy(e => e.Project.Id)
+            .Select(g =>
+            {
+                var project = g.First().Project!;
+                project.Evaluations = g.ToList(); // Gán evaluations vào project
+                return project;
+            })
+            .ToList();
+
+        // Get list code of proposal
+        var proposalCodes = proposals
+            .Select(p => p.Code)
+            .Distinct()
+            .ToList();
+
+        var projectSources = await _context.Project
+        .Where(p => proposalCodes.Contains(p.Code) && !p.Genre.ToLower().Equals("proposal"))
+        .Distinct()
+        .ToListAsync();
+
+        return (projectSources, proposals, null);
+    }
 
     public async Task<(AppraisalCouncil? council, string? error)> GetCouncilBelongToProject(Guid projectId)
     {

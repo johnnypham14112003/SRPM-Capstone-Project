@@ -57,6 +57,14 @@ public class AppraisalCouncilController : Controller
         return result ? Ok("Delete Successfully!") : BadRequest("Delete Failed!");
     }
 
+    [HttpGet("list-project/{councilId}")]
+    public async Task<IActionResult> GetProjectOfCouncil([FromRoute] Guid councilId)
+    {
+        var complexList = await _appraisalCouncilService.GetProjectsFromCouncilAsync(councilId);
+
+        return complexList is not null ? Ok(complexList) : NotFound("Not found any Project belong to this CouncilId");
+    }
+
     [HttpGet("project/{projectId}")]
     public async Task<IActionResult> GetCouncilOfProject([FromRoute] Guid projectId)
     {
