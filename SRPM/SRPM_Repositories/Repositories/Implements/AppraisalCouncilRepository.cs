@@ -69,19 +69,17 @@ public class AppraisalCouncilRepository : GenericRepository<AppraisalCouncil>, I
         var project = await _context.Project.FirstOrDefaultAsync(p => p.Id == projectId);
         if (project is null) return (null, "Not found this project Id");
 
-        var proposals = await _context.Project
+        var proposal = await _context.Project
             .Where(p =>
             p.Code.Equals(project.Code) &&
             p.Genre.ToLower().Equals("proposal") &&
             (p.Status.ToLower().Equals("approved") || p.Status.ToLower().Equals("submitted") || p.Status.ToLower().Equals("inprogress")))
-            .Select(p => p.Id)
-            .ToListAsync();
-        if (!proposals.Any() || proposals is null) return (null, "No proposals found for this project");
+            .FirstOrDefaultAsync();
+        if (proposal is null) return (null, "Not found any proposal of this project");
 
         var council = await _context.Evaluation
-        .Where(e => e.ProjectId == projectId && e.AppraisalCouncilId != null)
+        .Where(e => e.ProjectId == proposal.Id && e.AppraisalCouncilId != null)
         .Select(e => e.AppraisalCouncil)
-        .Distinct()
         .FirstOrDefaultAsync();
 
         if (council is null) return (null, "No council found for this project");
