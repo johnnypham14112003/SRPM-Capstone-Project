@@ -62,9 +62,9 @@ public class AppraisalCouncilController : Controller
     [HttpGet("list-project/{councilId}")]
     public async Task<IActionResult> GetProjectOfCouncil([FromRoute] Guid councilId)
     {
-        var complexList = await _appraisalCouncilService.GetProjectsFromCouncilAsync(councilId);
+        var result = await _appraisalCouncilService.GetProjectsFromCouncilAsync(councilId);
 
-        return complexList is not null ? Ok(complexList) : NotFound("Not found any Project belong to this CouncilId");
+        return result is not null ? Ok(result) : NotFound("Not found any Project belong to this CouncilId");
     }
 
     [HttpGet("project/{projectId}")]
