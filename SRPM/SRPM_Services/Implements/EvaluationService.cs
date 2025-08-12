@@ -1,4 +1,5 @@
-﻿using Mapster;
+﻿using HtmlAgilityPack;
+using Mapster;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using SRPM_Repositories.Models;
@@ -12,6 +13,7 @@ using SRPM_Services.Extensions.Exceptions;
 using SRPM_Services.Extensions.MicrosoftBackgroundService;
 using SRPM_Services.Extensions.OpenAI;
 using SRPM_Services.Interfaces;
+using System.Threading;
 
 namespace SRPM_Services.Implements;
 
@@ -132,6 +134,9 @@ public class EvaluationService : IEvaluationService
                     p => p.Include(pro => pro.Milestones), false)
                 ?? throw new NotFoundException($"Not Found Project Id '{projectId}' to create evaluation!");
 
+                var projectDocument = await unitOfWork.GetDocumentRepository().GetOneAsync(
+                    d => d.ProjectId == project.Id && d.Type.ToLower().Equals("bm1"), null, false);
+
                 var datePart = DateTime.Now.ToString("ddMMyyyy");
                 var abbreviations = project.Abbreviations;
 
@@ -206,8 +211,26 @@ public class EvaluationService : IEvaluationService
                 }
 
 
-                ////========================[ Run AI ]========================
+                //==============================[ Run AI ]==============================
+                // Get content from projectDocument
+                string rawHtml = projectDocument?.ContentHtml ?? string.Empty;
+                string visibleText = ExtractVisibleTextFromHtml(rawHtml);
+                var countDocToken = openAIService.CountToken("chatmodel", visibleText);
+
                 var projectSummary = project.Adapt<RQ_ProjectContentForAI>();
+
+                if (countDocToken <= 7000)
+                {
+                    //send all content
+                    projectSummary.DocumentContent = visibleText;
+                }
+                else
+                {
+                    //Summary long text
+                    projectSummary.DocumentContent = await openAIService
+                    .GetFinalSummaryAsync(visibleText, cancelToken);
+                }
+
                 projectSummary.MilestoneContents = project.Milestones.Adapt<ICollection<RQ_MilestoneContentForAI>>();
 
                 //Handle result AI
@@ -349,5 +372,22 @@ public class EvaluationService : IEvaluationService
 
 
         return (listSimilarity, summaryEvaluation);
+    }
+    private string ExtractVisibleTextFromHtml(string html)
+    {
+        if (string.IsNullOrWhiteSpace(html)) return string.Empty;
+        var doc = new HtmlDocument();
+        doc.LoadHtml(html);
+
+        // remove script/style/comments
+        var removeNodes = doc.DocumentNode.SelectNodes("//script|//style|//comment()");
+        if (removeNodes != null)
+        {
+            foreach (var n in removeNodes) n.Remove();
+        }
+
+        var text = doc.DocumentNode.InnerText ?? string.Empty;
+        text = System.Text.RegularExpressions.Regex.Replace(text, @"\s+", " ").Trim();
+        return text;
     }
 }
