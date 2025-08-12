@@ -103,17 +103,24 @@ public class AppraisalCouncilService : IAppraisalCouncilService
         return await _unitOfWork.GetAppraisalCouncilRepository().SaveChangeAsync();
     }
 
-    public async Task<RS_ProjectsOfCouncil?> GetProjectsFromCouncilAsync(Guid councilId)
+    public async Task<List<RS_ProjectsOfCouncil>?> GetProjectsFromCouncilAsync(Guid councilId)
     {
-        var result = await _unitOfWork.GetAppraisalCouncilRepository().GetProjectOfCouncil(councilId);
+        var listPro = await _unitOfWork.GetAppraisalCouncilRepository().GetProjectOfCouncil(councilId);
 
-        if (!string.IsNullOrWhiteSpace(result.error)) throw new NotFoundException(result.error);
+        if (!string.IsNullOrWhiteSpace(listPro.error)) throw new NotFoundException(listPro.error);
 
-        return new RS_ProjectsOfCouncil
+        var result = listPro.srcProject?.Select(p =>
         {
-            ProjectSources = result.srcProject.Adapt<List<RS_Project>>(),
-            Proposals = result.proposals.Adapt<List<RS_Project>>()
-        };
+            var mapped = p.Adapt<RS_ProjectsOfCouncil>();
+
+            mapped.Proposals = listPro.proposals?
+                .Where(x => x.Code == p.Code && x.Genre == "proposal")
+                .Adapt<List<RS_Project>>() ?? new List<RS_Project>();
+
+            return mapped;
+        }).ToList();
+
+        return result;
     }
 
     public async Task<RS_AppraisalCouncil?> GetCouncilInEvaluationAsync(Guid projectId)
