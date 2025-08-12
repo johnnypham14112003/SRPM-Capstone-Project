@@ -63,25 +63,57 @@ public class AppraisalCouncilRepository : GenericRepository<AppraisalCouncil>, I
             default: return await _context.AppraisalCouncil.FirstOrDefaultAsync(ac => ac.Id == id);
         }
     }
+    public async Task<(List<Project>? srcProject, List<Project>? proposals, string? error)> GetProjectOfCouncil(Guid councilId)
+    {
+        var council = await _context.AppraisalCouncil
+            .Include(c => c.Evaluations)
+                .ThenInclude(e => e.Project)
+            .AsNoTracking()
+            .FirstOrDefaultAsync(c => c.Id == councilId);
+        if (council is null) return (null, null, "Not found any council with that councilId");
+
+        //get proposal from evaluation
+        var proposals = council.Evaluations
+            .Where(e => e.Project != null && e.Project.Genre.ToLower().Equals("proposal"))
+            .GroupBy(e => e.Project.Id)
+            .Select(g =>
+            {
+                var project = g.First().Project!;
+                project.Evaluations = g.ToList(); // Gán evaluations vào project
+                return project;
+            })
+            .ToList();
+
+        // Get list code of proposal
+        var proposalCodes = proposals
+            .Select(p => p.Code)
+            .Distinct()
+            .ToList();
+
+        var projectSources = await _context.Project
+        .Where(p => proposalCodes.Contains(p.Code) && !p.Genre.ToLower().Equals("proposal"))
+        .Distinct()
+        .ToListAsync();
+
+        return (projectSources, proposals, null);
+    }
 
     public async Task<(AppraisalCouncil? council, string? error)> GetCouncilBelongToProject(Guid projectId)
     {
         var project = await _context.Project.FirstOrDefaultAsync(p => p.Id == projectId);
         if (project is null) return (null, "Not found this project Id");
 
-        var proposals = await _context.Project
+        var proposal = await _context.Project
             .Where(p =>
             p.Code.Equals(project.Code) &&
             p.Genre.ToLower().Equals("proposal") &&
             (p.Status.ToLower().Equals("approved") || p.Status.ToLower().Equals("submitted") || p.Status.ToLower().Equals("inprogress")))
-            .Select(p => p.Id)
-            .ToListAsync();
-        if (!proposals.Any() || proposals is null) return (null, "No proposals found for this project");
+            .FirstOrDefaultAsync();
+        if (proposal is null) return (null, "Not found any proposal of this project");
 
         var council = await _context.Evaluation
-        .Where(e => e.ProjectId == projectId && e.AppraisalCouncilId != null)
+        .Where(e => e.ProjectId == proposal.Id && e.AppraisalCouncilId != null)
         .Select(e => e.AppraisalCouncil)
-        .Distinct()
         .FirstOrDefaultAsync();
 
         if (council is null) return (null, "No council found for this project");
