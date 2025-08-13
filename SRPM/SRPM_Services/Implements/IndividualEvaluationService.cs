@@ -15,10 +15,12 @@ namespace SRPM_Services.Implements;
 public class IndividualEvaluationService : IIndividualEvaluationService
 {
     private readonly IUnitOfWork _unitOfWork;
+    private readonly IUserContextService _userContextService;
 
-    public IndividualEvaluationService(IUnitOfWork unitOfWork)
+    public IndividualEvaluationService(IUnitOfWork unitOfWork, IUserContextService userContextService)
     {
         _unitOfWork = unitOfWork;
+        _userContextService = userContextService;
     }
 
     //=============================================================================
@@ -84,6 +86,11 @@ public class IndividualEvaluationService : IIndividualEvaluationService
             .GetByIdAsync(newIndividualEvaluation.EvaluationStageId)
             ?? throw new NotFoundException("This EvaluationStageId is not exist to create its IndividualEvaluation");
 
+        //default get by current session || use id on parameter
+        Guid userRoleId = newIndividualEvaluation.ReviewerId is null ? await GetCurrentMainUserRoleId() : Guid.Empty;
+        if (userRoleId == Guid.Empty)
+            throw new BadRequestException("Unknown Who Is Create This Evaluation!");
+
         //Check name
         if (string.IsNullOrWhiteSpace(newIndividualEvaluation.Name))
             throw new BadRequestException("Cannot create a null tilte name of individual evaluation");
@@ -93,6 +100,7 @@ public class IndividualEvaluationService : IIndividualEvaluationService
             throw new BadRequestException("Must be created by a specific person if not by AI");
 
         IndividualEvaluation individualEvaluationDTO = newIndividualEvaluation.Adapt<IndividualEvaluation>();
+        individualEvaluationDTO.ReviewerId = userRoleId;
         await _unitOfWork.GetIndividualEvaluationRepository().AddAsync(individualEvaluationDTO);
         var resultSave = await _unitOfWork.GetIndividualEvaluationRepository().SaveChangeAsync();
         return (resultSave, individualEvaluationDTO.Id);
@@ -134,5 +142,23 @@ public class IndividualEvaluationService : IIndividualEvaluationService
         await _unitOfWork.GetIndividualEvaluationRepository().DeleteAsync(existIndividualEvaluation);
         //existEvaluation.Status = "deleted";
         return await _unitOfWork.SaveChangesAsync();
+    }
+
+    private async Task<Guid> GetCurrentMainUserRoleId()
+    {
+        _ = Guid.TryParse(_userContextService.GetCurrentUserId(), out Guid accId);
+
+        var existAccount = await _unitOfWork.GetAccountRepository().GetOneAsync(a => a.Id == accId, null, false) ??
+            throw new NotFoundException("Your current session account Id is not exist in database! Can't find your cv");
+
+        var defaultUserRole = await _unitOfWork.GetUserRoleRepository().GetOneAsync(ur =>
+            ur.AccountId == accId &&
+            ur.ProjectId == null &&
+            ur.AppraisalCouncilId == null &&
+            ur.ExpireDate.HasValue &&
+            ur.ExpireDate > DateTime.Now, null, false) ??
+        throw new NotFoundException("Not found your base role Id or it is expired in system!");
+
+        return defaultUserRole.Id;
     }
 }
