@@ -129,10 +129,10 @@ public class IndividualEvaluationService : IIndividualEvaluationService
         if (userRoleId == Guid.Empty)
             throw new BadRequestException("Unknown who is updating this evaluation!");
 
-        if (!newIndividualEvaluation.IsAIReport && newIndividualEvaluation.ReviewerId is null)
-            throw new BadRequestException("Must be updated by a specific person if not by AI");
-
         newIndividualEvaluation.ReviewerId = userRoleId;
+        newIndividualEvaluation.EvaluationStageId = existIndividualEvaluation.EvaluationStageId;
+        if (newIndividualEvaluation.IsAIReport == true && newIndividualEvaluation.ReviewerId is null)
+            throw new BadRequestException("Must be updated by a specific person if not by AI");
 
         // Transfer new data
         newIndividualEvaluation.Adapt(existIndividualEvaluation);
