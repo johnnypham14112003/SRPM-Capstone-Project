@@ -123,11 +123,8 @@ public class DocumentService : IDocumentService
 
     public async Task<bool> UpdateDocumentInfo(RQ_Document newDocument)
     {
-        var existDocument = await ViewDetailDocument(newDocument.Id.Adapt<Guid>())
+        var existDocument = await _unitOfWork.GetDocumentRepository().GetOneAsync(d => d.Id == newDocument.Id)
             ?? throw new NotFoundException("Not found any Document match this Id!");
-
-        if (existDocument.Signatures is not null || existDocument.Signatures.Any())
-            throw new BadRequestException("Cannot Update Document that have signature!");
 
         //Get Current UserRoleId if EditorId is null
         Guid userRoleId = newDocument.EditorId is null ? userRoleId = await GetCurrentMainUserRoleId() : Guid.Empty;
