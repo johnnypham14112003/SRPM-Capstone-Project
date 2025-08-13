@@ -82,15 +82,17 @@ public class IndividualEvaluationService : IIndividualEvaluationService
     public async Task<(bool success, Guid individualEvaluationId)> CreateAsync(RQ_IndividualEvaluation newIndividualEvaluation)
     {
         //Check available EvaluationStageId
+        var currentUserId = Guid.Parse(_userContextService.GetCurrentUserId());
         var existEvaluationStage = await _unitOfWork.GetEvaluationStageRepository()
-            .GetByIdAsync(newIndividualEvaluation.EvaluationStageId)
+            .GetOneAsync(ie => ie.Id == newIndividualEvaluation.EvaluationStageId)
             ?? throw new NotFoundException("This EvaluationStageId is not exist to create its IndividualEvaluation");
-
+        var existUserRole = await _unitOfWork.GetUserRoleRepository()
+            .GetOneAsync(ur => ur.AppraisalCouncilId == existEvaluationStage.AppraisalCouncilId && ur.AccountId == currentUserId);
         //default get by current session || use id on parameter
-        Guid userRoleId = newIndividualEvaluation.ReviewerId is null ? await GetCurrentMainUserRoleId() : Guid.Empty;
+        Guid userRoleId = newIndividualEvaluation.ReviewerId is null ? existUserRole!.Id : existUserRole!.Id;
         if (userRoleId == Guid.Empty)
             throw new BadRequestException("Unknown Who Is Create This Evaluation!");
-
+        newIndividualEvaluation.ReviewerId = userRoleId;
         //Check name
         if (string.IsNullOrWhiteSpace(newIndividualEvaluation.Name))
             throw new BadRequestException("Cannot create a null tilte name of individual evaluation");
