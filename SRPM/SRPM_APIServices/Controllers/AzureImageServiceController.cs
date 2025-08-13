@@ -18,12 +18,18 @@ namespace SRPM_APIServices.Controllers
         [HttpPost("upload")]
         public async Task<IActionResult> Upload(IFormFile file)
         {
+            const long maxFileSize = 30 * 1024 * 1024; // 30MB in bytes
+
             if (file == null || file.Length == 0)
                 return BadRequest("No file uploaded.");
+
+            if (file.Length > maxFileSize)
+                return BadRequest("File size exceeds the 30MB limit.");
 
             var url = await _blobService.UploadFileAsync(file);
             return Ok(new { Url = url });
         }
+
         [HttpDelete("delete/{blobName}")]
         public async Task<IActionResult> Delete(string blobName)
         {

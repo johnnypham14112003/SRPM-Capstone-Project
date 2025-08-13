@@ -147,6 +147,7 @@ public static class DIContainer
         services.AddScoped<IUserRoleRepository, UserRoleRepository>();
         services.AddScoped<IFieldRepository, FieldRepository>();
         services.AddScoped<IBlobService, BlobService>();
+        services.AddScoped<IProjectResultService, ProjectResultService>();
 
         //Add other repository here...
 
@@ -429,6 +430,19 @@ public static class DIContainer
         // Optional: Map other fields as needed
         .IgnoreNullValues(true); // optional setting for cleanliness
 
+        TypeAdapterConfig<RQ_ProjectResult, ProjectResult>.NewConfig()
+    .Ignore(dest => dest.Id)
+    .Ignore(dest => dest.AddedDate)
+    .Ignore(dest => dest.Project)
+    .Ignore(dest => dest.ResultPublishs!);
+
+        TypeAdapterConfig<ProjectResult, RS_ProjectResult>.NewConfig();
+
+        TypeAdapterConfig<RQ_ResultPublish, ResultPublish>.NewConfig()
+            .Ignore(dest => dest.Id)
+            .Ignore(dest => dest.ProjectResult);
+
+        TypeAdapterConfig<ResultPublish, RS_ResultPublish>.NewConfig();
 
         return services;
     }
