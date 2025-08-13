@@ -29,7 +29,7 @@ public class BackgroundTaskController : Controller
             });
         }
 
-        return NotFound(new { message = "Task not found" });
+        return NotFound(new { message = "Task not found or already cleaned up." });
     }
 
     [HttpDelete("{taskId}")]

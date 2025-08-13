@@ -50,7 +50,6 @@ public class BackgroundTaskService : BackgroundService
                 var progress = new Progress<int>(p => _tracker.UpdateProgress(taskId, p));
 
                 _tracker.SetStatus(taskId, TrackedTaskStatus.Running);
-
                 try
                 {
                     using var scope = _scopeFactory.CreateScope();
@@ -84,7 +83,6 @@ public class BackgroundTaskService : BackgroundService
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error in task processing loop.");
-                await Task.Delay(1000, stoppingToken);
             }
         }
 
