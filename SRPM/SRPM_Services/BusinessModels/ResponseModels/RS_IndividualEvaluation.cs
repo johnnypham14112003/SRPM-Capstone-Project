@@ -20,6 +20,7 @@ public class RS_IndividualEvaluation
     public Guid? ReviewerId { get; set; }
     public string? ReviewerName { get; set; }
     public string? ReviewerEmail { get; set; }
+    public string? ReviewerAvatar { get; set; }
     public virtual ICollection<RS_Document>? Documents { get; set; }
     public virtual ICollection<RS_ProjectSimilarityResult>? ProjectsSimilarityResult { get; set; }
 }
