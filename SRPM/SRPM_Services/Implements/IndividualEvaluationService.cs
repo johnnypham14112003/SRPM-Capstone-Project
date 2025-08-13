@@ -15,10 +15,12 @@ namespace SRPM_Services.Implements;
 public class IndividualEvaluationService : IIndividualEvaluationService
 {
     private readonly IUnitOfWork _unitOfWork;
+    private readonly IUserContextService _userContextService;
 
-    public IndividualEvaluationService(IUnitOfWork unitOfWork)
+    public IndividualEvaluationService(IUnitOfWork unitOfWork, IUserContextService userContextService)
     {
         _unitOfWork = unitOfWork;
+        _userContextService = userContextService;
     }
 
     //=============================================================================
@@ -31,6 +33,7 @@ public class IndividualEvaluationService : IIndividualEvaluationService
             ie =>
             {
                 ie.Include(iei => iei.Documents);
+                ie.Include(ie => ie.Reviewer).ThenInclude(ie => ie.Account);
                 ie.Include(iei => iei.ProjectsSimilarity)
                     .ThenInclude(ps => ps.Project)
                     .AsSplitQuery();
@@ -80,10 +83,17 @@ public class IndividualEvaluationService : IIndividualEvaluationService
     public async Task<(bool success, Guid individualEvaluationId)> CreateAsync(RQ_IndividualEvaluation newIndividualEvaluation)
     {
         //Check available EvaluationStageId
+        var currentUserId = Guid.Parse(_userContextService.GetCurrentUserId());
         var existEvaluationStage = await _unitOfWork.GetEvaluationStageRepository()
-            .GetByIdAsync(newIndividualEvaluation.EvaluationStageId)
+            .GetOneAsync(ie => ie.Id == newIndividualEvaluation.EvaluationStageId)
             ?? throw new NotFoundException("This EvaluationStageId is not exist to create its IndividualEvaluation");
-
+        var existUserRole = await _unitOfWork.GetUserRoleRepository()
+            .GetOneAsync(ur => ur.AppraisalCouncilId == existEvaluationStage.AppraisalCouncilId && ur.AccountId == currentUserId);
+        //default get by current session || use id on parameter
+        Guid userRoleId = newIndividualEvaluation.ReviewerId is null ? existUserRole!.Id : existUserRole!.Id;
+        if (userRoleId == Guid.Empty)
+            throw new BadRequestException("Unknown Who Is Create This Evaluation!");
+        newIndividualEvaluation.ReviewerId = userRoleId;
         //Check name
         if (string.IsNullOrWhiteSpace(newIndividualEvaluation.Name))
             throw new BadRequestException("Cannot create a null tilte name of individual evaluation");
@@ -93,6 +103,7 @@ public class IndividualEvaluationService : IIndividualEvaluationService
             throw new BadRequestException("Must be created by a specific person if not by AI");
 
         IndividualEvaluation individualEvaluationDTO = newIndividualEvaluation.Adapt<IndividualEvaluation>();
+        individualEvaluationDTO.ReviewerId = userRoleId;
         await _unitOfWork.GetIndividualEvaluationRepository().AddAsync(individualEvaluationDTO);
         var resultSave = await _unitOfWork.GetIndividualEvaluationRepository().SaveChangeAsync();
         return (resultSave, individualEvaluationDTO.Id);
@@ -100,19 +111,32 @@ public class IndividualEvaluationService : IIndividualEvaluationService
 
     public async Task<bool> UpdateAsync(RQ_IndividualEvaluation newIndividualEvaluation)
     {
-        var existIndividualEvaluation = await _unitOfWork.GetIndividualEvaluationRepository().GetByIdAsync(newIndividualEvaluation.Id)
+        var existIndividualEvaluation = await _unitOfWork.GetIndividualEvaluationRepository()
+            .GetOneAsync(oe => oe.Id == newIndividualEvaluation.Id, include: q => q.Include(q => q.EvaluationStage))
             ?? throw new NotFoundException("Not found any IndividualEvaluation match this Id!");
 
-        //Check name
+        var currentUserId = Guid.Parse(_userContextService.GetCurrentUserId());
+
+        // Validate name
         if (string.IsNullOrWhiteSpace(newIndividualEvaluation.Name))
-            throw new BadRequestException("Cannot create a null tilte name of individual evaluation");
+            throw new BadRequestException("Cannot update with a null title name of individual evaluation");
 
-        //AI or Person
-        if (newIndividualEvaluation.IsAIReport == false && newIndividualEvaluation.ReviewerId is null)
-            throw new BadRequestException("Must be created by a specific person if not by AI");
+        // Resolve reviewer ID
+        var existUserRole = await _unitOfWork.GetUserRoleRepository()
+            .GetOneAsync(ur => ur.AppraisalCouncilId == existIndividualEvaluation.EvaluationStage.AppraisalCouncilId && ur.AccountId == currentUserId);
 
-        //Transfer new Data to old Data
+        Guid userRoleId = newIndividualEvaluation.ReviewerId ?? existUserRole?.Id ?? Guid.Empty;
+        if (userRoleId == Guid.Empty)
+            throw new BadRequestException("Unknown who is updating this evaluation!");
+
+        if (!newIndividualEvaluation.IsAIReport && newIndividualEvaluation.ReviewerId is null)
+            throw new BadRequestException("Must be updated by a specific person if not by AI");
+
+        newIndividualEvaluation.ReviewerId = userRoleId;
+
+        // Transfer new data
         newIndividualEvaluation.Adapt(existIndividualEvaluation);
+
         return await _unitOfWork.GetEvaluationRepository().SaveChangeAsync();
     }
 
@@ -134,5 +158,23 @@ public class IndividualEvaluationService : IIndividualEvaluationService
         await _unitOfWork.GetIndividualEvaluationRepository().DeleteAsync(existIndividualEvaluation);
         //existEvaluation.Status = "deleted";
         return await _unitOfWork.SaveChangesAsync();
+    }
+
+    private async Task<Guid> GetCurrentMainUserRoleId()
+    {
+        _ = Guid.TryParse(_userContextService.GetCurrentUserId(), out Guid accId);
+
+        var existAccount = await _unitOfWork.GetAccountRepository().GetOneAsync(a => a.Id == accId, null, false) ??
+            throw new NotFoundException("Your current session account Id is not exist in database! Can't find your cv");
+
+        var defaultUserRole = await _unitOfWork.GetUserRoleRepository().GetOneAsync(ur =>
+            ur.AccountId == accId &&
+            ur.ProjectId == null &&
+            ur.AppraisalCouncilId == null &&
+            ur.ExpireDate.HasValue &&
+            ur.ExpireDate > DateTime.Now, null, false) ??
+        throw new NotFoundException("Not found your base role Id or it is expired in system!");
+
+        return defaultUserRole.Id;
     }
 }

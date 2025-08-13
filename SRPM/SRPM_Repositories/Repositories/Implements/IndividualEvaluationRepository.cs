@@ -20,6 +20,7 @@ public class IndividualEvaluationRepository : GenericRepository<IndividualEvalua
         byte sortBy, int pageIndex, int pageSize)
     {
         var query = _context.IndividualEvaluation
+            .Include(ie => ie.Reviewer).ThenInclude(ie => ie.Account)
             .AsNoTracking()
             .AsQueryable();
 

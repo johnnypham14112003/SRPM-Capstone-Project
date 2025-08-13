@@ -444,6 +444,9 @@ public static class DIContainer
 
         TypeAdapterConfig<ResultPublish, RS_ResultPublish>.NewConfig();
 
+        TypeAdapterConfig<IndividualEvaluation, RS_IndividualEvaluation>.NewConfig()
+    .Map(dest => dest.ReviewerName, src => src.Reviewer != null ? src.Reviewer.Account.FullName : null)
+    .Map(dest => dest.ReviewerEmail, src => src.Reviewer != null ? src.Reviewer.Account.Email : null);
         return services;
     }
 
