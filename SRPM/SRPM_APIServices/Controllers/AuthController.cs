@@ -70,7 +70,7 @@ public class AuthController : Controller
             AvatarUrl = account.AvatarURL,
             Email = account.Email,
             SelectedRole = selectedRole,
-            Roles = allRoles.Select(r => r.Name).ToList()
+            Roles = allRoles.Select(r => r.Name).Distinct().ToList()
         });
     }
     [HttpPost]
