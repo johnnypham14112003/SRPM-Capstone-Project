@@ -32,6 +32,21 @@ public class TransactionService : ITransactionService
         if (hasInvalidFields)
             throw new BadRequestException("Transaction Title, Type, ReceiverAccount, ReceiverBankName, ReceiverName cannot be empty!");
 
+        var moneyRange = await _unitOfWork.GetSystemConfigurationRepository().GetListAsync(
+            sys => sys.ConfigType.ToLower().Equals("finance"), null, false);
+        if (moneyRange is null || moneyRange.Count > 2)
+            throw new BadRequestException("Not found any condition of transaction range or it has more than 2 range point");
+
+        var minimumConfig = moneyRange.FirstOrDefault(t => t.ConfigKey.ToLower().Equals("fund request from"));
+        decimal.TryParse(minimumConfig.ConfigValue, out decimal minimumValue);
+
+        var maxConfig = moneyRange.FirstOrDefault(t => t.ConfigKey.ToLower().Equals("fund request to"));
+        decimal.TryParse(maxConfig.ConfigValue, out decimal maxValue);
+
+
+        if (trans.TotalMoney < minimumValue || trans.TotalMoney > maxValue)
+            throw new BadRequestException("The total money requested is not in range allowed of system!");
+
         Guid userRoleId = Guid.Empty;
         //default get by current session || use id on parameter
         if (trans.RequestPersonId is null)
