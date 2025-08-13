@@ -26,35 +26,38 @@ public class IndividualEvaluationService : IIndividualEvaluationService
     //=============================================================================
     public async Task<RS_IndividualEvaluation?> ViewDetail(Guid id)
     {
-        if (id == Guid.Empty) throw new BadRequestException("Cannot view a null IndividualEvaluation Id!");
+        if (id == Guid.Empty)
+            throw new BadRequestException("Cannot view a null IndividualEvaluation Id!");
 
-        var existIndividualEvaluation = await _unitOfWork.GetIndividualEvaluationRepository()
-            .GetOneAsync(ie => ie.Id == id,
-            ie =>
-            {
-                ie.Include(iei => iei.Documents);
-                ie.Include(ie => ie.Reviewer).ThenInclude(ie => ie.Account);
-                ie.Include(iei => iei.ProjectsSimilarity)
-                    .ThenInclude(ps => ps.Project)
-                    .AsSplitQuery();
-                return ie;
-            }, false)
+        var list = await _unitOfWork.GetIndividualEvaluationRepository()
+            .GetListAsync(
+                 ie => ie.Id == id,
+                include: ie =>
+                {
+                    ie = ie.Include(a => a.Reviewer).ThenInclude(b => b.Account);
+                    ie = ie.Include(a => a.EvaluationStage);
+                    ie = ie.Include(a => a.Documents);
+                    ie = ie.Include(c => c.ProjectsSimilarity).ThenInclude(d => d.Project);
+                    return ie;
+                },
+                hasTrackings: false
+            );
+
+        var existIndividualEvaluation = list.FirstOrDefault()
             ?? throw new NotFoundException($"Not found this IndividualEvaluation Id: '{id}'!");
 
-        //Main mapping
         var individualEva = existIndividualEvaluation.Adapt<RS_IndividualEvaluation>();
 
-        //ProjectsSimilarity => ProjectsSimilarityResult
-        individualEva.ProjectsSimilarityResult = existIndividualEvaluation.ProjectsSimilarity?//if not null -> select
-        .Select(ps => new RS_ProjectSimilarityResult
-        {
-            Id = ps.ProjectId,
-            EnglishTitle = ps.Project.EnglishTitle,
-            Similarity = ps.Similarity
-        }).ToList();
+        individualEva.ProjectsSimilarityResult = existIndividualEvaluation.ProjectsSimilarity?
+            .Select(ps => new RS_ProjectSimilarityResult
+            {
+                Id = ps.ProjectId,
+                EnglishTitle = ps.Project.EnglishTitle,
+                Similarity = ps.Similarity
+            }).ToList();
+
         return individualEva;
     }
-
     public async Task<PagingResult<RS_IndividualEvaluation>> GetListAsync(Q_IndividualEvaluation queryInput)
     {
         //Re-assign value if it smaller than 1
