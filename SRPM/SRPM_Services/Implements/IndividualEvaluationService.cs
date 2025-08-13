@@ -33,6 +33,7 @@ public class IndividualEvaluationService : IIndividualEvaluationService
             ie =>
             {
                 ie.Include(iei => iei.Documents);
+                ie.Include(ie => ie.Reviewer).ThenInclude(ie => ie.Account);
                 ie.Include(iei => iei.ProjectsSimilarity)
                     .ThenInclude(ps => ps.Project)
                     .AsSplitQuery();
@@ -110,19 +111,32 @@ public class IndividualEvaluationService : IIndividualEvaluationService
 
     public async Task<bool> UpdateAsync(RQ_IndividualEvaluation newIndividualEvaluation)
     {
-        var existIndividualEvaluation = await _unitOfWork.GetIndividualEvaluationRepository().GetByIdAsync(newIndividualEvaluation.Id)
+        var existIndividualEvaluation = await _unitOfWork.GetIndividualEvaluationRepository()
+            .GetOneAsync(oe => oe.Id == newIndividualEvaluation.Id, include: q => q.Include(q => q.EvaluationStage))
             ?? throw new NotFoundException("Not found any IndividualEvaluation match this Id!");
 
-        //Check name
+        var currentUserId = Guid.Parse(_userContextService.GetCurrentUserId());
+
+        // Validate name
         if (string.IsNullOrWhiteSpace(newIndividualEvaluation.Name))
-            throw new BadRequestException("Cannot create a null tilte name of individual evaluation");
+            throw new BadRequestException("Cannot update with a null title name of individual evaluation");
 
-        //AI or Person
-        if (newIndividualEvaluation.IsAIReport == false && newIndividualEvaluation.ReviewerId is null)
-            throw new BadRequestException("Must be created by a specific person if not by AI");
+        // Resolve reviewer ID
+        var existUserRole = await _unitOfWork.GetUserRoleRepository()
+            .GetOneAsync(ur => ur.AppraisalCouncilId == existIndividualEvaluation.EvaluationStage.AppraisalCouncilId && ur.AccountId == currentUserId);
 
-        //Transfer new Data to old Data
+        Guid userRoleId = newIndividualEvaluation.ReviewerId ?? existUserRole?.Id ?? Guid.Empty;
+        if (userRoleId == Guid.Empty)
+            throw new BadRequestException("Unknown who is updating this evaluation!");
+
+        if (!newIndividualEvaluation.IsAIReport && newIndividualEvaluation.ReviewerId is null)
+            throw new BadRequestException("Must be updated by a specific person if not by AI");
+
+        newIndividualEvaluation.ReviewerId = userRoleId;
+
+        // Transfer new data
         newIndividualEvaluation.Adapt(existIndividualEvaluation);
+
         return await _unitOfWork.GetEvaluationRepository().SaveChangeAsync();
     }
 

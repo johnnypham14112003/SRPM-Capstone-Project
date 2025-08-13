@@ -429,7 +429,9 @@ public static class DIContainer
         // Optional: Map other fields as needed
         .IgnoreNullValues(true); // optional setting for cleanliness
 
-
+        TypeAdapterConfig<IndividualEvaluation, RS_IndividualEvaluation>.NewConfig()
+    .Map(dest => dest.ReviewerName, src => src.Reviewer != null ? src.Reviewer.Account.FullName : null)
+    .Map(dest => dest.ReviewerEmail, src => src.Reviewer != null ? src.Reviewer.Account.Email : null);
         return services;
     }
 
