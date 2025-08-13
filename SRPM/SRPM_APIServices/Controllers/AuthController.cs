@@ -104,7 +104,7 @@ public class AuthController : Controller
             AvatarUrl = account.AvatarURL,
             Email = account.Email,
             SelectedRole = selectedSwitchRole,
-            Roles = allRoles
+            Roles = allRoles.Select(r => r.Name).Distinct().ToList()
         });
     }
 
