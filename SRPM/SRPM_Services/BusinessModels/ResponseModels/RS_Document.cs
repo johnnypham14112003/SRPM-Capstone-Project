@@ -14,6 +14,7 @@ public class RS_Document
     [MaxLength(30)] public string Status { get; set; } = null!;
 
     // Foreign keys
+    public Guid? EditorId { get; set; }
     public Guid UploaderId { get; set; }
     public Guid? ProjectId { get; set; }
     public Guid? EvaluationId { get; set; }

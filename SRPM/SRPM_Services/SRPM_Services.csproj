@@ -7,6 +7,7 @@
 	</PropertyGroup>
 
 	<ItemGroup>
+		<PackageReference Include="Azure.Storage.Blobs" Version="12.25.0" />
 		<PackageReference Include="FluentEmail.Core" Version="3.0.2" />
 		<PackageReference Include="FluentEmail.Smtp" Version="3.0.2" />
 		<PackageReference Include="Google.Apis.Auth" Version="1.70.0" />
@@ -35,10 +36,6 @@
 		<Content Include="Extensions\FluentEmail\UIEmail\*.cshtml">
 			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
 		</Content>
-	</ItemGroup>
-
-	<ItemGroup>
-	  <Folder Include="Extensions\AzureImageSerivce\" />
 	</ItemGroup>
 
 </Project>

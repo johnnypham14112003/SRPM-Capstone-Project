@@ -1,4 +1,7 @@
-﻿using SRPM_APIServices;
+﻿using Azure.Identity;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Configuration.AzureKeyVault;
+using SRPM_APIServices;
 using SRPM_APIServices.Middlewares;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -6,6 +9,10 @@ var config = builder.Configuration;
 var env = builder.Environment;
 var configBuild = builder.Configuration;
 // Add services to the container.
+builder.Configuration.AddAzureKeyVault(
+    builder.Configuration["KeyVault:KeyVaultURL"],
+    new DefaultKeyVaultSecretManager()
+);
 builder.Services.RegisterServices(config, env, configBuild);
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddEndpointsApiExplorer();
