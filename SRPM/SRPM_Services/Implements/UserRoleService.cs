@@ -50,7 +50,7 @@ public class UserRoleService : IUserRoleService
             .Any();
     }
 
-    public async Task<IEnumerable<string>> GetAllUserRole(Guid userId)
+    public async Task<IQueryable<RS_Role>> GetAllUserRole(Guid userId)
     {
         var roles = await _unitOfWork.GetUserRoleRepository().GetListByFilterAsync(
             accountId: userId,
@@ -63,9 +63,13 @@ public class UserRoleService : IUserRoleService
 
         return roles
             .Where(r => r.Role != null)
-            .Select(r => r.Role.Name)
+            .Select(r => new RS_Role
+            {
+                Name = r.Role.Name,
+                IsGroupRole = r.Role.IsGroupRole
+            })
             .Distinct()
-            .ToList();
+            .AsQueryable();
     }
 
     public async Task<PagingResult<RS_UserRole>> GetListAsync(RQ_UserRoleQuery query)

@@ -41,11 +41,11 @@ public class AuthController : Controller
 
         var allRoles = await _roleService.GetAllUserRole(account.Id);
 
-        var selectedRole = allRoles.Contains("Researcher")
+        var selectedRole = allRoles.Any(r => r.Name == "Researcher")
             ? "Researcher"
-            : allRoles.FirstOrDefault();
+            : allRoles.FirstOrDefault(r => !r.IsGroupRole)?.Name ?? "Unknown";
 
-        if (!string.IsNullOrEmpty(selectedRole))
+        if (selectedRole != null)
         {
             var isAuthorized = await _roleService.UserHasRoleAsync(account.Id, selectedRole);
             if (!isAuthorized)
@@ -70,7 +70,7 @@ public class AuthController : Controller
             AvatarUrl = account.AvatarURL,
             Email = account.Email,
             SelectedRole = selectedRole,
-            Roles = allRoles
+            Roles = allRoles.Select(r => r.Name).ToList()
         });
     }
     [HttpPost]

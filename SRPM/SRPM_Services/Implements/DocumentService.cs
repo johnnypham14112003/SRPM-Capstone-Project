@@ -59,7 +59,7 @@ public class DocumentService : IDocumentService
         if (listDocument is null || listDocument.Count == 0)
             throw new NotFoundException("Not Found Any Document!");
 
-        return new PagingResult<RS_Document>
+        return new PagingResult<RS_Document>  
         {
             PageIndex = queryInput.PageIndex,
             PageSize = queryInput.PageSize,
