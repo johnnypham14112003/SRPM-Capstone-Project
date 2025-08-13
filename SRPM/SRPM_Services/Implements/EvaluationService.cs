@@ -13,6 +13,7 @@ using SRPM_Services.Extensions.Exceptions;
 using SRPM_Services.Extensions.MicrosoftBackgroundService;
 using SRPM_Services.Extensions.OpenAI;
 using SRPM_Services.Interfaces;
+using System.Net;
 using System.Threading;
 
 namespace SRPM_Services.Implements;
@@ -242,7 +243,9 @@ public class EvaluationService : IEvaluationService
                     if (projectSummary.MilestoneContents is not null)
                     {
                         var AIResult = await AIReviewAndPlagiarism(projectSummary, cancelToken, unitOfWork, openAIService);
-                        indiEva.Comment = AIResult.summaryEvaluation;
+                        indiEva.Comment = AIResult.reviewResult.Comment;
+                        indiEva.TotalRate = (byte)AIResult.reviewResult.TotalRate;
+                        indiEva.ReviewerResult = AIResult.reviewResult.ReviewerResult;
                         listSimilarity = AIResult.listSimilarity;
                     }
                 }
@@ -293,9 +296,30 @@ public class EvaluationService : IEvaluationService
                     q => q.Include(iev => iev.ProjectsSimilarity))
                 ?? throw new NotFoundException($"Not Found Individual Evaluation Id '{individualEvalutionId}' to regen AI review!");
 
+                //Get BM1 document
+                var projectDocument = await unitOfWork.GetDocumentRepository().GetOneAsync(
+                    d => d.ProjectId == project.Id && d.Type.ToLower().Equals("bm1"), null, false);
+
+                // Get content from projectDocument
+                string rawHtml = projectDocument?.ContentHtml ?? string.Empty;
+                string visibleText = ExtractVisibleTextFromHtml(rawHtml);
+                var countDocToken = openAIService.CountToken("chatmodel", visibleText);
+
                 //Prepare data before send to AI
                 var projectSummary = project.Adapt<RQ_ProjectContentForAI>();
                 projectSummary.MilestoneContents = project.Milestones.Adapt<ICollection<RQ_MilestoneContentForAI>>();
+
+                if (countDocToken <= 7000)
+                {
+                    //send all content
+                    projectSummary.DocumentContent = visibleText;
+                }
+                else
+                {
+                    //Summary long text
+                    projectSummary.DocumentContent = await openAIService
+                    .GetFinalSummaryAsync(visibleText, cancelToken);
+                }
 
                 //Handle result AI
                 List<RS_ProjectSimilarityResult>? listSimilarity = null;
@@ -306,7 +330,9 @@ public class EvaluationService : IEvaluationService
                     if (projectSummary.MilestoneContents is not null)
                     {
                         var AIResult = await AIReviewAndPlagiarism(projectSummary, cancelToken, unitOfWork, openAIService);
-                        individualEvaluation.Comment = AIResult.summaryEvaluation;
+                        individualEvaluation.Comment = AIResult.reviewResult.Comment;
+                        individualEvaluation.TotalRate = (byte)AIResult.reviewResult.TotalRate;
+                        individualEvaluation.ReviewerResult = AIResult.reviewResult.ReviewerResult;
                         listSimilarity = AIResult.listSimilarity;
                     }
                 }
@@ -337,7 +363,7 @@ public class EvaluationService : IEvaluationService
     }
 
     //=============================================================================================
-    private async Task<(List<RS_ProjectSimilarityResult>? listSimilarity, string summaryEvaluation)>
+    private async Task<(List<RS_ProjectSimilarityResult>? listSimilarity, RS_AIReviewResult? reviewResult)>
         AIReviewAndPlagiarism(
             RQ_ProjectContentForAI projectSummary,
             CancellationToken cancelToken,
@@ -346,7 +372,7 @@ public class EvaluationService : IEvaluationService
     {
         List<RS_ProjectSimilarityResult>? listSimilarity = [];
         float[]? vectorDescription;
-        string summaryEvaluation = "";
+        RS_AIReviewResult? reviewResult;
 
         //Query encoded completed Project
         var projectEncoded = await unitOfWork.GetProjectRepository().GetListAdvanceAsync(
@@ -365,13 +391,12 @@ public class EvaluationService : IEvaluationService
         vectorDescription = await openAIService.EmbedTextAsync(projectSummary.Description!, cancelToken);
 
         //Overview
-        summaryEvaluation = await openAIService.ReviewProjectAsync(projectSummary, cancelToken);
+        reviewResult = await openAIService.ReviewProjectAsync(projectSummary, cancelToken);
 
         //Compare Similarity
         listSimilarity = await openAIService.CompareWithSourceAsync(vectorDescription!, syntheticSource, cancelToken);
 
-
-        return (listSimilarity, summaryEvaluation);
+        return (listSimilarity, reviewResult);
     }
     private string ExtractVisibleTextFromHtml(string html)
     {
@@ -387,7 +412,11 @@ public class EvaluationService : IEvaluationService
         }
 
         var text = doc.DocumentNode.InnerText ?? string.Empty;
-        text = System.Text.RegularExpressions.Regex.Replace(text, @"\s+", " ").Trim();
-        return text;
+
+        //Decode Unicode Character may have in text
+        string decodedText = WebUtility.HtmlDecode(text);
+        //Replace blank space -> a space
+        decodedText = System.Text.RegularExpressions.Regex.Replace(text, @"\s+", " ").Trim();
+        return decodedText;
     }
 }

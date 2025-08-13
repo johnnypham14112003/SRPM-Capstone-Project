@@ -1,7 +1,6 @@
 ﻿//https://github.com/openai/openai-dotnet?tab=readme-ov-file
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore.Metadata.Internal;
-using Microsoft.ML.Tokenizers;
+using Microsoft.Extensions.Logging;
 using OpenAI.Chat;
 using OpenAI.Embeddings;
 using SRPM_Services.BusinessModels.Others;
@@ -9,7 +8,6 @@ using SRPM_Services.BusinessModels.RequestModels;
 using SRPM_Services.BusinessModels.ResponseModels;
 using System.Text.Json;
 using System.Text.RegularExpressions;
-using System.Threading;
 
 namespace SRPM_Services.Extensions.OpenAI;
 
@@ -18,7 +16,7 @@ public interface IOpenAIService
     Task<string> GetFinalSummaryAsync(string longText, CancellationToken cancellationToken = default);
     int CountToken(string model, string? inputText);
     Task<float[]?> EmbedTextAsync(string inputText, CancellationToken cancellationToken = default);
-    Task<string> ReviewProjectAsync([FromBody] RQ_ProjectContentForAI project, CancellationToken cancellationToken = default);
+    Task<RS_AIReviewResult?> ReviewProjectAsync([FromBody] RQ_ProjectContentForAI project, CancellationToken cancellationToken = default);
     //Task<Dictionary<string, double>> CompareWithSourceAsync(string inputText, IEnumerable<string> inputSource, CancellationToken cancellationToken = default);
     Task<List<RS_ProjectSimilarityResult>> CompareWithSourceAsync(
         float[] inputVector, IEnumerable<RS_ProjectSimilarityResult> projectSource, CancellationToken cancellationToken = default);
@@ -81,14 +79,19 @@ public class OpenAIService : IOpenAIService
         return AverageVectors(allVectors);
     }
 
-    public async Task<string> ReviewProjectAsync([FromBody] RQ_ProjectContentForAI project, CancellationToken cancellationToken = default)
+    public async Task<RS_AIReviewResult?> ReviewProjectAsync([FromBody] RQ_ProjectContentForAI project, CancellationToken cancellationToken = default)
     {
         // Build prompt
         var systemRolePrompt = new SystemChatMessage(string.Join(" ",
         [
-            "You are a world-class, adaptive Smart Examiner and analytical expert, combining deep expertise in critical evaluation, meticulous source verification, and comprehensive comparative analysis across digital landscapes.",
-            "Maintain warm, clear, and authoritative communication throughout; write exclusively in idiomatic English, fully natural and polished for expert audiences.",
-            "Ensuring every conclusion is evidence-grounded, precisely sourced."
+            "You are a professional evaluator specialized in project assessment.",
+            "Your task is to analyze the provided project data and return a structured JSON response with three fields:",
+            "1. ReviewerResult (boolean): true if the project is approved, false otherwise.",
+            "2. TotalRate (integer): a score from 0 to 10 based on quality, clarity, and feasibility.",
+            "3. Comment (string): a concise explanation for the decision. Ensuring conclusion is evidence-grounded," +
+            " precisely sourced, maintain warm, clear, and authoritative communication throughout;" +
+            "write exclusively in idiomatic English, fully natural and polished for expert audiences.",
+            "Respond ONLY with a raw JSON object. Do not include markdown formatting, code fences, or extra any conversational text."
         ]));
         var projectJson = JsonSerializer.Serialize(project, JsonSerializerOptionInstance.Default);
         var userPrompt = new UserChatMessage("Here is the data:\n" + projectJson);
@@ -99,7 +102,16 @@ public class OpenAIService : IOpenAIService
         //Send Request
         ChatCompletion response = await _chatClient.CompleteChatAsync(messages, _chatCompletionOptions, cancellationToken);
 
-        return response.Content[0].Text;
+        var responseText = response.Content[0].Text;
+        try
+        {
+            return JsonSerializer.Deserialize<RS_AIReviewResult>(responseText);
+        }
+        catch (JsonException ex)
+        {
+            Console.WriteLine("Failed to parse AI response: ", ex);
+            throw;
+        }
     }
 
     public async Task<List<RS_ProjectSimilarityResult>> CompareWithSourceAsync(
