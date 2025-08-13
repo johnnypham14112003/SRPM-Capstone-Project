@@ -1,5 +1,6 @@
 ﻿using Mapster;
 using Microsoft.AspNetCore.Http.HttpResults;
+using Microsoft.EntityFrameworkCore;
 using SRPM_Repositories.Models;
 using SRPM_Repositories.Repositories.Interfaces;
 using SRPM_Services.BusinessModels;
@@ -59,7 +60,7 @@ public class DocumentService : IDocumentService
         if (listDocument is null || listDocument.Count == 0)
             throw new NotFoundException("Not Found Any Document!");
 
-        return new PagingResult<RS_Document>  
+        return new PagingResult<RS_Document>
         {
             PageIndex = queryInput.PageIndex,
             PageSize = queryInput.PageSize,
@@ -123,8 +124,26 @@ public class DocumentService : IDocumentService
 
     public async Task<bool> UpdateDocumentInfo(RQ_Document newDocument)
     {
-        var existDocument = await _unitOfWork.GetDocumentRepository().GetOneAsync(d => d.Id == newDocument.Id)
+        var existDocument = await _unitOfWork.GetDocumentRepository().GetOneAsync(
+            d => d.Id == newDocument.Id,
+            d => d.Include(doc => doc.Signatures))
             ?? throw new NotFoundException("Not found any Document match this Id!");
+
+        //Get list staff userRole Id
+        var staffRole = await _unitOfWork.GetRoleRepository().GetOneAsync(
+            r => r.Name.ToLower().Equals("staff"),
+            r => r.Include(ri => ri.UserRoles), false);
+
+        //Check each staff if signed this document
+        var listStaff = staffRole.UserRoles;
+        if (listStaff is not null)
+        {
+            foreach (var staff in listStaff)
+            {
+                var existStaffSignature = existDocument.Signatures.FirstOrDefault(s => s.SignerId == staff.Id);
+                if (existStaffSignature is not null) throw new BadRequestException("Cannot update document that have staff signature!");
+            }
+        }
 
         //Get Current UserRoleId if EditorId is null
         Guid userRoleId = newDocument.EditorId is null ? userRoleId = await GetCurrentMainUserRoleId() : Guid.Empty;
