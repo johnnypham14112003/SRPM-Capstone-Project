@@ -22,4 +22,5 @@ public interface IProjectService
     Task<string> CreateFromDocumentAsync(RQ_MilestoneTaskContent content);
     Task<List<RS_ProjectOverview>> GetHostProjectHistory();
     Task<List<RS_ProjectOverview>> GetStaffProjectHistory();
+    Task<bool> ApproveProposalAsync(Guid proposalProjectId);
 }

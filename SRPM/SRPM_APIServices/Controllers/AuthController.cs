@@ -218,5 +218,11 @@ public class AuthController : Controller
 
         return Ok(new { Message = "Password has been reset successfully." });
     }
+    [HttpGet("my-base-role")]
+    public async Task<IActionResult> GetCurrentUserBaseRoleId()
+    {
+        var result = await _userContextService.GetCurrentUserBaseUserRoleIdAsync();
 
+        return Ok(result);
+    }
 }

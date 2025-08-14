@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using SRPM_Services.BusinessModels.Others;
 using SRPM_Services.BusinessModels.RequestModels;
 using SRPM_Services.Extensions.Exceptions;
+using SRPM_Services.Implements;
 using SRPM_Services.Interfaces;
 
 // For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
@@ -236,6 +237,32 @@ public class ProjectController : Controller
         catch (Exception ex)
         {
             return StatusCode(500, new { message = "Unexpected error occurred.", detail = ex.Message });
+        }
+    }
+    [HttpPost("{proposalProjectId}/approve")]
+    public async Task<IActionResult> ApproveProposal(Guid proposalProjectId)
+    {
+        try
+        {
+            var success = await _service.ApproveProposalAsync(proposalProjectId);
+
+            if (!success)
+                return BadRequest("Proposal approval failed due to unknown reasons.");
+
+            return Ok("Proposal approved successfully.");
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(ex.Message);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(ex.Message);
+        }
+        catch (Exception ex)
+        {
+            // Optional: log the exception here
+            return StatusCode(500, $"Internal server error: {ex.Message}");
         }
     }
 

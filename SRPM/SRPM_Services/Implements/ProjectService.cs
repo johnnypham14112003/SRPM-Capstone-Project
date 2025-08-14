@@ -599,4 +599,70 @@ public class ProjectService : IProjectService
             throw new Exception("Error getting staff project history. " + ex);
         }
     }
+    public async Task<bool> ApproveProposalAsync(Guid proposalProjectId)
+    {
+        var repo = _unitOfWork.GetProjectRepository();
+        var invalidStatuses = new[]
+{
+            Status.InProgress.ToString().ToLower(),
+            Status.Completed.ToString().ToLower(),
+            Status.Cancelled.ToString().ToLower(),
+            Status.Deleted.ToString().ToLower()
+        };
+        // Step 1: Get the proposal project
+        var proposal = await repo.GetByIdAsync(proposalProjectId, hasTrackings: true);
+        if (proposal == null)
+            throw new KeyNotFoundException("Proposal project not found.");
+
+        // Step 2: Check proposal status
+        if (proposal.Status != Status.Submitted.ToString().ToLower())
+            throw new InvalidOperationException("Only submitted proposals can be approved.");
+
+        // Step 3: Check if another proposal is already approved
+        var alreadyApproved = await repo.AnyAsync(
+            p => p.Code == proposal.Code &&
+                 p.Id != proposal.Id &&
+                 p.Genre == "proposal" &&
+                 invalidStatuses.Contains(p.Status)
+        );
+
+        if (alreadyApproved)
+            throw new InvalidOperationException("Another proposal has already been approved for this project.");
+
+        // Step 4: Check source project status
+        var sourceProject = await repo.GetOneAsync(
+            p => p.Code == proposal.Code &&
+                 (p.Genre.ToLower() == "propose" || p.Genre.ToLower() == "normal")
+        );
+
+        if (sourceProject != null)
+        {
+
+            if (invalidStatuses.Contains(sourceProject.Status))
+                throw new InvalidOperationException($"Cannot approve proposal. Source project is already {sourceProject.Status}.");
+
+            // Step 5: Update source project to InProgress
+            sourceProject.Status = Status.InProgress.ToString().ToLower();
+        }
+
+        // Step 6: Approve this proposal
+        proposal.Status = Status.Approved.ToString().ToLower();
+
+        // Step 7: Reject other submitted proposals
+        var otherProposals = await repo.GetListAsync(
+            p => p.Code == proposal.Code &&
+                 p.Id != proposal.Id &&
+                 p.Status == Status.Submitted.ToString().ToLower(),
+            hasTrackings: true
+        );
+
+        foreach (var other in otherProposals)
+        {
+            other.Status = Status.Rejected.ToString().ToLower();
+        }
+
+        // Step 8: Save changes
+        await _unitOfWork.SaveChangesAsync();
+        return true;
+    }
 }
