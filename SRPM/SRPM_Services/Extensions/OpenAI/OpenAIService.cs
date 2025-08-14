@@ -255,7 +255,7 @@ public class OpenAIService : IOpenAIService
             new SystemChatMessage("You are a senior evaluator tasked with synthesizing multiple section reviews into a final assessment of a project proposal."),
             new UserChatMessage($"Based on the following chunk reviews, provide a comprehensive evaluation:\n\n{combined}\n\n" +
                "Your response should include:\n" +
-               "1) One-paragraph overall summary (max 120 words)\n" +
+               "1) One-paragraph overall summary\n" +
                "2) Five bullet-point strengths of the proposal\n" +
                "3) Five bullet-point weaknesses of the proposal\n" +
                "4) A final score from 0 to 100, with a short rationale")
