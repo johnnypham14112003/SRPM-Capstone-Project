@@ -202,20 +202,15 @@ public class ProjectService : IProjectService
         var hostRole = userRoles.FirstOrDefault(r => r.Role?.Name == "Host Institution" && r.Status != Status.Deleted.ToString().ToLowerInvariant() && r.ProjectId == null && r.AppraisalCouncil == null);
         var staffRole = userRoles.FirstOrDefault(r => r.Role?.Name == "Staff" && r.Status != Status.Deleted.ToString().ToLowerInvariant() && r.ProjectId == null && r.AppraisalCouncil == null);
 
-        if (hostRole != null)
+        var role = hostRole ?? staffRole;
+
+        if (role == null)
         {
-            entity.Genre = "normal";
-            entity.CreatorId = hostRole.Id;
+            throw new Exception("User must be either Host Institution or Staff to create a project.");
         }
-        if (staffRole != null)
-        {
-            entity.Genre = "propose";
-            entity.CreatorId = staffRole.Id;
-        }
-        else
-        {
-            throw new("User must be either Host Institution or Staff to create a project.");
-        }
+
+        entity.Genre = (role == hostRole) ? "normal" : "propose";
+        entity.CreatorId = role.Id;
 
         entity.Status = Status.Created.ToString().ToLowerInvariant();
 
