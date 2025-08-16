@@ -3,11 +3,14 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using OpenAI.Chat;
 using OpenAI.Embeddings;
+using SRPM_Repositories.Models;
 using SRPM_Services.BusinessModels.Others;
 using SRPM_Services.BusinessModels.RequestModels;
 using SRPM_Services.BusinessModels.ResponseModels;
+using System.Buffers.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace SRPM_Services.Extensions.OpenAI;
 
@@ -87,11 +90,16 @@ public class OpenAIService : IOpenAIService
             "You are a professional evaluator specialized in project assessment.",
             "Your task is to analyze the provided project data and return a structured JSON response with three fields:",
             "1. ReviewerResult (boolean): true if the project is approved, false otherwise.",
-            "2. TotalRate (integer): a score from 0 to 10 based on quality, clarity, and feasibility.",
-            "3. Comment (string): a concise explanation for the decision. Ensuring conclusion is evidence-grounded," +
-            " precisely sourced, maintain warm, clear, and authoritative communication throughout;" +
-            "write exclusively in idiomatic English, fully natural and polished for expert audiences.",
-            "Respond ONLY with a raw JSON object. Do not include markdown formatting, code fences, or extra any conversational text."
+            "2. TotalRate (integer): a score from 0 to 100 based on overall quality, clarity, and feasibility and provided data.",
+            "3. Comment (string): a concise but detailed explanation for the decision, referencing the following criteria:",
+            "- Purpose and significance of the project (max 10 points)",
+            "- Research methodology (max 20 points)",
+            "- Research content and expected outcomes (max 40 points)",
+            "- Capability of the project leader and research team (max 20 points)",
+            "- Budget justification and cost-effectiveness (max 10 points)",
+            "Ensure your conclusion is evidence-grounded, precisely sourced, and maintains warm, clear, and authoritative communication throughout.",
+            "Write exclusively in idiomatic English, fully natural and polished for expert audiences.",
+            "Respond ONLY with a raw JSON object. Do not include markdown formatting, code fences, or any extra conversational text."
         ]));
         var projectJson = JsonSerializer.Serialize(project, JsonSerializerOptionInstance.Default);
         var userPrompt = new UserChatMessage("Here is the data:\n" + projectJson);
@@ -233,13 +241,26 @@ public class OpenAIService : IOpenAIService
         // Prompt
         var messages = new List<ChatMessage>
         {
-            new SystemChatMessage("You are a professional evaluator reviewing a project proposal. Your role is to analyze each section and provide a concise summary along with comments on feasibility, clarity, and creativity."),
+            new SystemChatMessage("You are a professional evaluator reviewing a project proposal. " +
+                "Your role is to analyze each section and provide a detailed summary and evaluation based on specific criteria."),
+            
             new UserChatMessage($"Please review the following section of the proposal:\n\nCHUNK START\n{chunk}\nCHUNK END\n\n" +
-               "Your response should include:\n" +
-               "1) A brief summary of the section (max 80 words)\n" +
-               "2) Comments on feasibility\n" +
-               "3) Comments on clarity\n" +
-               "4) Comments on creativity")
+                "Your response must include:\n\n" +
+                "1) A concise summary of the section (2–3 sentences)\n\n" +
+                "2) Evaluation across the following criteria (if applicable in this chunk):\n" +
+                "   - Purpose and significance of the project (max 10 points)\n" +
+                "   - Research methodology (max 20 points)\n" +
+                "   - Research content and expected outcomes (max 40 points)\n" +
+                "   - Capability of the project leader and research team (max 20 points)\n" +
+                "   - Budget justification and cost-effectiveness (max 10 points)\n\n" +
+                "For each relevant criterion, provide:\n" +
+                "   a) A short paragraph of analysis\n" +
+                "   b) A score from 0 to the category’s maximum\n\n" +
+                "3) Comments on feasibility (technical, logistical, and practical)\n" +
+                "4) Comments on clarity (structure, language, and coherence)\n" +
+                "5) Comments on creativity (originality, innovation, and impact)\n\n" +
+                "Use clear, professional, and evidence-based language. Your tone should be warm, analytical, and suitable for expert audiences."
+    )
         };
 
         ChatCompletion response = await _chatClient.CompleteChatAsync(messages, _chatCompletionOptions, ct);
@@ -252,13 +273,24 @@ public class OpenAIService : IOpenAIService
         var combined = string.Join("\n\n---\n\n", summaries.Select((s, i) => $"Chunk#{i + 1} Summary:\n{s}"));
         var messages = new List<ChatMessage>
         {
-            new SystemChatMessage("You are a senior evaluator tasked with synthesizing multiple section reviews into a final assessment of a project proposal."),
+            new SystemChatMessage("You are a senior evaluator tasked with synthesizing multiple section reviews into a final, " +
+                "detailed assessment of a research project proposal. Your evaluation will be used to score the project across specific criteria."),
             new UserChatMessage($"Based on the following chunk reviews, provide a comprehensive evaluation:\n\n{combined}\n\n" +
                "Your response should include:\n" +
-               "1) One-paragraph overall summary\n" +
-               "2) Five bullet-point strengths of the proposal\n" +
-               "3) Five bullet-point weaknesses of the proposal\n" +
-               "4) A final score from 0 to 100, with a short rationale")
+               "1) One-paragraph overall summary of the proposal.\n\n" +
+                "2) Detailed analysis for each of the following categories:\n" +
+                "   - Purpose and significance of the project (max 10 points)\n" +
+                "   - Research methodology (max 20 points)\n" +
+                "   - Research content and expected outcomes (max 40 points)\n" +
+                "   - Capability of the project leader and research team (max 20 points)\n" +
+                "   - Budget justification and cost-effectiveness (max 10 points)\n\n" +
+                "For each category, provide:\n" +
+                "   a) A short paragraph of analysis\n" +
+                "   b) A score from 0 to the category’s maximum\n\n" +
+                "3) Five bullet-point strengths of the proposal\n" +
+                "4) Five bullet-point weaknesses of the proposal\n" +
+                "5) Final total score out of 100, with a brief rationale\n\n" +
+                "Use clear, professional, and evidence-based language. Your tone should be warm, authoritative, and suitable for expert audiences.")
         };
 
         ChatCompletion response = await _chatClient.CompleteChatAsync(messages, _chatCompletionOptions, ct);
