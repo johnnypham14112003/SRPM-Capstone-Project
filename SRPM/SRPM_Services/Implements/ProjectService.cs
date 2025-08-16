@@ -254,11 +254,73 @@ public class ProjectService : IProjectService
     public async Task<bool> DeleteAsync(Guid id)
     {
         var repo = _unitOfWork.GetProjectRepository();
-        var entity = await repo.GetByIdAsync<Guid>(id);
+
+        var entity = await repo.GetOneAsync(
+            p => p.Id == id,
+            include: q => q
+                .Include(p => p.Members)
+                .Include(p => p.Notifications)
+                .Include(p => p.Milestones)
+                .Include(p => p.Evaluations)
+                .Include(p => p.ProjectsSimilarity)
+                .Include(p => p.ProjectMajors)
+                .Include(p => p.ProjectTags)
+                .Include(p => p.Documents)
+                .Include(p => p.Transactions)
+                .Include(p => p.ProjectResult),
+            hasTrackings: true
+        );
+
         if (entity == null) return false;
 
+        // Delete related entities
+        var memberRepo = _unitOfWork.GetUserRoleRepository();
+        var notificationRepo = _unitOfWork.GetNotificationRepository();
+        var milestoneRepo = _unitOfWork.GetMilestoneRepository();
+        var evaluationRepo = _unitOfWork.GetEvaluationRepository();
+        var similarityRepo = _unitOfWork.GetProjectSimilarityRepository();
+        var majorRepo = _unitOfWork.GetProjectMajorRepository();
+        var tagRepo = _unitOfWork.GetProjectTagRepository();
+        var documentRepo = _unitOfWork.GetDocumentRepository();
+        var transactionRepo = _unitOfWork.GetTransactionRepository();
+        var resultRepo = _unitOfWork.GetProjectResultRepository();
+
+        if (entity.Members?.Any() == true)
+            await memberRepo.DeleteRangeAsync(entity.Members);
+
+        if (entity.Notifications?.Any() == true)
+            await notificationRepo.DeleteRangeAsync(entity.Notifications);
+
+        if (entity.Milestones?.Any() == true)
+            await milestoneRepo.DeleteRangeAsync(entity.Milestones);
+
+        if (entity.Evaluations?.Any() == true)
+            await evaluationRepo.DeleteRangeAsync(entity.Evaluations);
+
+        if (entity.ProjectsSimilarity?.Any() == true)
+            await similarityRepo.DeleteRangeAsync(entity.ProjectsSimilarity);
+
+        if (entity.ProjectMajors?.Any() == true)
+            await majorRepo.DeleteRangeAsync(entity.ProjectMajors);
+
+        if (entity.ProjectTags?.Any() == true)
+            await tagRepo.DeleteRangeAsync(entity.ProjectTags);
+
+        if (entity.Documents?.Any() == true)
+            await documentRepo.DeleteRangeAsync(entity.Documents);
+
+        if (entity.Transactions?.Any() == true)
+            await transactionRepo.DeleteRangeAsync(entity.Transactions);
+
+        if (entity.ProjectResult != null)
+            await resultRepo.DeleteAsync(entity.ProjectResult);
+
+        // Delete the main project
         await repo.DeleteAsync(entity);
+
+        // Save all changes
         await _unitOfWork.SaveChangesAsync();
+
         return true;
     }
 
@@ -318,33 +380,22 @@ public class ProjectService : IProjectService
 
         // Step 3: Check for existing proposals with same info
         var similarProjects = await _unitOfWork.GetProjectRepository().GetListAsync(
-            p =>
-                p.CreatorId == sourceProject.CreatorId &&
-                p.Genre == "proposal" &&
-                p.EnglishTitle == sourceProject.EnglishTitle &&
-                p.VietnameseTitle == sourceProject.VietnameseTitle &&
-                p.StartDate == sourceProject.StartDate,
+            p => p.CreatorId == sourceProject.CreatorId &&
+                 p.Genre == "proposal" &&
+                 p.EnglishTitle == sourceProject.EnglishTitle &&
+                 p.VietnameseTitle == sourceProject.VietnameseTitle &&
+                 p.StartDate == sourceProject.StartDate,
+            include: q => q.Include(p => p.Members),
             hasTrackings: false,
             useSplitQuery: true
         );
 
-        var restrictedStatuses = new[]
-        {
-        Status.Draft,
-        Status.Created,
-        Status.Submitted,
-        Status.Approved,
-        Status.InProgress,
-        Status.Completed
-    };
+        var enrolledProject = similarProjects?
+            .FirstOrDefault(project => project.Members.Any(m => m.AccountId == principalId));
 
-        var existingDraft = similarProjects!.FirstOrDefault(p =>
-            restrictedStatuses.Contains(p.Status.ToStatus()));
-
-        if (existingDraft != null)
+        if (enrolledProject != null)
         {
-            // ✅ Return the existing draft instead of throwing
-            return existingDraft.Adapt<RS_Project>();
+            return enrolledProject.Adapt<RS_Project>();
         }
 
         // Step 4: Clone as draft

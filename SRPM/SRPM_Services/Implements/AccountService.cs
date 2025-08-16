@@ -379,7 +379,7 @@ public class AccountService : IAccountService
     {
         var keyword = input?.Trim();
         var roleKeyword = userRole?.Trim();
-
+        var onlineUser = _userContextService.GetCurrentUserId();
         List<Account> results;
 
         // Build dynamic predicate
@@ -387,6 +387,7 @@ public class AccountService : IAccountService
             (string.IsNullOrWhiteSpace(keyword) ||
              (!string.IsNullOrEmpty(a.FullName) && a.FullName.Contains(keyword)) ||
              (!string.IsNullOrEmpty(a.Email) && a.Email.Contains(keyword))) &&
+             a.Id.ToString() != onlineUser && // Exclude the current user
             (string.IsNullOrWhiteSpace(roleKeyword) ||
              (a.UserRoles != null &&
               a.UserRoles.Any(ur => ur.Role != null &&
