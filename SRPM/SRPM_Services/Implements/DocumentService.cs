@@ -83,9 +83,7 @@ public class DocumentService : IDocumentService
             defaultUserRole = await _unitOfWork.GetUserRoleRepository().GetOneAsync(ur =>
                 ur.AccountId == accId &&
                 ur.ProjectId == null &&
-                ur.AppraisalCouncilId == null &&
-                ur.ExpireDate.HasValue &&
-                ur.ExpireDate > DateTime.Now, null, false) ??
+                ur.AppraisalCouncilId == null, null, false) ??
             throw new NotFoundException("Not found your base role Id or it is expired in system!");
         }
         else
@@ -97,9 +95,7 @@ public class DocumentService : IDocumentService
             defaultUserRole = await _unitOfWork.GetUserRoleRepository().GetOneAsync(ur =>
                 ur.AccountId == existAccount.Id &&
                 ur.ProjectId == null &&
-                ur.AppraisalCouncilId == null &&
-                ur.ExpireDate.HasValue &&
-                ur.ExpireDate > DateTime.Now, null, false) ??
+                ur.AppraisalCouncilId == null, null, false) ??
             throw new NotFoundException("Not found this email user base role Id or it is expired in system!");
         }
 
@@ -187,9 +183,7 @@ public class DocumentService : IDocumentService
         var defaultUserRole = await _unitOfWork.GetUserRoleRepository().GetOneAsync(ur =>
             ur.AccountId == accId &&
             ur.ProjectId == null &&
-            ur.AppraisalCouncilId == null/* &&
-            ur.ExpireDate.HasValue &&
-            ur.ExpireDate > DateTime.Now*/, null, false) ??
+            ur.AppraisalCouncilId == null, null, false) ??
         throw new NotFoundException("Not found your base role Id or it is expired in system!");
 
         return defaultUserRole.Id;

@@ -156,9 +156,7 @@ public class TransactionService : ITransactionService
         var listUserRole = await _unitOfWork.GetUserRoleRepository().GetListAdvanceAsync(ur =>
             ur.AccountId == accId &&
             ur.ProjectId == null &&
-            ur.AppraisalCouncilId == null &&
-            ur.ExpireDate.HasValue &&
-            ur.ExpireDate > DateTime.Now, null, false) ??
+            ur.AppraisalCouncilId == null, null, false) ??
         throw new NotFoundException("Not found your base roles or it is expired in system!");
 
         return listUserRole;
