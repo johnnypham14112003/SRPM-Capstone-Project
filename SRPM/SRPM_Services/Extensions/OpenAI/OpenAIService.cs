@@ -91,15 +91,18 @@ public class OpenAIService : IOpenAIService
             "Your task is to analyze the provided project data and return a structured JSON response with three fields:",
             "1. ReviewerResult (boolean): true if the project is approved, false otherwise.",
             "2. TotalRate (integer): a score from 0 to 100 based on overall quality, clarity, and feasibility and provided data.",
-            "3. Comment (string): a concise but detailed explanation for the decision, referencing the following criteria:",
-            "- Purpose and significance of the project (max 10 points)",
-            "- Research methodology (max 20 points)",
-            "- Research content and expected outcomes (max 40 points)",
-            "- Capability of the project leader and research team (max 20 points)",
-            "- Budget justification and cost-effectiveness (max 10 points)",
+            "3. Comment (string): a detailed explanation in Markdown format, referencing the following evaluation criteria.",
+            "The Markdown content must include exactly 7 lines:",
+            "- **Purpose and significance of the project** (max 10 points): _your analysis and score_",
+            "- **Research methodology** (max 20 points): _your analysis and score_",
+            "- **Research content and expected outcomes** (max 40 points): _your analysis and score_",
+            "- **Capability of the project leader and research team** (max 20 points): _your analysis and score_",
+            "- **Budget justification and cost-effectiveness** (max 10 points): _your analysis and score_",
+            "- **Overall assessment**: _a one-sentence summary of the proposal’s overall quality and potential_",
+            "- **Detailed conclusion**: _a short paragraph synthesizing the evaluation and justifying the final score_",
             "Ensure your conclusion is evidence-grounded, precisely sourced, and maintains warm, clear, and authoritative communication throughout.",
             "Write exclusively in idiomatic English, fully natural and polished for expert audiences.",
-            "Respond ONLY with a raw JSON object. Do not include markdown formatting, code fences, or any extra conversational text."
+            "Respond ONLY with a raw JSON object. Do not include markdown formatting syntax (like triple backticks), code fences, or any extra conversational text."
         ]));
         var projectJson = JsonSerializer.Serialize(project, JsonSerializerOptionInstance.Default);
         var userPrompt = new UserChatMessage("Here is the data:\n" + projectJson);
