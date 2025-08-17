@@ -5,10 +5,10 @@ public class Q_Document
     public string? KeyWord { get; set; }
     public string? Type { get; set; }
     public bool IsTemplate { get; set; } = true;
-    public string Status { get; set; } = "created";
+    public string? Status { get; set; }
     public byte SortBy { get; set; } = 1; // 1=UpdatedAt↓, 2=UpdatedAt↑, 3=UploadAt↓, 4=UploadAt↑, 5=UploaderId↑, 6=ProjectId↑, 7=EvaluationId↑, 8=IndividualEvaluationId↑, 9=TransactionId↑, 10=EditorId↑, 11=Name↓, ...=Name↑
     public int PageIndex { get; set; } = 1;
-    public int PageSize { get; set; } = 5;
+    public int PageSize { get; set; } = 10;
     public DateTime? FromDate { get; set; }
     public DateTime? ToDate { get; set; }
 

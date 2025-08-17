@@ -6,7 +6,7 @@ public class Q_AppraisalCouncil
     public int PageIndex { get; set; } = 1;
     public int PageSize { get; set; } = 5;
     public byte SortBy { get; set; } = 1; //1: Code  | 2: Name  | 3: CreateTime
-    public string Status { get; set; } = "created";
+    public string? Status { get; set; }
     public DateTime? FromDate { get; set; }
     public DateTime? ToDate { get; set; }
 }
