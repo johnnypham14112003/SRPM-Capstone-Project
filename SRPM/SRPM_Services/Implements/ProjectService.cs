@@ -23,12 +23,13 @@ public class ProjectService : IProjectService
     private readonly IUnitOfWork _unitOfWork;
     private readonly IUserContextService _userContextService;
     private readonly ITaskQueueHandler _taskQueueHandler;
-
-    public ProjectService(IUnitOfWork unitOfWork, IUserContextService userContextService, ITaskQueueHandler taskQueueHandler)
+    private readonly INotificationService _notificationService;
+    public ProjectService(IUnitOfWork unitOfWork, IUserContextService userContextService, ITaskQueueHandler taskQueueHandler, INotificationService notificationService)
     {
         _unitOfWork = unitOfWork;
         _userContextService = userContextService;
         _taskQueueHandler = taskQueueHandler;
+        _notificationService = notificationService;
     }
     public async Task<object?> GetByIdAsync(Guid id)
     {
@@ -649,22 +650,19 @@ public class ProjectService : IProjectService
     {
         var repo = _unitOfWork.GetProjectRepository();
         var invalidStatuses = new[]
-{
-            Status.InProgress.ToString().ToLower(),
-            Status.Completed.ToString().ToLower(),
-            Status.Cancelled.ToString().ToLower(),
-            Status.Deleted.ToString().ToLower()
-        };
-        // Step 1: Get the proposal project
-        var proposal = await repo.GetByIdAsync(proposalProjectId, hasTrackings: true);
-        if (proposal == null)
-            throw new KeyNotFoundException("Proposal project not found.");
+        {
+        Status.InProgress.ToString().ToLower(),
+        Status.Completed.ToString().ToLower(),
+        Status.Cancelled.ToString().ToLower(),
+        Status.Deleted.ToString().ToLower()
+    };
 
-        // Step 2: Check proposal status
+        var proposal = await repo.GetByIdAsync(proposalProjectId, hasTrackings: true)
+            ?? throw new KeyNotFoundException("Proposal project not found.");
+
         if (proposal.Status != Status.Submitted.ToString().ToLower())
             throw new InvalidOperationException("Only submitted proposals can be approved.");
 
-        // Step 3: Check if another proposal is already approved
         var alreadyApproved = await repo.AnyAsync(
             p => p.Code == proposal.Code &&
                  p.Id != proposal.Id &&
@@ -675,39 +673,80 @@ public class ProjectService : IProjectService
         if (alreadyApproved)
             throw new InvalidOperationException("Another proposal has already been approved for this project.");
 
-        // Step 4: Check source project status
         var sourceProject = await repo.GetOneAsync(
             p => p.Code == proposal.Code &&
                  (p.Genre.ToLower() == "propose" || p.Genre.ToLower() == "normal")
         );
 
+        if (sourceProject != null && invalidStatuses.Contains(sourceProject.Status))
+            throw new InvalidOperationException($"Cannot approve proposal. Source project is already {sourceProject.Status}.");
+
         if (sourceProject != null)
-        {
-
-            if (invalidStatuses.Contains(sourceProject.Status))
-                throw new InvalidOperationException($"Cannot approve proposal. Source project is already {sourceProject.Status}.");
-
-            // Step 5: Update source project to InProgress
             sourceProject.Status = Status.InProgress.ToString().ToLower();
-        }
 
-        // Step 6: Approve this proposal
         proposal.Status = Status.Approved.ToString().ToLower();
 
-        // Step 7: Reject other submitted proposals
         var otherProposals = await repo.GetListAsync(
             p => p.Code == proposal.Code &&
                  p.Id != proposal.Id &&
                  p.Status == Status.Submitted.ToString().ToLower(),
-            hasTrackings: true
+            hasTrackings: true,
+            include: q => q
+                .Include(p => p.Members)
         );
 
         foreach (var other in otherProposals)
         {
             other.Status = Status.Rejected.ToString().ToLower();
+
+
+            await _notificationService.CreateNew(new RQ_Notification
+            {
+                Title = $"Proposal Rejected {other.EnglishTitle}",
+                Type = "project",
+                ObjecNotificationId = other.Id,
+                IsGlobalSend = false,
+                ListAccountId = other.Members?.Select(m => m.AccountId).Distinct().ToList() ?? new List<Guid>()
+            });
         }
 
-        // Step 8: Save changes
+
+        await _notificationService.CreateNew(new RQ_Notification
+        {
+            Title = $"Proposal Approved {proposal.EnglishTitle}",
+            Type = "project",
+            ObjecNotificationId = proposal.Id,
+            IsGlobalSend = false,
+            ListAccountId = proposal.Members?.Select(m => m.AccountId).Distinct().ToList() ?? new List<Guid>()
+        });
+
+
+        var approvedMembers = await _unitOfWork.GetUserRoleRepository().GetListAsync(pm => pm.ProjectId == proposal.Id);
+        foreach (var member in approvedMembers)
+        {
+            var account = await _unitOfWork.GetAccountRepository().GetByIdAsync(member.AccountId);
+            if (account?.Email != null)
+            {
+                await _notificationService.SendNotificationMail(new RQ_NotificationEmail
+                {
+                    Subject = "[SRPM] Proposal Approval Notification",
+                    ReceiverEmailAddress = account.Email,
+                    Title = "Your Proposal Has Been Approved",
+                    RefContent = $"Dear {account.FullName ?? "Researcher"},\n\n" +
+                              $"We are pleased to inform you that your proposal titled \"{proposal.EnglishTitle}\" has been officially approved by the SRPM committee.\n\n" +
+                              $"This decision reflects the quality and relevance of your work, and we look forward to seeing its impact in the upcoming stages of the project.\n\n" +
+                              $"You may now proceed with the next steps outlined in your project plan. Please ensure all documentation and milestones are updated accordingly.\n\n" +
+                              $"If you have any questions or require further assistance, feel free to reach out to your assigned coordinator.\n\n" +
+                              $"Best regards,\nSRPM Administration Team",
+                    CreatedDate = DateTime.UtcNow,
+                    RefTitle = "Proposal Approved",
+                    Content = $"Project: {proposal.EnglishTitle}\nStatus: Approved",
+                    RefButton = "View Proposal",
+                    RefUrl = $"https://srpm.com/proposals/{proposal.Id}"
+                });
+            }
+        }
+
         await _unitOfWork.SaveChangesAsync();
         return true;
     }

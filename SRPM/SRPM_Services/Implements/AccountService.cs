@@ -230,7 +230,7 @@ public class AccountService : IAccountService
         var emailDto = new EmailDTO
         {
             ReceiverEmailAddress = email,
-            Subject = "Reset Your Password - SRPM",
+            Subject = "[SRPM] Reset Your Password",
             Body = body
         };
 
