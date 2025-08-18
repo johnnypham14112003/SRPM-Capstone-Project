@@ -23,4 +23,5 @@ public interface IProjectService
     Task<List<RS_ProjectOverview>> GetHostProjectHistory();
     Task<List<RS_ProjectOverview>> GetStaffProjectHistory();
     Task<bool> ApproveProposalAsync(Guid proposalProjectId);
+    Task<(Guid id, bool isEnrolled)> CheckIsEnrollInProject(Guid sourceProject);
 }

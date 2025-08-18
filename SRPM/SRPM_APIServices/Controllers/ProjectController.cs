@@ -265,6 +265,28 @@ public class ProjectController : Controller
             return StatusCode(500, $"Internal server error: {ex.Message}");
         }
     }
+    [HttpGet("check-enrollment/{sourceProjectId}")]
+    public async Task<IActionResult> CheckEnrollment(Guid sourceProjectId)
+    {
+        try
+        {
+            var result = await _service.CheckIsEnrollInProject(sourceProjectId);
+
+            return Ok(new
+            {
+                ProposalId = result.id,
+                IsEnrolled = result.isEnrolled
+            });
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new { Message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { Message = "An error occurred.", Details = ex.Message });
+        }
+    }
 
 
 }

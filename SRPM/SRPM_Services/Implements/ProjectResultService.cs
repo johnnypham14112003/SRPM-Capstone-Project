@@ -28,7 +28,7 @@ namespace SRPM_Services.Implements
         {
             var repo = _unitOfWork.GetProjectResultRepository();
             var entity = request.Adapt<ProjectResult>();
-            entity.Id = Guid.NewGuid(); // Ensure new ID for the project result
+            entity.Id = Guid.NewGuid(); 
             await repo.AddAsync(entity);
 
             if (request.ResultPublishs != null)
@@ -37,7 +37,7 @@ namespace SRPM_Services.Implements
                 foreach (var pub in request.ResultPublishs)
                 {
                     var newPub = pub.Adapt<ResultPublish>();
-                    newPub.Id = Guid.NewGuid(); // Ensure new ID for each publication
+                    newPub.Id = Guid.NewGuid(); 
                     newPub.ProjectResultId = entity.Id;
                     newPub.PublicationDate ??= DateTime.UtcNow;
                     await publishRepo.AddAsync(newPub);
@@ -56,21 +56,26 @@ namespace SRPM_Services.Implements
                 throw new ArgumentException("Id is required for update.");
 
             var repo = _unitOfWork.GetProjectResultRepository();
-            var entity = await repo.GetOneAsync(p => p.Id == request.Id)
-                         ?? throw new Exception("ProjectResult not found");
+            var entity = await repo.GetOneAsync(
+                p => p.Id == request.Id.Value,
+                include: q => q.Include(p => p.ResultPublishs),
+                hasTrackings: true
+            ) ?? throw new Exception("ProjectResult not found");
 
+            // Update main fields
             entity.Name = request.Name;
             entity.Url = request.Url;
-            entity.ProjectId = request.ProjectId;
 
+            // Handle ResultPublishs
             if (request.ResultPublishs != null)
             {
                 var publishRepo = _unitOfWork.GetResultPublishRepository();
+
                 foreach (var pub in request.ResultPublishs)
                 {
                     if (pub.Id.HasValue)
                     {
-                        var existing = await publishRepo.GetOneAsync(p => p.Id == pub.Id);
+                        var existing = entity.ResultPublishs?.FirstOrDefault(p => p.Id == pub.Id.Value);
                         if (existing != null)
                         {
                             existing.Url = pub.Url;
@@ -94,8 +99,15 @@ namespace SRPM_Services.Implements
 
             await _unitOfWork.SaveChangesAsync();
 
-            var result = entity.Adapt<RS_ProjectResult>();
-            result.ResultPublishs = entity.ResultPublishs?.Adapt<List<RS_ResultPublish>>();
+            // Reload updated entity if needed
+            var updatedEntity = await repo.GetOneAsync(
+                p => p.Id == entity.Id,
+                include: q => q.Include(p => p.ResultPublishs),
+                hasTrackings: false
+            );
+
+            var result = updatedEntity.Adapt<RS_ProjectResult>();
+            result.ResultPublishs = updatedEntity.ResultPublishs?.Adapt<List<RS_ResultPublish>>();
             return result;
         }
         public async Task<PagingResult<RS_ProjectResult>> GetListAsync(Q_ProjectResult query)

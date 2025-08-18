@@ -711,4 +711,34 @@ public class ProjectService : IProjectService
         await _unitOfWork.SaveChangesAsync();
         return true;
     }
+    public async Task<(Guid id, bool isEnrolled)> CheckIsEnrollInProject(Guid sourceProjectId)
+    {
+        var principalId = Guid.Parse(_userContextService.GetCurrentUserId()); // Your method to get current user ID
+
+        var sourceProject = await _unitOfWork.GetProjectRepository().GetOneAsync(
+            p => p.Id == sourceProjectId,
+            hasTrackings: false
+        );
+
+        if (sourceProject == null)
+            throw new KeyNotFoundException("Source project not found.");
+
+        var similarProposals = await _unitOfWork.GetProjectRepository().GetListAsync(
+            p => p.CreatorId == sourceProject.CreatorId &&
+                 p.Genre == "proposal" &&
+                 p.EnglishTitle == sourceProject.EnglishTitle &&
+                 p.VietnameseTitle == sourceProject.VietnameseTitle &&
+                 p.StartDate == sourceProject.StartDate,
+            include: q => q.Include(p => p.Members),
+            hasTrackings: false,
+            useSplitQuery: true
+        );
+
+        var enrolledProposal = similarProposals?
+            .FirstOrDefault(p => p.Members.Any(m => m.AccountId == principalId));
+
+        return enrolledProposal != null
+            ? (enrolledProposal.Id, true)
+            : (Guid.Empty, false);
+    }
 }

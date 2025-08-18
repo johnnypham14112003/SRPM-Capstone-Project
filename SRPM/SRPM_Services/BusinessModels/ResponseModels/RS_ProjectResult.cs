@@ -8,7 +8,7 @@ namespace SRPM_Services.BusinessModels.ResponseModels
 {
     public class RS_ProjectResult
     {
-        public Guid Id { get; set; }
+        public Guid? Id { get; set; }
         public string Name { get; set; } = null!;
         public string? Url { get; set; }
         public DateTime AddedDate { get; set; }
@@ -17,7 +17,7 @@ namespace SRPM_Services.BusinessModels.ResponseModels
     }
     public class RS_ResultPublish
     {
-        public Guid Id { get; set; }
+        public Guid? Id { get; set; }
         public string Url { get; set; } = null!;
         public string? Title { get; set; }
         public string? Description { get; set; }
