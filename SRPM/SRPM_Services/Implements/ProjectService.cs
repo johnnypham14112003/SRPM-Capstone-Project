@@ -13,7 +13,6 @@ using SRPM_Services.Extensions.Enumerables;
 using SRPM_Services.Extensions.Exceptions;
 using SRPM_Services.Extensions.MicrosoftBackgroundService;
 using SRPM_Services.Extensions.OpenAI;
-using SRPM_Services.Extensions.Utils;
 using SRPM_Services.Interfaces;
 using System.Text.RegularExpressions;
 
