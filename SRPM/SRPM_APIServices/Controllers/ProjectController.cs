@@ -96,7 +96,8 @@ public class ProjectController : Controller
     [HttpPost("document")]
     public async Task<IActionResult> CreateMilestoneTaskFromDocument(RQ_MilestoneTaskContent request)
     {
-        return Ok(await _service.CreateFromDocumentAsync(request));
+        var result = await _service.CreateFromDocumentAsync(request);
+        return result? Ok("Generate Success!") : BadRequest("Failed to save data!");
     }
 
     // PUT: api/project/{id}
