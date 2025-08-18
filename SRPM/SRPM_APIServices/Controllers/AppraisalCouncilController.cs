@@ -59,11 +59,18 @@ public class AppraisalCouncilController : Controller
         return result ? Ok("Delete Successfully!") : BadRequest("Delete Failed!");
     }
 
-    [HttpGet("list-project/{councilId}")]
-    public async Task<IActionResult> GetProjectOfCouncil([FromRoute] Guid councilId)
+    [HttpPost("list-project/{councilId}")]
+    public async Task<IActionResult> GetProjectOfCouncil([FromRoute] Guid councilId, List<string>? statuses)
     {
         var result = await _appraisalCouncilService.GetProjectsFromCouncilAsync(councilId);
-
+            if (statuses is not null) 
+            { 
+            var returnedProjects = result!
+                .Where(p => statuses!.Contains(p.Status.ToString().ToLower()))
+                .ToList();
+            return returnedProjects is not null ? Ok(returnedProjects) : NotFound("Not found any Project belong to this CouncilId");
+            
+            }
         return result is not null ? Ok(result) : NotFound("Not found any Project belong to this CouncilId");
     }
 
