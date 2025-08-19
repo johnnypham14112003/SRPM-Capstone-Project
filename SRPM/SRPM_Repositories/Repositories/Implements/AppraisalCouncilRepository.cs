@@ -68,6 +68,7 @@ public class AppraisalCouncilRepository : GenericRepository<AppraisalCouncil>, I
         var council = await _context.AppraisalCouncil
             .Include(c => c.Evaluations)
                 .ThenInclude(e => e.Project)
+                .ThenInclude(pt => pt.ProjectTags)
             .AsNoTracking()
             .FirstOrDefaultAsync(c => c.Id == councilId);
         if (council is null) return (null, null, "Not found any council with that councilId");
@@ -92,6 +93,7 @@ public class AppraisalCouncilRepository : GenericRepository<AppraisalCouncil>, I
 
         var projectSources = await _context.Project
         .Where(p => proposalCodes.Contains(p.Code) && !p.Genre.ToLower().Equals("proposal"))
+        .Include(p => p.ProjectTags)
         .Distinct()
         .ToListAsync();
 

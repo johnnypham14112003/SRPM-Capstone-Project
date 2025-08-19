@@ -25,5 +25,6 @@ public class RS_ProjectsOfCouncil
     public DateTime? UpdatedAt { get; set; }
     public string Status { get; set; } = null!;
     public Guid CreatorId { get; set; }
+    public List<RS_TagBrief> ProjectTags { get; set; }
     public List<RS_Project> Proposals { get; set; }
 }
