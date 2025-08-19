@@ -65,7 +65,7 @@ public class ProjectService : IProjectService
         if (!isMember)
         {
             var projectOverview = await _unitOfWork.GetProjectRepository()
-                .GetByIdAsync(id);
+                .GetOneAsync(p => p.Id == id, include: q => q.Include(q => q.ProjectTags));
 
             return new
             {
