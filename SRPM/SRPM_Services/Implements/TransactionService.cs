@@ -122,7 +122,7 @@ public class TransactionService : ITransactionService
             foreach (var ur in userRoles)
             {
                 var currentRole = await _unitOfWork.GetRoleRepository().GetOneAsync(r => r.Id == ur.RoleId);
-                if (currentRole.Name.ToLower().Equals("principal investigator"))
+                if (currentRole.Name.ToLower().Equals("staff"))
                     staffURid = ur.Id;
             }
 
