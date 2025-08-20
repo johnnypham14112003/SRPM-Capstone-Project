@@ -34,7 +34,7 @@ public class TransactionController: Controller
     }
 
     [HttpGet("{id}")]
-    public async Task<IActionResult> Get(Guid id)
+    public async Task<IActionResult> GetById(Guid id)
     {
         var transaction = await _transactionService.GetTransactionById(id);
         return transaction != null ? Ok(transaction) : NotFound();

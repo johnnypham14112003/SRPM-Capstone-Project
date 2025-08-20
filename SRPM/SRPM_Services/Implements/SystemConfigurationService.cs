@@ -51,14 +51,31 @@ public class SystemConfigurationService : ISystemConfigurationService
         return (resultSys, resultNoti);
     }
 
-    public async Task<List<RQ_SystemConfiguration>> ListConfig(string typeData, string? keyData)
+    public async Task<List<RQ_SystemConfiguration>> ListConfig(string? typeData, string? keyData)
     {
-        var listConfig = string.IsNullOrWhiteSpace(keyData) ?
-            await _unitOfWork.GetSystemConfigurationRepository().GetListAsync(sys => sys.ConfigType.Equals(typeData), hasTrackings: false) :
-            await _unitOfWork.GetSystemConfigurationRepository().GetListAsync(sys => sys.ConfigType.Equals(typeData) && sys.ConfigKey.Equals(keyData), hasTrackings : false);
+        if (!string.IsNullOrWhiteSpace(typeData) && !string.IsNullOrWhiteSpace(keyData))
+        {
+            var listConfig = await _unitOfWork.GetSystemConfigurationRepository()
+                .GetListAsync(sys => sys.ConfigType.Equals(typeData) && sys.ConfigKey.Equals(keyData), hasTrackings: false);
 
-        if (listConfig is null) throw new NotFoundException("Not found any config!");
-        return listConfig.Adapt<List<RQ_SystemConfiguration>>();
+            return listConfig.Adapt<List<RQ_SystemConfiguration>>();
+        }
+        else if (!string.IsNullOrWhiteSpace(typeData)) //Get all of type
+        {
+            var listConfig = await _unitOfWork.GetSystemConfigurationRepository()
+                .GetListAsync(sys => sys.ConfigType.Equals(typeData), hasTrackings: false);
+
+            return listConfig.Adapt<List<RQ_SystemConfiguration>>();
+        }
+        else //Get all
+        {
+            var listConfig = await _unitOfWork.GetSystemConfigurationRepository()
+                .GetListAsync(_ => true, hasTrackings: false);
+
+            return listConfig.Adapt<List<RQ_SystemConfiguration>>();
+        }
+
+
     }
 
     public async Task<RS_SystemConfiguration> ViewDetailConfig(Guid id)

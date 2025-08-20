@@ -27,7 +27,7 @@ public class NotificationController : Controller
     }
 
     [HttpPost("list")]
-    public async Task<IActionResult> ListNotiOfUser([FromBody] Q_RequestNoti queryInput)
+    public async Task<IActionResult> ListNotfication([FromBody] Q_RequestNoti queryInput)
     {
         var result = await _notificationService.ListRequestNotification(queryInput);
         return Ok(result);
@@ -48,14 +48,14 @@ public class NotificationController : Controller
     }
 
     [HttpPost("email")]
-    public async Task<IActionResult> Update([FromBody] RQ_NotificationEmail notification)
+    public async Task<IActionResult> SendEmail([FromBody] RQ_NotificationEmail notification)
     {
         bool result = await _notificationService.SendNotificationMail(notification);
         return result ? Ok("Update Successfully!") : BadRequest("Update Failed!");
     }
 
     [HttpPut("status")]
-    public async Task<IActionResult> Update([FromQuery] Guid? notification)
+    public async Task<IActionResult> CheckReadNoti([FromQuery] Guid? notification)
     {
         bool result = await _notificationService.ReadNotification(notification);
         return result ? Ok("Update Successfully!") : BadRequest("Update Failed!");

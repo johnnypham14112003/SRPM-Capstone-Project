@@ -7,11 +7,6 @@ using SRPM_Services.BusinessModels.RequestModels;
 using SRPM_Services.BusinessModels.RequestModels.Query;
 using SRPM_Services.BusinessModels.ResponseModels;
 using SRPM_Services.Interfaces;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace SRPM_Services.Implements
 {
@@ -50,6 +45,7 @@ namespace SRPM_Services.Implements
             result.ResultPublishs = entity.ResultPublishs?.Adapt<List<RS_ResultPublish>>();
             return result;
         }
+
         public async Task<RS_ProjectResult> UpdateAsync(RQ_ProjectResult request)
         {
             if (!request.Id.HasValue)
