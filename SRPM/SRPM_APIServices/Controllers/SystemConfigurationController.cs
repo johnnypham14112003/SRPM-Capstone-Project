@@ -39,7 +39,7 @@ public class SystemConfigurationController : Controller
 
     // api/systemconfiguration?typeData...&keyData=...
     [HttpGet]
-    public async Task<IActionResult> ListConfig([FromQuery] string typeData, [FromQuery] string? keyData)
+    public async Task<IActionResult> ListConfig([FromQuery] string? typeData, [FromQuery] string? keyData)
     {
         var categoryInfo = await _systemConfigurationService.ListConfig(typeData, keyData);
         return Ok(categoryInfo);
