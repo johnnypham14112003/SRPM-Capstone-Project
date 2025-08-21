@@ -7,7 +7,6 @@ namespace SRPM_APIServices.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    [Authorize]
     public class DashboardController : Controller
     {
         private readonly IDashboardService _dashboardService;
@@ -18,42 +17,73 @@ namespace SRPM_APIServices.Controllers
         }
 
         [HttpGet("system-stats")]
-        [Authorize(Roles = "Administrator, Staff")]
-        public async Task<IActionResult> GetSystemStats([FromQuery] DateTime from, [FromQuery] DateTime to)
+        public async Task<IActionResult> GetSystemStats([FromQuery] DateTime? from, [FromQuery] DateTime? to)
         {
-            var result = await _dashboardService.GetSystemStatsAsync(from, to);
+            var start = from ?? DateTime.MinValue;
+            var end = to ?? DateTime.Now;
+            var result = await _dashboardService.GetSystemStatsAsync(start, end);
             return Ok(result);
         }
 
-        [HttpGet("user-project-stats")]
-        public async Task<IActionResult> GetUserProjectStats([FromQuery] DateTime from, [FromQuery] DateTime to)
+        [HttpGet("transactions")]
+        public async Task<IActionResult> GetTransactionStats([FromQuery] DateTime? from, [FromQuery] DateTime? to)
         {
-            var result = await _dashboardService.GetUserProjectStatsAsync(from, to);
+            var start = from ?? DateTime.MinValue;
+            var end = to ?? DateTime.Now;
+            var result = await _dashboardService.GetTransactionStatsAsync(start, end);
             return Ok(result);
         }
 
-        [HttpGet("principal-dashboard")]
-        [Authorize(Roles = "Principal Investigator")]
-        public async Task<IActionResult> GetPrincipalDashboard([FromQuery] DateTime from, [FromQuery] DateTime to)
+        [HttpGet("milestones/progress")]
+        public async Task<IActionResult> GetMilestoneProgressStats()
         {
-            var result = await _dashboardService.GetPrincipalDashboardAsync(from, to);
+            var result = await _dashboardService.GetMilestoneProgressStatsAsync();
             return Ok(result);
         }
 
-        [HttpGet("institution-dashboard")]
-        [Authorize(Roles = "Host Institution")]
-        public async Task<IActionResult> GetInstitutionDashboard([FromQuery] DateTime from, [FromQuery] DateTime to)
+        [HttpGet("councils")]
+        public async Task<IActionResult> GetCouncilProjectStats()
         {
-            var result = await _dashboardService.GetInstitutionDashboardAsync(from, to);
+            var result = await _dashboardService.GetCouncilProjectStatsAsync();
             return Ok(result);
         }
 
-        [HttpGet("kpi-tiles")]
-        public async Task<IActionResult> GetKpiTiles([FromQuery] DateTime from, [FromQuery] DateTime to)
+        [HttpGet("projects/status")]
+        public async Task<IActionResult> GetSourceProjectStatusStats([FromQuery] DateTime? from, [FromQuery] DateTime? to)
         {
-            var result = await _dashboardService.GetKpiTilesAsync(from, to);
+            var start = from ?? DateTime.MinValue;
+            var end = to ?? DateTime.Now;
+            var result = await _dashboardService.GetSourceProjectStatusStatsAsync(start, end);
             return Ok(result);
         }
+
+        [HttpGet("userroles/base")]
+        public async Task<IActionResult> GetBaseUserRoleDistribution()
+        {
+            var result = await _dashboardService.GetBaseUserRoleDistributionAsync();
+            return Ok(result);
+        }
+
+        [HttpGet("timeseries")]
+        public async Task<IActionResult> GetTimeSeriesStats(
+            [FromQuery] DateTime? from,
+            [FromQuery] DateTime? to,
+            [FromQuery] string granularity = "daily")
+        {
+            var end = to ?? DateTime.Now;
+            var result = await _dashboardService.GetTimeSeriesStatsAsync(from, end, granularity);
+            return Ok(result);
+        }
+
+        [HttpGet("majors/distribution")]
+        public async Task<IActionResult> GetMajorDistributionStats([FromQuery] DateTime? from, [FromQuery] DateTime? to)
+        {
+            var start = from ?? DateTime.MinValue;
+            var end = to ?? DateTime.Now;
+            var result = await _dashboardService.GetMajorDistributionStatsAsync(start, end);
+            return Ok(result);
+        }
+
     }
 
 }
