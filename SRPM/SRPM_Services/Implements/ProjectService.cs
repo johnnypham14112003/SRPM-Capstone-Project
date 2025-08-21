@@ -455,7 +455,6 @@ public class ProjectService : IProjectService
         // Find nearest data table
         /*var tableNode = sectionNode.SelectSingleNode("following::table[0]") ??
             throw new NotFoundException("Not found any data table below the title!");*/
-        // --- Find nearest table right after <p> container of sectionNode ---
 
         // Find element sibling right after sectionNode or nearest parent
         var candidates = doc.DocumentNode.Descendants().Where(n => !string.IsNullOrWhiteSpace(n.InnerText) &&
@@ -564,7 +563,12 @@ public class ProjectService : IProjectService
             decimal cost = 0m;
             decimal.TryParse(costRaw.Replace(",", "").Replace(".", ""), out cost);
 
-            if (currentRowHtml.Contains("<em>")) // Milestone
+            //If the content is bold -> then it is milestone
+            if (currentRowHtml.Contains("<strong>") ||
+                currentRowHtml.Contains("<b>") ||
+                currentRowHtml.Contains("weight=\"bold\"") ||
+                currentRowHtml.Contains("weight:bold") ||
+                currentRowHtml.Contains("<em>"))
             {
                 currentMilestone = new Milestone
                 {
