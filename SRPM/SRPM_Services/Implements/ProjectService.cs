@@ -13,6 +13,7 @@ using SRPM_Services.Extensions.Enumerables;
 using SRPM_Services.Extensions.Exceptions;
 using SRPM_Services.Extensions.MicrosoftBackgroundService;
 using SRPM_Services.Extensions.OpenAI;
+using SRPM_Services.Extensions.Utils;
 using SRPM_Services.Interfaces;
 using System.Text.RegularExpressions;
 
@@ -447,12 +448,58 @@ public class ProjectService : IProjectService
         doc.LoadHtml(contentHtml);
 
         // Find section match SectionTitle
-        var sectionNode = doc.DocumentNode.SelectSingleNode($"//*[contains(text(), '{content.SectionTitle}')]") ??
-            throw new NotFoundException("Not found that section content to identify data!");
+        var sectionTitle = HtmlAgilityPack.HtmlEntity.DeEntitize(content.SectionTitle);//Incase user type special character
+        /*var sectionNode = doc.DocumentNode.SelectSingleNode($"//*[contains(text(), '{content.SectionTitle}')]") ??
+           throw new NotFoundException("Not found that section content to identify data!");*/
 
         // Find nearest data table
-        var tableNode = sectionNode.SelectSingleNode("following::table[1]") ??
-            throw new NotFoundException("Not found any data table below the title!");
+        /*var tableNode = sectionNode.SelectSingleNode("following::table[0]") ??
+            throw new NotFoundException("Not found any data table below the title!");*/
+        // --- Find nearest table right after <p> container of sectionNode ---
+
+        // Find element sibling right after sectionNode or nearest parent
+        var candidates = doc.DocumentNode.Descendants().Where(n => !string.IsNullOrWhiteSpace(n.InnerText) &&
+                HtmlEntity.DeEntitize(n.InnerText)
+                   .Contains(sectionTitle, StringComparison.OrdinalIgnoreCase));
+
+        string[] preferTags = { "h1", "h2", "h3", "h4", "h5", "h6", "p", "strong", "span", "td", "th", "caption", "label" };
+        string[] containerTags = { "section", "article", "div", "main", "header", "footer", "aside", "body" };
+
+        var anchor = candidates
+            .Where(n => preferTags.Contains(n.Name))
+            .OrderByDescending(n => n.Ancestors().Count())                         // sâu nhất trước
+            .ThenBy(n => HtmlEntity.DeEntitize(n.InnerText).Length)                // text ngắn (gần tiêu đề) trước
+            .FirstOrDefault();
+
+        if (anchor == null)
+        {
+            var first = candidates.First(); // fallback: refine xuống descendant “đẹp” hơn
+            anchor = first.Descendants()
+                .Where(n => preferTags.Contains(n.Name) &&
+                            HtmlEntity.DeEntitize(n.InnerText)
+                               .Contains(sectionTitle, StringComparison.OrdinalIgnoreCase))
+                .OrderByDescending(n => n.Ancestors().Count())
+                .ThenBy(n => HtmlEntity.DeEntitize(n.InnerText).Length)
+                .FirstOrDefault()
+                ?? first; // nếu không có thì dùng container luôn (ít gặp)
+        }
+
+        // --- table: ưu tiên bảng gần nhất sau anchor theo document order ---
+        var tableNode = anchor.SelectSingleNode("following::table[1]");
+
+        // nếu chưa thấy, bó trong container (section/div/...) và chọn table có StreamPosition > anchor
+        if (tableNode == null)
+        {
+            var container = anchor.Ancestors().FirstOrDefault(a => containerTags.Contains(a.Name));
+            if (container != null)
+            {
+                var anchorPos = anchor.StreamPosition;
+                tableNode = container.SelectNodes(".//table")
+                             ?.Where(t => t.StreamPosition > anchorPos)
+                             .OrderBy(t => t.StreamPosition)
+                             .FirstOrDefault();
+            }
+        }
 
         var rows = tableNode.SelectNodes(".//tr");
         if (rows is null || rows.Count == 0) throw new NotFoundException("Not found any row data in this table!");
@@ -462,12 +509,12 @@ public class ProjectService : IProjectService
             throw new Exception("Không tìm thấy dòng tiêu đề bảng!");
 
         var headerCells = headerRow.SelectNodes("th");
-        var columnMap = new Dictionary<string, int>();
-        for (int i = 0; i < headerCells.Count; i++)
+        var columnMap = headerCells.Select((cell, i) =>
+        new
         {
-            var headerText = headerCells[i].InnerText.Trim();
-            columnMap[headerText] = i;
-        }
+            Text = HtmlEntity.DeEntitize(cell.InnerText).Replace('\u00A0', ' ').Trim(),
+            Index = i
+        }).ToDictionary(x => x.Text, x => x.Index);
 
         if (!columnMap.TryGetValue(content.Description, out var descriptionIndex))
             throw new NotFoundException($"Not found column '{content.Description}' in table.");
@@ -494,11 +541,11 @@ public class ProjectService : IProjectService
             var currentRowHtml = cells[descriptionIndex].InnerHtml.Trim();
 
             //Get data from Document
-            var description = cells.ElementAtOrDefault(descriptionIndex)?.InnerText.Trim() ?? "";
+            var description = StringUtils.DecodeHtmlEntitiesText(cells.ElementAtOrDefault(descriptionIndex)?.InnerText.Trim());
             var title = description.Length <= 20 ? description : description.Substring(0, 20).Trim() + "...";
-            var objective = cells.ElementAtOrDefault(objectiveIndex)?.InnerText.Trim() ?? "";
-            var timeRaw = cells.ElementAtOrDefault(timeIndex)?.InnerText.Trim() ?? "";
-            var costRaw = cells.ElementAtOrDefault(costIndex)?.InnerText.Trim() ?? "";
+            var objective = StringUtils.DecodeHtmlEntitiesText(cells.ElementAtOrDefault(objectiveIndex)?.InnerText.Trim());
+            var timeRaw = StringUtils.DecodeHtmlEntitiesText(cells.ElementAtOrDefault(timeIndex)?.InnerText.Trim());
+            var costRaw = StringUtils.DecodeHtmlEntitiesText(cells.ElementAtOrDefault(costIndex)?.InnerText.Trim());
 
 
             // Parse Time From Regex
@@ -517,7 +564,7 @@ public class ProjectService : IProjectService
             decimal cost = 0m;
             decimal.TryParse(costRaw.Replace(",", "").Replace(".", ""), out cost);
 
-            if (currentRowHtml.Contains("<b>")) // Milestone
+            if (currentRowHtml.Contains("<em>")) // Milestone
             {
                 currentMilestone = new Milestone
                 {
