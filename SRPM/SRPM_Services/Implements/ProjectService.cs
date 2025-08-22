@@ -333,7 +333,7 @@ public class ProjectService : IProjectService
         var accountId = Guid.Parse(_userContextService.GetCurrentUserId());
         var currentRoleName = _userContextService.GetCurrentUserRole();
 
-        // Fetch UserRoles with Role included (to access Name)
+        // Fetch UserRoles with Role included
         var userRoles = await _unitOfWork.GetUserRoleRepository()
             .GetListAsync(
                 ur => ur.AccountId == accountId,
@@ -347,6 +347,7 @@ public class ProjectService : IProjectService
 
         var projectIds = matchingRoles
             .Select(ur => ur.ProjectId)
+            .Where(id => id != null)
             .Distinct()
             .ToList();
 
@@ -357,11 +358,12 @@ public class ProjectService : IProjectService
         var normalizedStatus = statusList?.Select(s => s.ToLower()).ToList();
         var normalizedGenre = genreList?.Select(g => g.ToLower()).ToList();
 
+        // Build query conditionally
         var projects = await _unitOfWork.GetProjectRepository()
             .GetListAsync(
                 p => projectIds.Contains(p.Id) &&
-                     (normalizedStatus == null || normalizedStatus.Contains(p.Status.ToLower())) &&
-                     (normalizedGenre == null || normalizedGenre.Contains(p.Genre.ToLower())),
+                     (normalizedStatus == null || normalizedStatus.Count() == 0  || normalizedStatus.Contains(p.Status.ToLower())) &&
+                     (normalizedGenre == null || normalizedGenre.Count() == 0 || normalizedGenre.Contains(p.Genre.ToLower())),
                 hasTrackings: false
             );
 
