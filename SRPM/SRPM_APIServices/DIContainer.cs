@@ -72,7 +72,7 @@ public static class DIContainer
     //XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
     private static IServiceCollection InjectDbContext(this IServiceCollection services, IConfiguration configuration)
     {
-        var connectionString = configuration.GetConnectionString("DefaultConnection");
+        var connectionString = configuration["ProdConnection"];
 
         services.AddDbContext<SRPMDbContext>(options =>
             options.UseSqlServer(connectionString));
@@ -534,9 +534,10 @@ public static class DIContainer
         //strong-typed config
         /*prevent compile error if missing appsettings vars*/
         var feOpts = new FluentEmailOptionModel();
+        var key = configuration["FluentEmail-AppPassword"];
         configuration.GetSection("FluentEmail").Bind(feOpts);
 
-        services.AddFluentEmail(feOpts.Address).AddSmtpSender(feOpts.Host, feOpts.Port, feOpts.Address, feOpts.AppPassword);
+        services.AddFluentEmail(feOpts.Address).AddSmtpSender(feOpts.Host, feOpts.Port, feOpts.Address, key);
         return services;
     }
 
@@ -622,15 +623,16 @@ public static class DIContainer
         //strong-typed config
         /*prevent compile error if missing appsettings vars*/
         var oaiOpts = new OpenAIOptionModel();
+        var key = configuration["OpenAI-APIKey"];
         configuration.GetSection("OpenAI").Bind(oaiOpts);
 
         //new instance OpenAIOptionModel
         services.AddSingleton(oaiOpts);
 
         //new instance ChatClient
-        services.AddSingleton(new ChatClient(oaiOpts.ChatModel, oaiOpts.ApiKey));
+        services.AddSingleton(new ChatClient(oaiOpts.ChatModel, key));
         //new instance EmbeddingClient
-        services.AddSingleton(new EmbeddingClient(oaiOpts.EmbeddingModel, oaiOpts.ApiKey));
+        services.AddSingleton(new EmbeddingClient(oaiOpts.EmbeddingModel, key));
         services.AddSingleton(new ChatCompletionOptions { Temperature = 0.7f, MaxOutputTokenCount = 8100 });
         //new instance TokenizerProvider
         services.AddSingleton<ITokenizerProvider, TokenizerProvider>();
