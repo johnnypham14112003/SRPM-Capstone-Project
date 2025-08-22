@@ -17,7 +17,9 @@ public interface IProjectService
     Task<RS_Project?> UpdateAsync(Guid id, RQ_Project request, string status);
     Task<RS_Project?> ToggleStatusAsync(Guid id);
     Task<bool> DeleteAsync(Guid id);
-    Task<List<RS_ProjectOverview>> GetAllOnlineUserProjectAsync();
+    Task<List<RS_ProjectOverview>> GetAllOnlineUserProjectAsync(
+        List<string>? statusList,
+        List<string>? genreList);
     Task<RS_Project> EnrollAsPrincipalAsync(Guid sourceProjectId);
     Task<bool> CreateFromDocumentAsync(RQ_MilestoneTaskContent content);
     /*

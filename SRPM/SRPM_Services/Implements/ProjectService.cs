@@ -326,7 +326,9 @@ public class ProjectService : IProjectService
         return true;
     }
 
-    public async Task<List<RS_ProjectOverview>> GetAllOnlineUserProjectAsync()
+    public async Task<List<RS_ProjectOverview>> GetAllOnlineUserProjectAsync(
+        List<string>? statusList,
+        List<string>? genreList)
     {
         var accountId = Guid.Parse(_userContextService.GetCurrentUserId());
         var currentRoleName = _userContextService.GetCurrentUserRole();
@@ -351,9 +353,15 @@ public class ProjectService : IProjectService
         if (!projectIds.Any())
             return new List<RS_ProjectOverview>();
 
+        // Normalize filters
+        var normalizedStatus = statusList?.Select(s => s.ToLower()).ToList();
+        var normalizedGenre = genreList?.Select(g => g.ToLower()).ToList();
+
         var projects = await _unitOfWork.GetProjectRepository()
             .GetListAsync(
-                p => projectIds.Contains(p.Id),
+                p => projectIds.Contains(p.Id) &&
+                     (normalizedStatus == null || normalizedStatus.Contains(p.Status.ToLower())) &&
+                     (normalizedGenre == null || normalizedGenre.Contains(p.Genre.ToLower())),
                 hasTrackings: false
             );
 

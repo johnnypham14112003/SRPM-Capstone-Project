@@ -181,11 +181,11 @@ public class ProjectController : Controller
     // GET: api/project/overview
     [HttpGet("my-project")]
     [Authorize]
-    public async Task<ActionResult> GetMyProject()
+    public async Task<ActionResult> GetMyProject([FromQuery]List<string> Statuses, [FromQuery] List<string> Genres)
     {
         try
         {
-            var result = await _service.GetAllOnlineUserProjectAsync();
+            var result = await _service.GetAllOnlineUserProjectAsync(Statuses, Genres);
             return result?.Count > 0 ? Ok(result) : NoContent();
         }
         catch (Exception ex)
