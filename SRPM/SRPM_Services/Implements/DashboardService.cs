@@ -359,7 +359,8 @@ namespace SRPM_Services.Implements
             // Average projects per council
             var projects = await projectRepo.GetListAsync(
                 p => p.Genre == "propose" || p.Genre == "normal",
-                hasTrackings: false
+                hasTrackings: false,
+                include: p => p.Include(pr => pr.Evaluations).ThenInclude(e => e.AppraisalCouncil)
             );
 
             // Flatten all evaluations from all projects
