@@ -239,15 +239,11 @@ public class EvaluationService : IEvaluationService
                 indiEva.Comment = "The proposal's description is null to generate review!";
                 if (!string.IsNullOrWhiteSpace(projectSummary.Description))
                 {
-                    indiEva.Comment = "This proposal's milestone is null to generate review!";
-                    if (projectSummary.MilestoneContents is not null)
-                    {
-                        var AIResult = await AIReviewAndPlagiarism(projectSummary, cancelToken, unitOfWork, openAIService);
-                        indiEva.Comment = AIResult.reviewResult.Comment;
-                        indiEva.TotalRate = (byte)AIResult.reviewResult.TotalRate;
-                        indiEva.ReviewerResult = AIResult.reviewResult.ReviewerResult;
-                        listSimilarity = AIResult.listSimilarity;
-                    }
+                    var AIResult = await AIReviewAndPlagiarism(projectSummary, cancelToken, unitOfWork, openAIService);
+                    indiEva.Comment = AIResult.reviewResult.Comment;
+                    indiEva.TotalRate = (byte)AIResult.reviewResult.TotalRate;
+                    indiEva.ReviewerResult = AIResult.reviewResult.ReviewerResult;
+                    listSimilarity = AIResult.listSimilarity;
                 }
 
                 //Create AI Evaluation as Individual Evaluation
