@@ -99,13 +99,8 @@ public class TaskService : ITaskService
             throw new Exception("Milestone not found.");
 
         // Lookup user role using account ID and project ID
-        var userRole = await _unitOfWork.GetUserRoleRepository()
-            .GetOneAsync(ur => ur.AccountId == accountId && ur.ProjectId == milestone.ProjectId);
 
-        if (userRole == null)
-            throw new Exception("UserRole not found for the current user in the project.");
-
-        entity.CreatorId = userRole.Id;
+        entity.CreatorId = await _userContextService.GetCurrentUserBaseUserRoleIdAsync();
 
         await _unitOfWork.GetTaskRepository().AddAsync(entity);
         await _unitOfWork.SaveChangesAsync();
