@@ -632,7 +632,6 @@ public static class DIContainer
         services.AddSingleton(new ChatClient(oaiOpts.ChatModel, key));
         //new instance EmbeddingClient
         services.AddSingleton(new EmbeddingClient(oaiOpts.EmbeddingModel, key));
-
         services.AddSingleton(new ChatCompletionOptions { Temperature = 0.7f, MaxOutputTokenCount = 8100 });
 
         //new instance TokenizerProvider
