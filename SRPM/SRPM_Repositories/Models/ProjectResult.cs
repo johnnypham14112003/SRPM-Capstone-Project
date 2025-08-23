@@ -7,7 +7,7 @@ public class ProjectResult
     [Key] public Guid Id { get; set; } = Guid.NewGuid();
 
     [Required, MaxLength(250)] public string Name { get; set; } = null!;
-    [Required] public string? Url { get; set; }
+    public string? Url { get; set; }
     [Required] public DateTime AddedDate { get; set; } = DateTime.Now;
 
     // Foreign keys
