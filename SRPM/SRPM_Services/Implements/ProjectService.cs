@@ -379,24 +379,22 @@ public class ProjectService : IProjectService
     {
         Guid principalId = Guid.Parse(_userContextService.GetCurrentUserId());
 
-        // 1. Load source project and validate
+
         var sourceProject = await _unitOfWork
             .GetProjectRepository()
             .GetByIdAsync(sourceProjectId, hasTrackings: false);
         if (sourceProject == null)
             throw new NotFoundException("Project to enroll not found.");
 
-        // 2. Verify caller has Principal Investigator role
         var principal = await _unitOfWork.GetAccountRepository()
             .GetByIdAsync(principalId);
         if (principal.UserRoles?.All(ur => ur.Role.Name != "Principal Investigator") ?? true)
             throw new UnauthorizedAccessException("Account does not have Principal Investigator role.");
 
-        // 3. Begin transaction
         await _unitOfWork.BeginTransactionAsync(IsolationLevel.Serializable);
         try
         {
-            // 4. Check for existing enrollment
+
             var alreadyEnrolled = await _unitOfWork.GetProjectRepository()
                 .GetOneAsync(
                     p => p.CreatorId == sourceProject.CreatorId
@@ -414,7 +412,6 @@ public class ProjectService : IProjectService
                 return alreadyEnrolled.Adapt<RS_Project>();
             }
 
-            // 5. Clone the project as a draft proposal
             var draftClone = sourceProject.Adapt<Project>();
             draftClone.Id = Guid.NewGuid();
             draftClone.Genre = "proposal";
@@ -424,7 +421,6 @@ public class ProjectService : IProjectService
 
             await _unitOfWork.GetProjectRepository().AddAsync(draftClone);
 
-            // 6. Assign Principal Investigator role in the clone
             var piRole = await _unitOfWork.GetRoleRepository()
                 .GetOneAsync(r => r.Name == "Principal Investigator");
             if (piRole == null)
@@ -445,7 +441,6 @@ public class ProjectService : IProjectService
             };
             await _unitOfWork.GetUserRoleRepository().AddAsync(userRole);
 
-            // 7. Commit all changes within the transaction
             var saved = await _unitOfWork.SaveChangesAsync();
             if (!saved)
                 throw new Exception("Failed to save changes during enrollment.");
@@ -455,7 +450,6 @@ public class ProjectService : IProjectService
         }
         catch
         {
-            // 8. Roll back on any error
             await _unitOfWork.RollbackAsync();
             throw;
         }

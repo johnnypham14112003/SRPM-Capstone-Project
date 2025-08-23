@@ -1,6 +1,7 @@
 ﻿using Mapster;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using SRPM_Repositories.Models;
 using SRPM_Repositories.Repositories.Interfaces;
 using SRPM_Services.BusinessModels;
@@ -10,38 +11,65 @@ using SRPM_Services.BusinessModels.ResponseModels;
 using SRPM_Services.Extensions.Exceptions;
 using SRPM_Services.Interfaces;
 using System.Text;
+using static SRPM_Services.Extensions.Utils.StringUtils;
 
 namespace SRPM_Services.Implements;
 
 public class DocumentService : IDocumentService
 {
+    private readonly IMemoryCache _cache;
     private readonly IUnitOfWork _unitOfWork;
     private readonly IUserContextService _userContextService;
-    public DocumentService(IUnitOfWork unitOfWork, IUserContextService userContextService)
+    private static readonly TimeSpan ThrottleWindow = TimeSpan.FromSeconds(1);
+
+    public DocumentService(IUnitOfWork unitOfWork, IUserContextService userContextService, IMemoryCache cache)
     {
         _unitOfWork = unitOfWork;
         _userContextService = userContextService;
+        _cache = cache;
     }
 
     //=============================================================================
     public async Task<(bool success, Guid DocumentId)> NewDocument(RQ_Document doc)
     {
-        //Check Null Data
-        bool hasInvalidFields = new[] { doc.Name, doc.Type, doc.ContentHtml }
-        .Any(string.IsNullOrWhiteSpace);
-        if (hasInvalidFields) throw new BadRequestException("Document Name or Type or Content cannot be empty!");
+        if (new[] { doc.Name, doc.Type, doc.ContentHtml }
+            .Any(string.IsNullOrWhiteSpace))
+        {
+            throw new BadRequestException("Name, Type or ContentHtml cannot be empty.");
+        }
 
-        //default get by current session || use id on parameter
-        Guid userRoleId = doc.UploaderId is null ? userRoleId = await GetCurrentMainUserRoleId() : Guid.Empty;
-        if (userRoleId == Guid.Empty)
-            throw new BadRequestException("Unknown Who Is Uploading This Document!");
+        var userId = doc.UploaderId ?? await GetCurrentMainUserRoleId();
+        if (userId == Guid.Empty)
+            throw new BadRequestException("Unknown uploader.");
 
-        Document documentDTO = doc.Adapt<Document>();
-        documentDTO.UploaderId = userRoleId;
-        await _unitOfWork.GetDocumentRepository().AddAsync(documentDTO);
-        var resultSave = await _unitOfWork.GetDocumentRepository().SaveChangeAsync();
-        return (resultSave, documentDTO.Id);
+        ulong fingerprint = HtmlFingerprint.ComputeSampleFingerprint(doc.ContentHtml!);
+        string fpKey = $"doc_fp_{userId:N}_{fingerprint}";
+
+        if (_cache.TryGetValue(fpKey, out bool _))
+        {
+            // compute full content hash only on likely duplicates
+            ulong fullHash = HtmlFingerprint.ComputeXxHash64(doc.ContentHtml!);
+            string fullKey = $"doc_full_{userId:N}_{fullHash}";
+
+            if (_cache.TryGetValue(fullKey, out Guid existingId))
+                return (false, existingId);
+
+            // fall through to insert
+        }
+
+        var dto = doc.Adapt<Document>();
+        dto.UploaderId = userId;
+        await _unitOfWork.GetDocumentRepository().AddAsync(dto);
+        bool saved = await _unitOfWork.GetDocumentRepository().SaveChangeAsync();
+
+        _cache.Set(fpKey, true, ThrottleWindow);
+        ulong finalHash = HtmlFingerprint.ComputeXxHash64(doc.ContentHtml!);
+        string cacheKey = $"doc_full_{userId:N}_{finalHash}";
+        _cache.Set(cacheKey, dto.Id, ThrottleWindow);
+
+        return (saved, dto.Id);
     }
+
 
     public async Task<PagingResult<RS_Document>?> ListDocument(Q_Document queryInput)
     {
