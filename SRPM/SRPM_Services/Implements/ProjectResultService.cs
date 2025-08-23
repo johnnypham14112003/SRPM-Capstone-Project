@@ -34,7 +34,7 @@ namespace SRPM_Services.Implements
                     var newPub = pub.Adapt<ResultPublish>();
                     newPub.Id = Guid.NewGuid(); 
                     newPub.ProjectResultId = entity.Id;
-                    newPub.PublicationDate ??= DateTime.UtcNow;
+                    newPub.PublicationDate ??= DateTime.Now;
                     await publishRepo.AddAsync(newPub);
                 }
             }
@@ -87,7 +87,7 @@ namespace SRPM_Services.Implements
                     {
                         var newPub = pub.Adapt<ResultPublish>();
                         newPub.ProjectResultId = entity.Id;
-                        newPub.PublicationDate ??= DateTime.UtcNow;
+                        newPub.PublicationDate ??= DateTime.Now;
                         await publishRepo.AddAsync(newPub);
                     }
                 }

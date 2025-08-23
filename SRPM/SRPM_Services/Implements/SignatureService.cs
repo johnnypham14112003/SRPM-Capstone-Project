@@ -51,7 +51,7 @@ namespace SRPM_Services.Implements
                 SignerId = userRole.Id,
                 SignerName = SignerName,
                 SignatureHash = hashBase64,
-                SignedDate = DateTime.UtcNow
+                SignedDate = DateTime.Now
             };
 
             await _unitOfWork.GetSignatureRepository().AddAsync(signature);

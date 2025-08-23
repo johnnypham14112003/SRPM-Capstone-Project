@@ -1,8 +1,15 @@
-﻿namespace SRPM_Repositories.Repositories.Interfaces;
+﻿using Microsoft.EntityFrameworkCore;
+using System.Data;
+
+namespace SRPM_Repositories.Repositories.Interfaces;
 
 public interface IUnitOfWork
 {
     Task<bool> SaveChangesAsync();
+    Task BeginTransactionAsync(IsolationLevel isolationLevel = IsolationLevel.ReadCommitted);
+    Task CommitAsync();
+    Task RollbackAsync();
+
 
     IAccountNotificationRepository GetAccountNotificationRepository();
     IAccountRepository GetAccountRepository();

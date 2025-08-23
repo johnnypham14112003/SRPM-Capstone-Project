@@ -15,6 +15,7 @@ using SRPM_Services.Extensions.MicrosoftBackgroundService;
 using SRPM_Services.Extensions.OpenAI;
 using SRPM_Services.Extensions.Utils;
 using SRPM_Services.Interfaces;
+using System.Data;
 using System.Text.RegularExpressions;
 
 namespace SRPM_Services.Implements;
@@ -378,75 +379,87 @@ public class ProjectService : IProjectService
     {
         Guid principalId = Guid.Parse(_userContextService.GetCurrentUserId());
 
-        // Step 1: Validate source project
-        var sourceProject = await _unitOfWork.GetProjectRepository().GetByIdAsync(sourceProjectId, hasTrackings: false);
+        // 1. Load source project and validate
+        var sourceProject = await _unitOfWork
+            .GetProjectRepository()
+            .GetByIdAsync(sourceProjectId, hasTrackings: false);
         if (sourceProject == null)
             throw new NotFoundException("Project to enroll not found.");
 
-        // Step 2: Validate role of Principal Investigator
-        var principal = await _unitOfWork.GetAccountRepository().GetByIdAsync(principalId);
-        var hasPrincipalRole = principal.UserRoles!.Any(ur => ur.Role.Name == "Principal Investigator");
-
-        if (!hasPrincipalRole)
+        // 2. Verify caller has Principal Investigator role
+        var principal = await _unitOfWork.GetAccountRepository()
+            .GetByIdAsync(principalId);
+        if (principal.UserRoles?.All(ur => ur.Role.Name != "Principal Investigator") ?? true)
             throw new UnauthorizedAccessException("Account does not have Principal Investigator role.");
 
-        // Step 3: Check for existing proposals with same info
-        var similarProjects = await _unitOfWork.GetProjectRepository().GetListAsync(
-            p => p.CreatorId == sourceProject.CreatorId &&
-                 p.Genre == "proposal" &&
-                 p.EnglishTitle == sourceProject.EnglishTitle &&
-                 p.VietnameseTitle == sourceProject.VietnameseTitle &&
-                 p.StartDate == sourceProject.StartDate,
-            include: q => q.Include(p => p.Members),
-            hasTrackings: false,
-            useSplitQuery: true
-        );
-
-        var enrolledProject = similarProjects?
-            .FirstOrDefault(project => project.Members.Any(m => m.AccountId == principalId));
-
-        if (enrolledProject != null)
+        // 3. Begin transaction
+        await _unitOfWork.BeginTransactionAsync(IsolationLevel.Serializable);
+        try
         {
-            return enrolledProject.Adapt<RS_Project>();
+            // 4. Check for existing enrollment
+            var alreadyEnrolled = await _unitOfWork.GetProjectRepository()
+                .GetOneAsync(
+                    p => p.CreatorId == sourceProject.CreatorId
+                         && p.Genre == "proposal"
+                         && p.EnglishTitle == sourceProject.EnglishTitle
+                         && p.VietnameseTitle == sourceProject.VietnameseTitle
+                         && p.StartDate == sourceProject.StartDate
+                         && p.Members.Any(m => m.AccountId == principalId),
+                    include: q => q.Include(p => p.Members),
+                    hasTrackings: false);
+
+            if (alreadyEnrolled != null)
+            {
+                await _unitOfWork.CommitAsync();
+                return alreadyEnrolled.Adapt<RS_Project>();
+            }
+
+            // 5. Clone the project as a draft proposal
+            var draftClone = sourceProject.Adapt<Project>();
+            draftClone.Id = Guid.NewGuid();
+            draftClone.Genre = "proposal";
+            draftClone.Status = Status.Draft.ToString().ToLowerInvariant();
+            draftClone.CreatedAt = DateTime.Now;
+            draftClone.UpdatedAt = DateTime.Now;
+
+            await _unitOfWork.GetProjectRepository().AddAsync(draftClone);
+
+            // 6. Assign Principal Investigator role in the clone
+            var piRole = await _unitOfWork.GetRoleRepository()
+                .GetOneAsync(r => r.Name == "Principal Investigator");
+            if (piRole == null)
+                throw new ArgumentException("Role 'Principal Investigator' not found.");
+
+            var userRole = new UserRole
+            {
+                Id = Guid.NewGuid(),
+                AccountId = principalId,
+                Code = $"UR-{DateTime.Now:yyyy_MM_dd}_{principalId:N}".Substring(0, 6),
+                RoleId = piRole.Id,
+                ProjectId = draftClone.Id,
+                GroupName = draftClone.EnglishTitle,
+                IsOfficial = false,
+                ExpireDate = draftClone.CreatedAt.AddYears(1),
+                CreatedAt = DateTime.Now,
+                Status = Status.Approved.ToString().ToLowerInvariant()
+            };
+            await _unitOfWork.GetUserRoleRepository().AddAsync(userRole);
+
+            // 7. Commit all changes within the transaction
+            var saved = await _unitOfWork.SaveChangesAsync();
+            if (!saved)
+                throw new Exception("Failed to save changes during enrollment.");
+
+            await _unitOfWork.CommitAsync();
+            return draftClone.Adapt<RS_Project>();
         }
-
-        // Step 4: Clone as draft
-        var draftClone = sourceProject.Adapt<Project>();
-        draftClone.Id = Guid.NewGuid();
-        draftClone.Genre = "proposal";
-        draftClone.Status = Status.Draft.ToString().ToLowerInvariant();
-        draftClone.CreatedAt = DateTime.Now;
-        draftClone.UpdatedAt = DateTime.Now;
-
-        await _unitOfWork.GetProjectRepository().AddAsync(draftClone);
-
-        // Step 5: Attach Principal Investigator role to cloned project
-        var piRole = await _unitOfWork.GetRoleRepository()
-            .GetOneAsync(r => r.Name == "Principal Investigator");
-
-        if (piRole == null)
-            throw new ArgumentException("Role 'Principal Investigator' not found.");
-
-        var userRole = new UserRole
+        catch
         {
-            Id = Guid.NewGuid(),
-            AccountId = principalId,
-            Code = $"UR-{DateTime.Now:yyyy_MM_dd}_{principalId.ToString().Substring(0, 6).ToUpperInvariant()}",
-            RoleId = piRole.Id,
-            ProjectId = draftClone.Id,
-            GroupName = draftClone.EnglishTitle,
-            IsOfficial = false,
-            ExpireDate = draftClone.CreatedAt.AddYears(1),
-            CreatedAt = DateTime.Now,
-            Status = Status.Approved.ToString().ToLowerInvariant()
-        };
-
-        await _unitOfWork.GetUserRoleRepository().AddAsync(userRole);
-        await _unitOfWork.SaveChangesAsync();
-
-        return draftClone.Adapt<RS_Project>();
+            // 8. Roll back on any error
+            await _unitOfWork.RollbackAsync();
+            throw;
+        }
     }
-
     //=============================================================================================
     //Create Milestone, task
     public async Task<bool> CreateFromDocumentAsync(RQ_MilestoneTaskContent content)
@@ -699,7 +712,7 @@ public class ProjectService : IProjectService
     public async Task<bool> ApproveProposalAsync(Guid proposalProjectId)
     {
         var repo = _unitOfWork.GetProjectRepository();
-        var invalidStatuses = new[]
+        var invalidStates = new[]
         {
         Status.InProgress.ToString().ToLower(),
         Status.Completed.ToString().ToLower(),
@@ -713,93 +726,104 @@ public class ProjectService : IProjectService
         if (proposal.Status != Status.Submitted.ToString().ToLower())
             throw new InvalidOperationException("Only submitted proposals can be approved.");
 
-        var alreadyApproved = await repo.AnyAsync(
-            p => p.Code == proposal.Code &&
-                 p.Id != proposal.Id &&
-                 p.Genre == "proposal" &&
-                 invalidStatuses.Contains(p.Status)
+        var alreadyApproved = await repo.AnyAsync(p =>
+            p.Code == proposal.Code &&
+            p.Id != proposal.Id &&
+            p.Genre == "proposal" &&
+            invalidStates.Contains(p.Status)
         );
 
         if (alreadyApproved)
-            throw new InvalidOperationException("Another proposal has already been approved for this project.");
+            throw new InvalidOperationException("Another proposal has already been approved.");
 
-        var sourceProject = await repo.GetOneAsync(
-            p => p.Code == proposal.Code &&
-                 (p.Genre.ToLower() == "propose" || p.Genre.ToLower() == "normal")
+        var sourceProject = await repo.GetOneAsync(p =>
+            p.Code == proposal.Code &&
+            (p.Genre.ToLower() == "propose" || p.Genre.ToLower() == "normal")
         );
 
-        if (sourceProject != null && invalidStatuses.Contains(sourceProject.Status))
-            throw new InvalidOperationException($"Cannot approve proposal. Source project is already {sourceProject.Status}.");
+        if (sourceProject != null && invalidStates.Contains(sourceProject.Status))
+            throw new InvalidOperationException($"Cannot approve—source is {sourceProject.Status}.");
 
-        if (sourceProject != null)
-            sourceProject.Status = Status.InProgress.ToString().ToLower();
-
+        sourceProject!.Status = Status.InProgress.ToString().ToLower();
         proposal.Status = Status.Approved.ToString().ToLower();
 
-        var otherProposals = await repo.GetListAsync(
-            p => p.Code == proposal.Code &&
-                 p.Id != proposal.Id &&
-                 p.Status == Status.Submitted.ToString().ToLower(),
-            hasTrackings: true,
-            include: q => q
-                .Include(p => p.Members)
-        );
+        await _unitOfWork.SaveChangesAsync();
 
-        foreach (var other in otherProposals)
+        _taskQueueHandler.EnqueueTracked(async (serviceProvider, token, progress) =>
         {
-            other.Status = Status.Rejected.ToString().ToLower();
 
+            var scopedUow = serviceProvider.GetRequiredService<IUnitOfWork>();
+            var notifService = serviceProvider.GetRequiredService<INotificationService>();
+            var projRepo = scopedUow.GetProjectRepository();
 
-            await _notificationService.CreateNew(new RQ_Notification
+            var others = await projRepo.GetListAsync(
+                p => p.Code == proposal.Code &&
+                     p.Id != proposal.Id &&
+                     p.Status == Status.Submitted.ToString().ToLower(),
+                hasTrackings: true,
+                include: q => q.Include(p => p.Members)
+            );
+
+            foreach (var other in others)
             {
-                Title = $"Proposal Rejected {other.EnglishTitle}",
-                Type = "project",
-                ObjecNotificationId = other.Id,
-                IsGlobalSend = false,
-                ListAccountId = other.Members?.Select(m => m.AccountId).Distinct().ToList() ?? new List<Guid>()
-            });
-        }
-
-
-        await _notificationService.CreateNew(new RQ_Notification
-        {
-            Title = $"Proposal Approved {proposal.EnglishTitle}",
-            Type = "project",
-            ObjecNotificationId = proposal.Id,
-            IsGlobalSend = false,
-            ListAccountId = proposal.Members?.Select(m => m.AccountId).Distinct().ToList() ?? new List<Guid>()
-        });
-
-
-        var approvedMembers = await _unitOfWork.GetUserRoleRepository().GetListAsync(pm => pm.ProjectId == proposal.Id);
-        foreach (var member in approvedMembers)
-        {
-            var account = await _unitOfWork.GetAccountRepository().GetByIdAsync(member.AccountId);
-            if (account?.Email != null)
-            {
-                await _notificationService.SendNotificationMail(new RQ_NotificationEmail
+                other.Status = Status.Rejected.ToString().ToLower();
+                await notifService.CreateNew(new RQ_Notification
                 {
-                    Subject = "[SRPM] Proposal Approval Notification",
-                    ReceiverEmailAddress = account.Email,
-                    Title = "Your Proposal Has Been Approved",
-                    RefContent = $"Dear {account.FullName ?? "Researcher"},\n\n" +
+                    Title = $"Proposal Rejected {other.EnglishTitle}",
+                    Type = "project",
+                    ObjecNotificationId = other.Id,
+                    IsGlobalSend = false,
+                    ListAccountId = other.Members.Select(m => m.AccountId).Distinct().ToList()
+                });
+
+                progress.Report(20); 
+            }
+
+            await notifService.CreateNew(new RQ_Notification
+            {
+                Title = $"Proposal Approved {proposal.EnglishTitle}",
+                Type = "project",
+                ObjecNotificationId = proposal.Id,
+                IsGlobalSend = false,
+                ListAccountId = proposal.Members.Select(m => m.AccountId).Distinct().ToList()
+            });
+
+            progress.Report(60);
+
+            var approvedMembers = await scopedUow.GetUserRoleRepository()
+                                                 .GetListAsync(pm => pm.ProjectId == proposal.Id);
+            foreach (var member in approvedMembers)
+            {
+                var account = await scopedUow.GetAccountRepository().GetByIdAsync(member.AccountId);
+                if (!string.IsNullOrEmpty(account?.Email))
+                {
+                    await notifService.SendNotificationMail(new RQ_NotificationEmail
+                    {
+                        Subject = "[SRPM] Proposal Approval Notification",
+                        ReceiverEmailAddress = account.Email,
+                        Title = "Your Proposal Has Been Approved",
+                        RefContent = $"Dear {account.FullName ?? "Researcher"},\n\n" +
                               $"We are pleased to inform you that your proposal titled \"{proposal.EnglishTitle}\" has been officially approved by the SRPM committee.\n\n" +
                               $"This decision reflects the quality and relevance of your work, and we look forward to seeing its impact in the upcoming stages of the project.\n\n" +
                               $"You may now proceed with the next steps outlined in your project plan. Please ensure all documentation and milestones are updated accordingly.\n\n" +
                               $"If you have any questions or require further assistance, feel free to reach out to your assigned coordinator.\n\n" +
                               $"Best regards,\nSRPM Administration Team",
-                    CreatedDate = DateTime.UtcNow,
-                    RefTitle = "Proposal Approved",
-                    Content = $"Project: {proposal.EnglishTitle}\nStatus: Approved",
-                    RefButton = "View Proposal",
-                    RefUrl = $"https://srpm.com/proposals/{proposal.Id}"
-                });
+                        CreatedDate = DateTime.Now,
+                        RefTitle = "Proposal Approved",
+                        Content = $"Project: {proposal.EnglishTitle}\nStatus: Approved",
+                        RefButton = "View Proposal",
+                        RefUrl = $"https://srpm.com/proposals/{proposal.Id}"
+                    });
+                }
             }
-        }
 
-        await _unitOfWork.SaveChangesAsync();
+            progress.Report(100);
+            await scopedUow.SaveChangesAsync();
+        });
+
         return true;
     }
+
     public async Task<(Guid id, bool isEnrolled)> CheckIsEnrollInProject(Guid sourceProjectId)
     {
         var principalId = Guid.Parse(_userContextService.GetCurrentUserId()); // Your method to get current user ID

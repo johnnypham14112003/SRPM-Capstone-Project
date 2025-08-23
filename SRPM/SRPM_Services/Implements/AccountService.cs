@@ -259,7 +259,7 @@ public class AccountService : IAccountService
             .FirstOrDefault();
 
         if (otpCode == null)
-            return (false, 0, DateTime.UtcNow); // No OTP issued
+            return (false, 0, DateTime.Now); // No OTP issued
 
         // Step 3: Check expiration
         if (DateTime.Now < otpCode.ExpiresAt)
@@ -268,7 +268,7 @@ public class AccountService : IAccountService
         // Step 4: Lockout check
         if (otpCode.Attempt >= 3)
         {
-            otpCode.ExpiresAt = DateTime.UtcNow; // Force expire on max attempts
+            otpCode.ExpiresAt = DateTime.Now; // Force expire on max attempts
             return (false, otpCode.Attempt, otpCode.ExpiresAt); // Max attempts reached — no retry
         }
 

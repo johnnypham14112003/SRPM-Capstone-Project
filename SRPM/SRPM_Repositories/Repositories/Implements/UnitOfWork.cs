@@ -1,11 +1,15 @@
-﻿using SRPM_Repositories.Repositories.Interfaces;
-
+﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
+using SRPM_Repositories.Repositories.Interfaces;
+using System.Data;
 namespace SRPM_Repositories.Repositories.Implements;
 
 public class UnitOfWork : IUnitOfWork
 {
     //Declare DI
     private readonly SRPMDbContext _context;
+    private IDbContextTransaction _transaction;
+
     //Lazy (initial when needed)
     private readonly Lazy<IAccountNotificationRepository> _accountNotificationRepository;
     private readonly Lazy<IAccountRepository> _accountRepository;
@@ -119,6 +123,28 @@ public class UnitOfWork : IUnitOfWork
     //Methods Expose Repository
     public async Task<bool> SaveChangesAsync()
         => await _context.SaveChangesAsync() > 0;
+    public async Task BeginTransactionAsync(IsolationLevel isolationLevel = IsolationLevel.ReadCommitted)
+    {
+        _transaction = await _context.Database.BeginTransactionAsync(isolationLevel);
+    }
+
+    public async Task CommitAsync()
+    {
+        if (_transaction != null)
+        {
+            await _transaction.CommitAsync();
+            await _transaction.DisposeAsync();
+        }
+    }
+
+    public async Task RollbackAsync()
+    {
+        if (_transaction != null)
+        {
+            await _transaction.RollbackAsync();
+            await _transaction.DisposeAsync();
+        }
+    }
 
     public IAccountNotificationRepository GetAccountNotificationRepository()
         => _accountNotificationRepository.Value;
