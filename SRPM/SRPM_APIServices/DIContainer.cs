@@ -588,7 +588,8 @@ public static class DIContainer
     {
         var allowedOrigins = new[] {
             "http://localhost:5173",
-            "http://localhost:3000"
+            "http://localhost:3000",
+            "https://fe-capstone-tan.vercel.app"
         };
 
         app.UseCors("CustomPolicy");
