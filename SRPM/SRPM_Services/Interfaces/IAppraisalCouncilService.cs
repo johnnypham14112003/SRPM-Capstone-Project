@@ -16,4 +16,5 @@ public interface IAppraisalCouncilService
     Task<RS_AppraisalCouncil?> GetCouncilInEvaluationAsync(Guid projectId);
     Task<bool> AssignCouncilToClonedStages(Guid sourceProjectId, Guid appraisalCouncilId);
     Task<PagingResult<RS_AppraisalCouncil>> GetAllOnlineUserAppraisalCouncilAsync(int pageIndex, int pageSize);
+    Task<List<RS_Project>> GetProposalsFromCouncilAsync(Guid councilId);
 }

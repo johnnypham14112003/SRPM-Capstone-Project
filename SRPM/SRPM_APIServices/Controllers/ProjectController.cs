@@ -194,52 +194,6 @@ public class ProjectController : Controller
         }
     }
 
-    [HttpGet("host")]
-    public async Task<ActionResult> GetHostProjectHistory()
-    {
-        try
-        {
-            var result = await _service.GetHostProjectHistory();
-            return Ok(result);
-        }
-        catch (NotFoundException ex)
-        {
-            return NotFound(new { message = ex.Message });
-        }
-        catch (UnauthorizedAccessException ex)
-        {
-            return Forbid(ex.Message);
-        }
-        catch (Exception ex)
-        {
-            return StatusCode(500, new { message = "Unexpected error occurred.", detail = ex.Message });
-        }
-    }
-
-    /// <summary>
-    /// Get all projects proposed by the current Staff account.
-    /// </summary>
-    [HttpGet("staff")]
-    public async Task<ActionResult> GetStaffProjectHistory()
-    {
-        try
-        {
-            var result = await _service.GetStaffProjectHistory();
-            return Ok(result);
-        }
-        catch (NotFoundException ex)
-        {
-            return NotFound(new { message = ex.Message });
-        }
-        catch (UnauthorizedAccessException ex)
-        {
-            return Forbid(ex.Message);
-        }
-        catch (Exception ex)
-        {
-            return StatusCode(500, new { message = "Unexpected error occurred.", detail = ex.Message });
-        }
-    }
     [HttpPost("{proposalProjectId}/approve")]
     public async Task<IActionResult> ApproveProposal(Guid proposalProjectId)
     {
