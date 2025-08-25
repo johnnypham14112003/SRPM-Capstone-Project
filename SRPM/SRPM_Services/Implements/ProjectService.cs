@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using SRPM_Repositories.Models;
+using SRPM_Repositories.Repositories.Implements;
 using SRPM_Repositories.Repositories.Interfaces;
 using SRPM_Services.BusinessModels;
 using SRPM_Services.BusinessModels.Others;
@@ -331,48 +332,100 @@ public class ProjectService : IProjectService
         List<string>? statusList,
         List<string>? genreList)
     {
-        var accountId = Guid.Parse(_userContextService.GetCurrentUserId());
-        var currentRoleName = _userContextService.GetCurrentUserRole();
+        try
+        {
+            var accountId = Guid.Parse(_userContextService.GetCurrentUserId());
+            var currentRole = _userContextService.GetCurrentUserRole();
+            var deletedStatus = Status.Deleted.ToString().ToLower();
 
-        // Fetch UserRoles with Role included
-        var userRoles = await _unitOfWork.GetUserRoleRepository()
-            .GetListAsync(
-                ur => ur.AccountId == accountId,
-                include: q => q.Include(ur => ur.Role)
-            );
+            if (currentRole == "Host Institution" || currentRole == "Staff")
+            {
+                var userRole = await _unitOfWork
+                    .GetUserRoleRepository()
+                    .GetOneAsync(r =>
+                        r.AccountId == accountId &&
+                        r.Role != null &&
+                        r.Role.Name == currentRole &&
+                        r.Status.ToLower() != deletedStatus &&
+                        r.ProjectId == null &&
+                        r.AppraisalCouncilId == null,
+                        hasTrackings: false);
 
-        // Filter by matching role name
-        var matchingRoles = userRoles!
-            .Where(ur => ur.Role != null && ur.Role.Name == currentRoleName)
-            .ToList();
+                if (userRole == null)
+                    throw new NotFoundException($"No {currentRole} role found for this account.");
 
-        var projectIds = matchingRoles
-            .Select(ur => ur.ProjectId)
-            .Where(id => id != null)
-            .Distinct()
-            .ToList();
+                var sourceGenre = currentRole == "Host Institution" ? "normal" : "propose";
+                var completedStatus = Status.Completed.ToString().ToLower();
+                var sourceProjects = await _unitOfWork
+                    .GetProjectRepository()
+                    .GetListAsync(p =>
+                        p.CreatorId == userRole.Id &&
+                        p.Genre.ToLower() == sourceGenre &&
+                        p.Status.ToLower() != deletedStatus,
+                        hasTrackings: false);
 
-        if (!projectIds.Any())
-            return new List<RS_ProjectOverview>();
+                if (sourceProjects == null || !sourceProjects.Any())
+                    return new List<RS_ProjectOverview>();
 
-        // Normalize filters
-        var normalizedStatus = statusList?.Select(s => s.ToLower()).ToList();
-        var normalizedGenre = genreList?.Select(g => g.ToLower()).ToList();
+                var sourceProjectIds = sourceProjects.Select(p => p.Code).ToList();
 
-        // Build query conditionally
-        var projects = await _unitOfWork.GetProjectRepository()
-            .GetListAsync(
-                p => projectIds.Contains(p.Id) &&
-                     (normalizedStatus == null || normalizedStatus.Count() == 0  || normalizedStatus.Contains(p.Status.ToLower())) &&
-                     (normalizedGenre == null || normalizedGenre.Count() == 0 || normalizedGenre.Contains(p.Genre.ToLower())),
-                hasTrackings: false
-            );
+                var proposalProjects = await _unitOfWork
+                    .GetProjectRepository()
+                    .GetListAsync(p =>
+                        p.Genre.ToLower() == "proposal" &&
+                        p.Code != null &&
+                        sourceProjectIds.Contains(p.Code),
+                        hasTrackings: false);
 
-        var overviewList = projects!
-            .OrderByDescending(p => p.CreatedAt)
-            .Adapt<List<RS_ProjectOverview>>();
+                if (proposalProjects == null || !proposalProjects.Any())
+                    return new List<RS_ProjectOverview>();
 
-        return overviewList;
+                return proposalProjects.Adapt<List<RS_ProjectOverview>>();
+            }
+            var allRoles = await _unitOfWork
+                .GetUserRoleRepository()
+                .GetListAsync(
+                    ur => ur.AccountId == accountId,
+                    include: q => q.Include(ur => ur.Role));
+
+            var matchingRoles = allRoles
+                .Where(ur => ur.Role != null && ur.Role.Name == currentRole)
+                .ToList();
+
+            var projectIds = matchingRoles
+                .Select(ur => ur.ProjectId)
+                .Where(id => id != null)
+                .Distinct()
+                .ToList();
+
+            if (!projectIds.Any())
+                return new List<RS_ProjectOverview>();
+
+            var normalizedStatus = statusList?.Select(s => s.ToLower()).ToList();
+            var normalizedGenre = genreList?.Select(g => g.ToLower()).ToList();
+
+            var genericProjects = await _unitOfWork
+                .GetProjectRepository()
+                .GetListAsync(p =>
+                    projectIds.Contains(p.Id) &&
+                    (normalizedStatus == null || !normalizedStatus.Any() || normalizedStatus.Contains(p.Status.ToLower())) &&
+                    (normalizedGenre == null || !normalizedGenre.Any() || normalizedGenre.Contains(p.Genre.ToLower())),
+                    hasTrackings: false);
+
+            var overviewList = genericProjects!
+                .OrderByDescending(p => p.CreatedAt)
+                .Adapt<List<RS_ProjectOverview>>();
+
+            return overviewList;
+        }
+        catch (NotFoundException)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            throw new Exception("Error getting user project history.", ex);
+        }
     }
 
     public async Task<RS_Project> EnrollAsPrincipalAsync(Guid sourceProjectId)
@@ -626,83 +679,7 @@ public class ProjectService : IProjectService
         return await _unitOfWork.SaveChangesAsync();
     }
 
-    public async Task<List<RS_ProjectOverview>> GetHostProjectHistory()
-    {
-        try
-        {
-            Guid accountId = Guid.Parse(_userContextService.GetCurrentUserId());
-
-            // Step 1: Get user roles for Host Institution
-            var userRoles = await _unitOfWork.GetUserRoleRepository()
-                .GetOneAsync(r =>
-                    r.AccountId == accountId &&
-                    r.Role != null &&
-                    r.Role.Name == "Host Institution" &&
-                    r.Status.ToLower() != Status.Deleted.ToString().ToLower() &&
-                    r.ProjectId == null &&
-                    r.AppraisalCouncilId == null,
-                    hasTrackings: false
-                );
-
-            if (userRoles == null)
-                throw new NotFoundException("No Host Institution roles found for this account.");
-
-            var projects = await _unitOfWork.GetProjectRepository()
-                .GetListAsync(p =>
-                    p.CreatorId == userRoles.Id &&
-                    p.Genre == "normal" &&
-                    p.Status.ToLower() != Status.Deleted.ToString().ToLower(),
-                    hasTrackings: false
-                );
-
-            if (projects == null || !projects.Any())
-                throw new NotFoundException("No host projects found for this account.");
-
-            return projects.Adapt<List<RS_ProjectOverview>>();
-        }
-        catch (Exception ex)
-        {
-            throw new Exception("Error getting host project history.", ex);
-        }
-    }
-    public async Task<List<RS_ProjectOverview>> GetStaffProjectHistory()
-    {
-        try
-        {
-            Guid accountId = Guid.Parse(_userContextService.GetCurrentUserId());
-
-            var userRoles = await _unitOfWork.GetUserRoleRepository()
-                .GetOneAsync(r =>
-                    r.AccountId == accountId &&
-                    r.Role != null &&
-                    r.Role.Name == "Staff" &&
-                    r.Status.ToLower() != Status.Deleted.ToString().ToLower() &&
-                    r.ProjectId == null &&
-                    r.AppraisalCouncilId == null,
-                    hasTrackings: false
-                );
-
-            if (userRoles == null)
-                throw new NotFoundException("No Staff roles found for this account.");
-
-            var projects = await _unitOfWork.GetProjectRepository()
-                .GetListAsync(p =>
-                    p.CreatorId == userRoles.Id &&
-                    p.Genre == "propose" &&
-                    p.Status.ToLower() != Status.Deleted.ToString().ToLower(),
-                    hasTrackings: false
-                );
-
-            if (projects == null || !projects.Any())
-                throw new NotFoundException("No staff projects found for this account.");
-
-            return projects.Adapt<List<RS_ProjectOverview>>();
-        }
-        catch (Exception ex)
-        {
-            throw new Exception("Error getting staff project history. " + ex);
-        }
-    }
+    
     public async Task<bool> ApproveProposalAsync(Guid proposalProjectId)
     {
         var repo = _unitOfWork.GetProjectRepository();

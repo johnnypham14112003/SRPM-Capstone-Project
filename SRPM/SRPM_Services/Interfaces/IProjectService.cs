@@ -22,14 +22,7 @@ public interface IProjectService
         List<string>? genreList);
     Task<RS_Project> EnrollAsPrincipalAsync(Guid sourceProjectId);
     Task<bool> CreateFromDocumentAsync(RQ_MilestoneTaskContent content);
-    /*
-     * The milestone text should be Bold
-     * The task text should be normal
-     * The time must be in format (start,end): dd/mm/yyyy, dd/mm/yyyy
-     */
 
-    Task<List<RS_ProjectOverview>> GetHostProjectHistory();
-    Task<List<RS_ProjectOverview>> GetStaffProjectHistory();
     Task<bool> ApproveProposalAsync(Guid proposalProjectId);
     Task<(Guid id, bool isEnrolled)> CheckIsEnrollInProject(Guid sourceProject);
 }

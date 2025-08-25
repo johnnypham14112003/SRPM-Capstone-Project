@@ -125,7 +125,23 @@ public class AppraisalCouncilService : IAppraisalCouncilService
 
         return result;
     }
+    public async Task<List<RS_Project>> GetProposalsFromCouncilAsync(Guid councilId)
+    {
+        var listPro = await _unitOfWork
+            .GetAppraisalCouncilRepository()
+            .GetProjectOfCouncil(councilId);
 
+        if (!string.IsNullOrWhiteSpace(listPro.error))
+            throw new NotFoundException(listPro.error);
+
+        // Map only the proposal‐genre items
+        var proposals = listPro.proposals?
+            .Where(x => x.Genre == "proposal")
+            .Adapt<List<RS_Project>>()     // Map to your response DTO
+            ?? new List<RS_Project>();
+
+        return proposals;
+    }
     public async Task<RS_AppraisalCouncil?> GetCouncilInEvaluationAsync(Guid projectId)
     {
         var result = await _unitOfWork.GetAppraisalCouncilRepository()

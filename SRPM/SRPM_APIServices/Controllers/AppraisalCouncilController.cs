@@ -59,19 +59,66 @@ public class AppraisalCouncilController : Controller
         return result ? Ok("Delete Successfully!") : BadRequest("Delete Failed!");
     }
 
-    [HttpPost("list-project/{councilId}")]
-    public async Task<IActionResult> GetProjectOfCouncil([FromRoute] Guid councilId, List<string>? statuses)
+    [HttpPost("list-project")]
+    public async Task<IActionResult> GetProjectOfCouncil([FromBody] ListProjectOfCouncil query)
     {
-        var result = await _appraisalCouncilService.GetProjectsFromCouncilAsync(councilId);
-            if (statuses is not null) 
-            { 
-            var returnedProjects = result!
-                .Where(p => statuses!.Contains(p.Status.ToString().ToLower()))
-                .ToList();
-            return returnedProjects is not null ? Ok(returnedProjects) : NotFound("Not found any Project belong to this CouncilId");
-            
+        // If only proposals requested
+        if (query.isProposal == true)
+        {
+            var proposals = await _appraisalCouncilService
+                .GetProposalsFromCouncilAsync(query.councilId);
+
+            if (proposals == null || !proposals.Any())
+                return NotFound("No proposal projects found for this CouncilId");
+
+            // Apply optional status filter on proposals
+            if (query.statuses is not null && query.statuses.Any())
+            {
+                var filtered = proposals
+                    .Where(p => query.statuses
+                        .Contains(p.Status.ToString().ToLower()))
+                    .ToList();
+
+                if (!filtered.Any())
+                    return NotFound("No proposals match the given statuses");
+
+                return Ok(filtered);
             }
-        return result is not null ? Ok(result) : NotFound("Not found any Project belong to this CouncilId");
+
+            return Ok(proposals);
+        }
+
+        // Otherwise, full council‐project + nested proposals logic
+        var councilProjects = await _appraisalCouncilService
+            .GetProjectsFromCouncilAsync(query.councilId);
+
+        if (councilProjects == null || !councilProjects.Any())
+            return NotFound("No projects found for this CouncilId");
+
+        // Filter by project statuses if provided
+        if (query.statuses is not null && query.statuses.Any())
+        {
+            var filteredByStatus = councilProjects
+                .Where(p => query.statuses
+                    .Contains(p.Status.ToString().ToLower()))
+                .ToList();
+
+            if (!filteredByStatus.Any())
+                return NotFound("No projects match the given statuses");
+
+            return Ok(filteredByStatus);
+        }
+
+        return Ok(councilProjects);
+    }
+    public sealed record ListProjectOfCouncil()
+    {
+        public Guid councilId { get; set; }
+        public List<string>? statuses { get; set; }
+        public List<string>? genres { get; set; }
+
+        // New flag to return only proposals
+        public bool? isProposal { get; set; }
     }
 
     [HttpGet("project/{projectId}")]
