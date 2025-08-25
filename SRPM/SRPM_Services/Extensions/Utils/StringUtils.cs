@@ -5,7 +5,7 @@ using System.Text;
 using System.Net;
 
 namespace SRPM_Services.Extensions.Utils;
-public class StringUtils
+public static class StringUtils
 {
     //Convert entire html codes into raw paragraph text, no format...
     public static string ExtractVisibleTextFromHtml(string html)
