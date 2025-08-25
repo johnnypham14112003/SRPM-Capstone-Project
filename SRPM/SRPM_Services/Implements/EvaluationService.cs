@@ -12,6 +12,7 @@ using SRPM_Services.Extensions.Enumerables;
 using SRPM_Services.Extensions.Exceptions;
 using SRPM_Services.Extensions.MicrosoftBackgroundService;
 using SRPM_Services.Extensions.OpenAI;
+using SRPM_Services.Extensions.Utils;
 using SRPM_Services.Interfaces;
 using System.Net;
 using System.Threading;
@@ -215,7 +216,9 @@ public class EvaluationService : IEvaluationService
                 //==============================[ Run AI ]==============================
                 // Get content from projectDocument
                 string rawHtml = projectDocument?.ContentHtml ?? string.Empty;
-                string visibleText = ExtractVisibleTextFromHtml(rawHtml);
+                string visibleText = StringUtils.ExtractVisibleTextFromHtml(rawHtml);
+                visibleText = StringUtils.DecodeHtmlEntitiesText(visibleText);
+
                 var countDocToken = openAIService.CountToken("chatmodel", visibleText);
 
                 var projectSummary = project.Adapt<RQ_ProjectContentForAI>();
@@ -302,7 +305,8 @@ public class EvaluationService : IEvaluationService
 
                 // Get content from projectDocument
                 string rawHtml = projectDocument?.ContentHtml ?? string.Empty;
-                string visibleText = ExtractVisibleTextFromHtml(rawHtml);
+                string visibleText = StringUtils.ExtractVisibleTextFromHtml(rawHtml);
+                visibleText = StringUtils.DecodeHtmlEntitiesText(visibleText);
                 var countDocToken = openAIService.CountToken("chatmodel", visibleText);
 
                 //Prepare data before send to AI
@@ -397,26 +401,5 @@ public class EvaluationService : IEvaluationService
         listSimilarity = await openAIService.CompareWithSourceAsync(vectorDescription!, syntheticSource, cancelToken);
 
         return (listSimilarity, reviewResult);
-    }
-    private string ExtractVisibleTextFromHtml(string html)
-    {
-        if (string.IsNullOrWhiteSpace(html)) return string.Empty;
-        var doc = new HtmlDocument();
-        doc.LoadHtml(html);
-
-        // remove script/style/comments
-        var removeNodes = doc.DocumentNode.SelectNodes("//script|//style|//comment()");
-        if (removeNodes != null)
-        {
-            foreach (var n in removeNodes) n.Remove();
-        }
-
-        var text = doc.DocumentNode.InnerText ?? string.Empty;
-
-        //Decode Unicode Character may have in text
-        string decodedText = WebUtility.HtmlDecode(text);
-        //Replace blank space -> a space
-        decodedText = System.Text.RegularExpressions.Regex.Replace(text, @"\s+", " ").Trim();
-        return decodedText;
     }
 }
