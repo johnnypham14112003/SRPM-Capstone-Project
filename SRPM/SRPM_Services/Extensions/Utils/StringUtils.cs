@@ -1,10 +1,36 @@
 ﻿using K4os.Hash.xxHash;
 using System.Buffers;
 using System.Text;
+﻿using HtmlAgilityPack;
+using System.Net;
 
 namespace SRPM_Services.Extensions.Utils;
-public class StringUtils
+public static class StringUtils
 {
+    //Convert entire html codes into raw paragraph text, no format...
+    public static string ExtractVisibleTextFromHtml(string html)
+    {
+        if (string.IsNullOrWhiteSpace(html)) return string.Empty;
+        var doc = new HtmlDocument();
+        doc.LoadHtml(html);
+
+        // remove script/style/comments
+        var removeNodes = doc.DocumentNode.SelectNodes("//script|//style|//comment()");
+        if (removeNodes != null)
+        {
+            foreach (var n in removeNodes) n.Remove();
+        }
+
+        var text = doc.DocumentNode.InnerText ?? string.Empty;
+
+        //Decode Unicode Character may have in text
+        string decodedText = WebUtility.HtmlDecode(text);
+        //Replace blank space -> a space
+        decodedText = System.Text.RegularExpressions.Regex.Replace(text, @"\s+", " ").Trim();
+        return decodedText;
+    }
+
+    //Convert encoded text content in side html tag to normal UTF-8 text
     public static string DecodeHtmlEntitiesText(string? rawText)
     {
         if (string.IsNullOrEmpty(rawText)) return "";
@@ -12,6 +38,7 @@ public class StringUtils
         text = text.Replace('\u00A0', ' ');                     // NBSP -> space thường
         return text.Trim();
     }
+
     public static class HtmlFingerprint
     {
         // sample this many chars from head and tail
