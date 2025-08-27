@@ -614,7 +614,7 @@ public class ProjectService : IProjectService
 
             //Get data from Document
             var description = StringUtils.DecodeHtmlEntitiesText(cells.ElementAtOrDefault(descriptionIndex)?.InnerText.Trim());
-            var title = description.Length <= 20 ? description : description.Substring(0, 20).Trim() + "...";
+            var title = description;//.Length <= 20 ? description : description.Substring(0, 20).Trim() + "...";
             var objective = StringUtils.DecodeHtmlEntitiesText(cells.ElementAtOrDefault(objectiveIndex)?.InnerText.Trim());
             var timeRaw = StringUtils.DecodeHtmlEntitiesText(cells.ElementAtOrDefault(timeIndex)?.InnerText.Trim());
             var costRaw = StringUtils.DecodeHtmlEntitiesText(cells.ElementAtOrDefault(costIndex)?.InnerText.Trim());
