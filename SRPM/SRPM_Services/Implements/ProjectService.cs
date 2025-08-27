@@ -511,6 +511,8 @@ public class ProjectService : IProjectService
     //Create Milestone, task
     public async Task<bool> CreateFromDocumentAsync(RQ_MilestoneTaskContent content)
     {
+        var existProject = await _unitOfWork.GetProjectRepository().GetByIdAsync(content.ProjectId, true)
+            ?? throw new NotFoundException("Not found this project id to insert milestone!");
         if (string.IsNullOrWhiteSpace(content.DocumentContent)) throw new NotFoundException("Not found document content");
         var contentHtml = content.DocumentContent;
 
@@ -598,6 +600,7 @@ public class ProjectService : IProjectService
         var tasksFromDoc = new List<SRPM_Repositories.Models.Task>();
         Milestone? currentMilestone = null;
         var yyyymm = DateTime.Now.ToString("yyyyMM");
+        decimal totalMoney = 0m;
 
         //loop through table cell skip first row (header title)
         foreach (var row in rows.Skip(1))
@@ -653,6 +656,7 @@ public class ProjectService : IProjectService
                     CreatorId = content.CreatorId
                 };
 
+                totalMoney += cost;
                 milestonesFromDoc.Add(currentMilestone);
             }
             else if (!string.IsNullOrWhiteSpace(description) && currentMilestone != null) // Task
@@ -673,7 +677,9 @@ public class ProjectService : IProjectService
         }
 
         if (milestonesFromDoc is null || milestonesFromDoc.Count == 0) throw new BadRequestException("Cannot read data in document, please check again if the data is correct format!");
+
         // Insert into database
+        existProject.Budget = totalMoney;
         await _unitOfWork.GetMilestoneRepository().AddRangeAsync(milestonesFromDoc);
         await _unitOfWork.GetTaskRepository().AddRangeAsync(tasksFromDoc);
         return await _unitOfWork.SaveChangesAsync();
