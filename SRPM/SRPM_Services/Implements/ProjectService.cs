@@ -539,6 +539,8 @@ public class ProjectService : IProjectService
     //Create Milestone, task
     public async Task<bool> CreateFromDocumentAsync(RQ_MilestoneTaskContent content)
     {
+        var existProject = await _unitOfWork.GetProjectRepository().GetByIdAsync(content.ProjectId, true)
+            ?? throw new NotFoundException("Not found this project id to insert milestone!");
         if (string.IsNullOrWhiteSpace(content.DocumentContent)) throw new NotFoundException("Not found document content");
         var contentHtml = content.DocumentContent;
 
@@ -626,6 +628,7 @@ public class ProjectService : IProjectService
         var tasksFromDoc = new List<SRPM_Repositories.Models.Task>();
         Milestone? currentMilestone = null;
         var yyyymm = DateTime.Now.ToString("yyyyMM");
+        decimal totalMoney = 0m;
 
         //loop through table cell skip first row (header title)
         foreach (var row in rows.Skip(1))
@@ -639,7 +642,7 @@ public class ProjectService : IProjectService
 
             //Get data from Document
             var description = StringUtils.DecodeHtmlEntitiesText(cells.ElementAtOrDefault(descriptionIndex)?.InnerText.Trim());
-            var title = description.Length <= 20 ? description : description.Substring(0, 20).Trim() + "...";
+            var title = description;//.Length <= 20 ? description : description.Substring(0, 20).Trim() + "...";
             var objective = StringUtils.DecodeHtmlEntitiesText(cells.ElementAtOrDefault(objectiveIndex)?.InnerText.Trim());
             var timeRaw = StringUtils.DecodeHtmlEntitiesText(cells.ElementAtOrDefault(timeIndex)?.InnerText.Trim());
             var costRaw = StringUtils.DecodeHtmlEntitiesText(cells.ElementAtOrDefault(costIndex)?.InnerText.Trim());
@@ -681,6 +684,7 @@ public class ProjectService : IProjectService
                     CreatorId = content.CreatorId
                 };
 
+                totalMoney += cost;
                 milestonesFromDoc.Add(currentMilestone);
             }
             else if (!string.IsNullOrWhiteSpace(description) && currentMilestone != null) // Task
@@ -701,7 +705,9 @@ public class ProjectService : IProjectService
         }
 
         if (milestonesFromDoc is null || milestonesFromDoc.Count == 0) throw new BadRequestException("Cannot read data in document, please check again if the data is correct format!");
+
         // Insert into database
+        existProject.Budget = totalMoney;
         await _unitOfWork.GetMilestoneRepository().AddRangeAsync(milestonesFromDoc);
         await _unitOfWork.GetTaskRepository().AddRangeAsync(tasksFromDoc);
         return await _unitOfWork.SaveChangesAsync();

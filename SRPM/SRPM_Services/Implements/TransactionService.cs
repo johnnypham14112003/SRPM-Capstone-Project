@@ -25,6 +25,29 @@ public class TransactionService : ITransactionService
     //===================================================================================
     public async Task<(bool result, Guid transactionId)> NewTransaction(RQ_Transaction trans)
     {
+        //Get origin Cost for request Cost check
+        decimal originCost = 0m;
+        if (trans.EvaluationStageId.HasValue)
+        {
+            var existEvaluationStage = await _unitOfWork.GetEvaluationStageRepository().GetOneAsync(
+                es => es.Id == trans.EvaluationStageId,
+                es => es.Include(stage => stage.Milestone), false)
+            ?? throw new NotFoundException($"Not found this EvaluationStage Id! :'{trans.EvaluationStageId}'");
+
+            if (existEvaluationStage.Milestone is not null)
+                originCost = existEvaluationStage.Milestone.Cost;
+        }
+        else if (trans.ProjectId.HasValue)
+        {
+            var existProject = await _unitOfWork.GetProjectRepository().GetOneAsync(
+                es => es.Id == trans.ProjectId, null, false)
+            ?? throw new NotFoundException($"Not found this project Id! :'{trans.ProjectId}'");
+
+            originCost = existProject.Budget;
+        }
+
+        if (trans.TotalMoney != originCost) throw new BadRequestException("The request money is not equal to origin declared!");
+
         //Check Null Data
         bool hasInvalidFields = new[] { trans.Title, trans.Type,
             trans.ReceiverAccount, trans.ReceiverBankName, trans.ReceiverName }
@@ -32,6 +55,7 @@ public class TransactionService : ITransactionService
         if (hasInvalidFields)
             throw new BadRequestException("Transaction Title, Type, ReceiverAccount, ReceiverBankName, ReceiverName cannot be empty!");
 
+        //Money range in system
         var moneyRange = await _unitOfWork.GetSystemConfigurationRepository().GetListAsync(
             sys => sys.ConfigType.ToLower().Equals("finance"), null, false);
         if (moneyRange is null || moneyRange.Count > 2)
