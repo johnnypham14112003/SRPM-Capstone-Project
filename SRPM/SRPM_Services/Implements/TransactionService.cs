@@ -135,8 +135,9 @@ public class TransactionService : ITransactionService
         var transaction = await _unitOfWork.GetTransactionRepository().GetByIdAsync(inputData.Id)
             ?? throw new NotFoundException("Not Found This Transaction Object To Update!");
 
-        inputData.Code = transaction.Code;
+        inputData.Code = transaction.Code.Trim();
         inputData.RequestPersonId = transaction.RequestPersonId;
+        inputData.Status = inputData.Status.Trim();
 
         //If staff is updating
         if (!string.IsNullOrWhiteSpace(inputData.SenderAccount) && transaction.HandlePersonId is null)
@@ -184,9 +185,6 @@ public class TransactionService : ITransactionService
         if (string.IsNullOrWhiteSpace(status))
             throw new BadRequestException("Cannot update null status!");
 
-        //Assign new status
-        transaction.Status = status;
-
         //If staff is updating for first approve
         if (transaction.HandlePersonId is null && transaction.Status.Equals("pending"))
         {
@@ -204,6 +202,11 @@ public class TransactionService : ITransactionService
 
             transaction.HandlePersonId = staffURid;
             transaction.Status = "awaiting";
+        }
+        else
+        {
+            //Assign new status
+            transaction.Status = status.Trim();
         }
 
         return await _unitOfWork.GetTransactionRepository().SaveChangeAsync();
