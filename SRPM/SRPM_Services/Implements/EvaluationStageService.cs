@@ -1,4 +1,5 @@
 ﻿using Mapster;
+using Microsoft.EntityFrameworkCore;
 using SRPM_Repositories.Models;
 using SRPM_Repositories.Repositories.Interfaces;
 using SRPM_Services.BusinessModels;
@@ -63,6 +64,18 @@ public class EvaluationStageService : IEvaluationStageService
 
         var existEvaluation = await _unitOfWork.GetEvaluationRepository().GetByIdAsync(newEvaluationStage.EvaluationId)
             ?? throw new BadRequestException("This EvaluationId is not exist to create its stages");
+
+        //Validate milestone
+        if (newEvaluationStage.MilestoneId.HasValue)
+        {
+            var existMilestone = await _unitOfWork.GetMilestoneRepository()
+                .GetOneAsync(t => t.Id==newEvaluationStage.MilestoneId,
+                t =>t.Include(tran => tran.EvaluationStages), false)
+                ??throw new NotFoundException("Not found this Milestone to create evaluation stage!");
+
+            if (existMilestone.EvaluationStages is not null)
+                throw new BadRequestException("Cannot create more than 1 evaluation stage of a milestone!");
+        }
 
         //List other stage
         var listStageExist = await _unitOfWork.GetEvaluationStageRepository()
