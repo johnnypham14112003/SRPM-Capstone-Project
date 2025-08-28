@@ -46,7 +46,7 @@ public class TransactionService : ITransactionService
             originCost = existProject.Budget;
         }
 
-        if (trans.TotalMoney != originCost) throw new BadRequestException("The request money is not equal to origin declared!");
+        if (trans.TotalMoney != originCost) throw new BadRequestException($"The request money is not equal to origin declared! {originCost}");
 
         //Check Null Data
         bool hasInvalidFields = new[] { trans.Title, trans.Type,
@@ -163,7 +163,12 @@ public class TransactionService : ITransactionService
     public async Task<bool> DeleteTransaction(Guid id)
     {
         var transaction = await _unitOfWork.GetTransactionRepository().GetByIdAsync(id);
-        if (transaction == null) return false;
+        if (transaction is null) return false;
+
+        var relateDocs = await _unitOfWork.GetDocumentRepository().GetListAsync(d => d.TransactionId == id);
+        if (relateDocs is not null) await _unitOfWork.GetDocumentRepository().DeleteRangeAsync(relateDocs);
+        var relateNoti = await _unitOfWork.GetNotificationRepository().GetListAsync(n => n.TransactionId == id);
+        if (relateNoti is not null) await _unitOfWork.GetNotificationRepository().DeleteRangeAsync(relateNoti);
 
         await _unitOfWork.GetTransactionRepository().DeleteAsync(transaction);
         return await _unitOfWork.GetTransactionRepository().SaveChangeAsync();
