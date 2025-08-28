@@ -139,7 +139,7 @@ public class TransactionService : ITransactionService
         inputData.RequestPersonId = transaction.RequestPersonId;
 
         //If staff is updating
-        if (!string.IsNullOrWhiteSpace(inputData.SenderAccount))
+        if (!string.IsNullOrWhiteSpace(inputData.SenderAccount) && transaction.HandlePersonId is null)
         {
             Guid staffURid = Guid.Empty;
             var userRoles = await GetCurrentUserRoles();
@@ -166,6 +166,41 @@ public class TransactionService : ITransactionService
         if (transaction == null) return false;
 
         await _unitOfWork.GetTransactionRepository().DeleteAsync(transaction);
+        return await _unitOfWork.GetTransactionRepository().SaveChangeAsync();
+    }
+
+    public async Task<bool> UpdateStatusTransaction(Guid transactionId, string status)
+    {
+        //Query exist transaction
+        var transaction = await _unitOfWork.GetTransactionRepository().GetByIdAsync(transactionId)
+            ?? throw new NotFoundException("Not Found This Transaction id To Update!");
+
+        //Validate status
+        if (string.IsNullOrWhiteSpace(status))
+            throw new BadRequestException("Cannot update null status!");
+
+        //Assign new status
+        transaction.Status = status;
+
+        //If staff is updating for first approve
+        if (transaction.HandlePersonId is null && transaction.Status.Equals("pending"))
+        {
+            Guid staffURid = Guid.Empty;
+            var userRoles = await GetCurrentUserRoles();
+            foreach (var ur in userRoles)
+            {
+                var currentRole = await _unitOfWork.GetRoleRepository().GetOneAsync(r => r.Id == ur.RoleId);
+                if (currentRole.Name.ToLower().Equals("staff"))
+                    staffURid = ur.Id;
+            }
+
+            if (staffURid == Guid.Empty)
+                throw new BadRequestException("Unknown Who Is Handle This Transaction!");
+
+            transaction.HandlePersonId = staffURid;
+            transaction.Status = "awaiting";
+        }
+
         return await _unitOfWork.GetTransactionRepository().SaveChangeAsync();
     }
 

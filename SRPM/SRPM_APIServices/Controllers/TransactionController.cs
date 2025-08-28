@@ -47,6 +47,13 @@ public class TransactionController: Controller
         return result ? Ok("Update Successfully!") : BadRequest("Update Failed!");
     }
 
+    [HttpPut("{transactionId}")]
+    public async Task<IActionResult> UpdateStatus([FromRoute] Guid transactionId, [FromQuery] string status)
+    {
+        var result = await _transactionService.UpdateStatusTransaction(transactionId, status);
+        return result ? Ok("Update Successfully!") : BadRequest("Update Failed!");
+    }
+
     [HttpDelete("{id}")]
     public async Task<IActionResult> Delete(Guid id)
     {
