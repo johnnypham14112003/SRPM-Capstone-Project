@@ -210,7 +210,7 @@ public class AccountService : IAccountService
 
         if (recentOtp?.ExpiresAt != null && DateTime.Now < recentOtp.ExpiresAt.Value.AddMinutes(maxRetryTime))
         {
-            throw new InvalidOperationException("You must wait 1 hour after the last OTP expired to request a new one.");
+            throw new InvalidOperationException("You must wait " + maxRetryTime + " minutes after the last OTP expired to request a new one.");
         }
         var otpCode = new OTPCode
         {

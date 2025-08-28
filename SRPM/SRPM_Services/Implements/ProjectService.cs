@@ -42,23 +42,20 @@ public class ProjectService : IProjectService
         var userRoles = await _unitOfWork.GetUserRoleRepository()
             .GetListAsync(
                 us => us.AccountId == userId
-                           && us.ProjectId == id
-                           && us.Status.ToLower() == targetStatus,
+                       && us.Status.ToLower() == targetStatus,
                 include: q => q.Include(ur => ur.Role)
             );
 
-        var isMember = userRoles!.Any();
+        var isMember = userRoles!.Any(us => us.ProjectId ==id);
 
-        // Group roles: Leader, Secretary, etc.
         var groupRoles = userRoles!
-            .Where(ur => ur.Role != null && ur.Role.IsGroupRole == true)
+            .Where(ur => ur.Role != null && ur.Role.IsGroupRole == true && ur.ProjectId == id)
             .Select(ur => ur.Role.Name)
             .Distinct()
             .ToList();
 
-        // Non-group roles: Researcher, Principal, etc.
         var fallbackRoles = userRoles!
-            .Where(ur => ur.Role != null && ur.Role.IsGroupRole == false)
+            .Where(ur => ur.Role != null && ur.Role.IsGroupRole == false && ur.ProjectId == id)
             .Select(ur => ur.Role.Name)
             .Distinct()
             .ToList();
@@ -70,16 +67,26 @@ public class ProjectService : IProjectService
             var projectOverview = await _unitOfWork.GetProjectRepository()
                 .GetOneAsync(p => p.Id == id, include: q => q.Include(q => q.ProjectTags));
 
+            var overviewDto = projectOverview?.Adapt<RS_ProjectOverview>();
+
+            var isStaff = userRoles
+                 .Any(role => role.Role.Name.Contains("Staff"));
+
+            if (!isStaff && overviewDto != null)
+            {
+                overviewDto.Budget = null;
+            }
+
             return new
             {
-                ProjectDetail = projectOverview?.Adapt<RS_ProjectOverview>(),
+                ProjectDetail = overviewDto,
                 isMember,
                 roleInProject = new List<string>()
             };
         }
 
         var entity = await _unitOfWork.GetProjectRepository()
-                .GetByIdAsync(id);
+            .GetByIdAsync(id);
 
         return new
         {
@@ -460,22 +467,27 @@ public class ProjectService : IProjectService
     {
         Guid principalId = Guid.Parse(_userContextService.GetCurrentUserId());
 
-
         var sourceProject = await _unitOfWork
             .GetProjectRepository()
-            .GetByIdAsync(sourceProjectId, hasTrackings: false);
+            .GetOneAsync(
+                p => p.Id == sourceProjectId,
+                include: q => q
+                    .Include(p => p.ProjectMajors)
+                    .Include(p => p.ProjectTags),
+                hasTrackings: false);
+
         if (sourceProject == null)
             throw new NotFoundException("Project to enroll not found.");
 
         var principal = await _unitOfWork.GetAccountRepository()
             .GetByIdAsync(principalId);
+
         if (principal.UserRoles?.All(ur => ur.Role.Name != "Principal Investigator") ?? true)
             throw new UnauthorizedAccessException("Account does not have Principal Investigator role.");
 
         await _unitOfWork.BeginTransactionAsync(IsolationLevel.Serializable);
         try
         {
-
             var alreadyEnrolled = await _unitOfWork.GetProjectRepository()
                 .GetOneAsync(
                     p => p.CreatorId == sourceProject.CreatorId
@@ -484,7 +496,9 @@ public class ProjectService : IProjectService
                          && p.VietnameseTitle == sourceProject.VietnameseTitle
                          && p.StartDate == sourceProject.StartDate
                          && p.Members.Any(m => m.AccountId == principalId),
-                    include: q => q.Include(p => p.Members),
+                    include: q => q.Include(p => p.Members)
+                    .Include(p => p.ProjectMajors).ThenInclude(pm => pm.Major).ThenInclude(m => m.Field)
+                    .Include(p => p.ProjectTags),
                     hasTrackings: false);
 
             if (alreadyEnrolled != null)
@@ -500,10 +514,30 @@ public class ProjectService : IProjectService
             draftClone.CreatedAt = DateTime.Now;
             draftClone.UpdatedAt = DateTime.Now;
 
+            // Clone ProjectMajors
+            draftClone.ProjectMajors = sourceProject.ProjectMajors?
+                .Select(pm => new ProjectMajor
+                {
+                    ProjectId = draftClone.Id,
+                    MajorId = pm.MajorId,
+                    Major = pm.Major
+                }).ToList();
+
+            // Clone ProjectTags
+            draftClone.ProjectTags = sourceProject.ProjectTags?
+                .Select(pt => new ProjectTag
+                {
+                    Id = Guid.NewGuid(),
+                    ProjectId = draftClone.Id,
+                    Name = pt.Name
+                }).ToList();
+
             await _unitOfWork.GetProjectRepository().AddAsync(draftClone);
+            await _unitOfWork.GetProjectMajorRepository().AddRangeAsync(draftClone.ProjectMajors);
 
             var piRole = await _unitOfWork.GetRoleRepository()
                 .GetOneAsync(r => r.Name == "Principal Investigator");
+
             if (piRole == null)
                 throw new ArgumentException("Role 'Principal Investigator' not found.");
 
@@ -520,6 +554,7 @@ public class ProjectService : IProjectService
                 CreatedAt = DateTime.Now,
                 Status = Status.Approved.ToString().ToLowerInvariant()
             };
+
             await _unitOfWork.GetUserRoleRepository().AddAsync(userRole);
 
             var saved = await _unitOfWork.SaveChangesAsync();
