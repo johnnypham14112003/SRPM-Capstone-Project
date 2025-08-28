@@ -10,7 +10,7 @@ namespace SRPM_Services.Interfaces;
 public interface IAccountService
 {
     Task<Account> LoginWithEmailPasswordAsync(string email, string password);
-    Task<bool> ForgotPasswordAsync(string email);
+    Task<(bool isSuccess, int TTL)> ForgotPasswordAsync(string email);
     Task<bool> ResetPasswordAsync(RQ_ResetPassword request);
     Task<(bool IsVerified, int Attempt, DateTime? Expiration)> VerifyOtpAsync(string email, string otp);
     Task<Account> HandleGoogleAsync(string googleToken);

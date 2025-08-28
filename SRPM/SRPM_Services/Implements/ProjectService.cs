@@ -227,11 +227,22 @@ public class ProjectService : IProjectService
     public async Task<RS_Project?> UpdateAsync(Guid id, RQ_Project request, [FromBody] string status)
     {
         var repo = _unitOfWork.GetProjectRepository();
-        var entity = await repo.GetByIdAsync<Guid>(id);
+
+        var entity = await repo.GetOneAsync(
+            c => c.Id == id,
+            hasTrackings: true,
+            include: c => c.Include(c => c.Milestones)
+        );
         if (entity == null) return null;
+
         entity.UpdatedAt = DateTime.Now;
+
         request.Adapt(entity);
+
         entity.Status = status.ToStatus().ToString().ToLowerInvariant();
+
+        entity.Budget = entity.Milestones?.Sum(m => m.Cost) ?? 0;
+
         await repo.UpdateAsync(entity);
         await _unitOfWork.SaveChangesAsync();
 
@@ -356,6 +367,7 @@ public class ProjectService : IProjectService
 
                 var sourceGenre = currentRole == "Host Institution" ? "normal" : "propose";
                 var completedStatus = Status.Completed.ToString().ToLower();
+
                 var sourceProjects = await _unitOfWork
                     .GetProjectRepository()
                     .GetListAsync(p =>
@@ -367,20 +379,37 @@ public class ProjectService : IProjectService
                 if (sourceProjects == null || !sourceProjects.Any())
                     return new List<RS_ProjectOverview>();
 
-                var sourceProjectIds = sourceProjects.Select(p => p.Code).ToList();
+                var completedSourceProjects = sourceProjects
+                    .Where(p => p.Status.ToLower() == completedStatus)
+                    .ToList();
 
-                var proposalProjects = await _unitOfWork
-                    .GetProjectRepository()
-                    .GetListAsync(p =>
-                        p.Genre.ToLower() == "proposal" &&
-                        p.Code != null &&
-                        sourceProjectIds.Contains(p.Code),
-                        hasTrackings: false);
+                var nonCompletedSourceProjects = sourceProjects
+                    .Where(p => p.Status.ToLower() != completedStatus)
+                    .ToList();
 
-                if (proposalProjects == null || !proposalProjects.Any())
-                    return new List<RS_ProjectOverview>();
+                var resultProjects = new List<Project>();
 
-                return proposalProjects.Adapt<List<RS_ProjectOverview>>();
+                resultProjects.AddRange(nonCompletedSourceProjects);
+
+                if (completedSourceProjects.Any())
+                {
+                    var completedProjectCodes = completedSourceProjects.Select(p => p.Code).ToList();
+
+                    var proposalProjects = await _unitOfWork
+                        .GetProjectRepository()
+                        .GetListAsync(p =>
+                            p.Genre.ToLower() == "proposal" &&
+                            p.Code != null &&
+                            completedProjectCodes.Contains(p.Code),
+                            hasTrackings: false);
+
+                    if (proposalProjects != null && proposalProjects.Any())
+                    {
+                        resultProjects.AddRange(proposalProjects);
+                    }
+                }
+
+                return resultProjects.Adapt<List<RS_ProjectOverview>>();
             }
             var allRoles = await _unitOfWork
                 .GetUserRoleRepository()
@@ -415,7 +444,6 @@ public class ProjectService : IProjectService
             var overviewList = genericProjects!
                 .OrderByDescending(p => p.CreatedAt)
                 .Adapt<List<RS_ProjectOverview>>();
-
             return overviewList;
         }
         catch (NotFoundException)

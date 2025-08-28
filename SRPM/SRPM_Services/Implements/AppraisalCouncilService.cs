@@ -134,10 +134,9 @@ public class AppraisalCouncilService : IAppraisalCouncilService
         if (!string.IsNullOrWhiteSpace(listPro.error))
             throw new NotFoundException(listPro.error);
 
-        // Map only the proposal‐genre items
         var proposals = listPro.proposals?
             .Where(x => x.Genre == "proposal")
-            .Adapt<List<RS_Project>>()     // Map to your response DTO
+            .Adapt<List<RS_Project>>()    
             ?? new List<RS_Project>();
 
         return proposals;

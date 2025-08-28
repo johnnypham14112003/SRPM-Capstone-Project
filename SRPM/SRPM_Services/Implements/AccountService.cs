@@ -12,6 +12,7 @@ using SRPM_Services.BusinessModels.ResponseModels;
 using SRPM_Services.Extensions.Enumerables;
 using SRPM_Services.Extensions.Exceptions;
 using SRPM_Services.Extensions.FluentEmail;
+using SRPM_Services.Extensions.MicrosoftBackgroundService;
 using SRPM_Services.Interfaces;
 using System.Data;
 using System.Diagnostics;
@@ -28,8 +29,8 @@ public class AccountService : IAccountService
     private readonly IConfiguration _configuration;
     private readonly IEmailService _emailService;
     private readonly IUserContextService _userContextService;
-
-    public AccountService(IUnitOfWork unitOfWork, IConfiguration configuration, IEmailService emailService, IUserContextService userContextService)
+    private readonly ITaskQueueHandler _taskQueueHandler;
+    public AccountService(ITaskQueueHandler taskQueueHandler, IUnitOfWork unitOfWork, IConfiguration configuration, IEmailService emailService, IUserContextService userContextService)
     {
         _unitOfWork = unitOfWork;
         // Read the allowed domain from configuration or default to "fe.edu.vn"
@@ -37,7 +38,7 @@ public class AccountService : IAccountService
         _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
         _emailService = emailService ?? throw new ArgumentNullException(nameof(emailService));
         _userContextService = userContextService ?? throw new ArgumentNullException(nameof(userContextService));
-
+        _taskQueueHandler = taskQueueHandler ?? throw new ArgumentNullException(nameof(taskQueueHandler));
     }
 
     private static string GenerateRandomPassword(int length = 12)
@@ -181,108 +182,131 @@ public class AccountService : IAccountService
         return value.ToString("D6"); // Pads with zeros to ensure 6 digits
     }
 
-    public async Task<bool> ForgotPasswordAsync(string email)
+    public async Task<(bool isSuccess, int TTL)> ForgotPasswordAsync(string email)
     {
         if (string.IsNullOrWhiteSpace(email))
             throw new ArgumentException("Email is required.");
 
+        // Get config
+        var ttlConfig = await _unitOfWork.GetSystemConfigurationRepository()
+            .GetOneAsync(c => c.ConfigKey.Contains("otp ttl") && c.ConfigType == "security");
+        var maxRetryTimeConfig = await _unitOfWork.GetSystemConfigurationRepository()
+            .GetOneAsync(c => c.ConfigKey.Contains("otp retry time") && c.ConfigType == "security");
+        var ttlMinutes = ttlConfig != null && int.TryParse(ttlConfig.ConfigValue, out var parsedTtl) ? parsedTtl : 15; // Default 15 minutes
+        var maxRetryTime = maxRetryTimeConfig != null && int.TryParse(maxRetryTimeConfig.ConfigValue, out var parsedRetry) ? parsedRetry : 60; // Default 60 minutes
         var account = await _unitOfWork.GetAccountRepository()
             .GetOneAsync(a => a.Email == email, hasTrackings: false);
 
         if (account == null || account.Status.Equals("deleted", StringComparison.OrdinalIgnoreCase))
             throw new NotFoundException("No active account found for this email.");
 
-        // Step 1: Generate OTP
+        // Step 1: Check rate limiting - prevent too frequent OTP requests
         var lastOtp = await _unitOfWork.GetOTPCodeRepository()
             .GetListAsync(o => o.AccountId == account.Id);
 
-        var recentOtp = lastOtp!
+        var recentOtp = lastOtp?
             .OrderByDescending(o => o.ExpiresAt)
             .FirstOrDefault();
 
-        if (recentOtp?.ExpiresAt != null && DateTime.Now < recentOtp.ExpiresAt.Value.AddHours(1))
+        if (recentOtp?.ExpiresAt != null && DateTime.Now < recentOtp.ExpiresAt.Value.AddMinutes(maxRetryTime))
         {
             throw new InvalidOperationException("You must wait 1 hour after the last OTP expired to request a new one.");
         }
-
         var otpCode = new OTPCode
         {
             AccountId = account.Id,
             Code = GenerateOtp(),
-            ExpiresAt = DateTime.Now.AddMinutes(10),
+            ExpiresAt = DateTime.Now.AddMinutes(ttlMinutes), // Use configurable TTL
+            TTL = ttlMinutes,
             Attempt = 0
         };
 
         await _unitOfWork.GetOTPCodeRepository().AddAsync(otpCode);
         await _unitOfWork.SaveChangesAsync();
 
-        // Step 2: Prepare model for Razor email
-        var model = new DTO_PasswordEmail
+
+        _taskQueueHandler.EnqueueTracked(async (serviceProvider, token, progress) =>
         {
-            UserName = account.FullName,
-            WebsiteURL = _configuration["WebsiteURL"] ?? "https://SRPM.com",
-            OtpCode = otpCode.Code
-        };
+            var model = new DTO_PasswordEmail
+            {
+                UserName = account.FullName,
+                WebsiteURL = _configuration["WebsiteURL"] ?? "https://srpm.com",
+                OtpCode = otpCode.Code
+            };
 
-        string body = await _emailService.RenderPasswordEmail(model);
+            string body = await _emailService.RenderPasswordEmail(model);
 
-        // Step 3: Send email
-        var emailDto = new EmailDTO
-        {
-            ReceiverEmailAddress = email,
-            Subject = "[SRPM] Reset Your Password",
-            Body = body
-        };
-
-        var emailSent = await _emailService.SendEmailAsync(emailDto);
-
-        return emailSent;
+            var emailDto = new EmailDTO
+            {
+                ReceiverEmailAddress = email,
+                Subject = "[SRPM] Reset Your Password",
+                Body = body
+            };
+            await _emailService.SendEmailAsync(emailDto);
+        });
+        return (true, otpCode.TTL);
     }
-
-
 
     public async Task<(bool IsVerified, int Attempt, DateTime? Expiration)> VerifyOtpAsync(string email, string inputOtp)
     {
-        // Step 1: Get the account
+        var ttlConfig = await _unitOfWork.GetSystemConfigurationRepository()
+            .GetOneAsync(c => c.ConfigKey.ToLower().Contains("otp ttl") && c.ConfigType == "security");
+
+        var otpAttemptLimitConfig = await _unitOfWork.GetSystemConfigurationRepository()
+            .GetOneAsync(c => c.ConfigKey.ToLower().Contains("otp attempt") && c.ConfigType == "security");
+
+        var ttlMinutes = ttlConfig != null && int.TryParse(ttlConfig.ConfigValue, out var parsedTtl)
+            ? parsedTtl
+            : 15; // Default 15 minutes
+
+        var maxAttempts = otpAttemptLimitConfig != null && int.TryParse(otpAttemptLimitConfig.ConfigValue, out var parsedAttempts)
+            ? parsedAttempts
+            : 3; // Default 3 attempts
         var account = await _unitOfWork.GetAccountRepository()
             .GetOneAsync(a => a.Email == email && a.Status.ToLower() != "deleted");
 
         if (account == null)
             throw new NotFoundException("Account not found.");
 
-        // Step 2: Get latest OTP for the account
         var otpCodes = await _unitOfWork.GetOTPCodeRepository()
             .GetListAsync(o => o.AccountId == account.Id);
 
-        var otpCode = otpCodes!
+        var otpCode = otpCodes?
             .OrderByDescending(o => o.ExpiresAt)
             .FirstOrDefault();
 
         if (otpCode == null)
-            return (false, 0, DateTime.Now); // No OTP issued
+            return (false, 0, null); 
 
-        // Step 3: Check expiration
-        if (DateTime.Now < otpCode.ExpiresAt)
-            return (false, otpCode.Attempt, otpCode.ExpiresAt); // Expired
+        var currentTime = DateTime.Now;
 
-        // Step 4: Lockout check
-        if (otpCode.Attempt >= 3)
-        {
-            otpCode.ExpiresAt = DateTime.Now; // Force expire on max attempts
-            return (false, otpCode.Attempt, otpCode.ExpiresAt); // Max attempts reached — no retry
+        if (currentTime > otpCode.ExpiresAt) 
+            return (false, otpCode.Attempt, otpCode.ExpiresAt);
+
+        if (otpCode.Attempt >= maxAttempts)
+        {            otpCode.ExpiresAt = currentTime;
+            await _unitOfWork.GetOTPCodeRepository().UpdateAsync(otpCode);
+            await _unitOfWork.SaveChangesAsync();
+
+            return (false, otpCode.Attempt, otpCode.ExpiresAt); 
         }
 
-        // Step 5: Verify OTP
         if (otpCode.Code == inputOtp)
-            return (true, otpCode.Attempt, otpCode.ExpiresAt); // Correct and valid
+        {
+            await _unitOfWork.GetOTPCodeRepository().UpdateAsync(otpCode);
+            await _unitOfWork.SaveChangesAsync();
 
-        // Step 6: Increment only if still under limit
+            return (true, otpCode.Attempt, otpCode.ExpiresAt);
+        }
+
         otpCode.Attempt++;
-
         await _unitOfWork.GetOTPCodeRepository().UpdateAsync(otpCode);
         await _unitOfWork.SaveChangesAsync();
-
-        return (false, otpCode.Attempt, otpCode.ExpiresAt); // Incorrect OTP
+        _taskQueueHandler.EnqueueTracked(async (serviceProvider, token, progress) =>
+        {
+            await CleanupExpiredOtpsAsync();
+        });
+            return (false, otpCode.Attempt, otpCode.ExpiresAt); 
     }
 
 
@@ -291,37 +315,60 @@ public class AccountService : IAccountService
         if (request.NewPassword != request.ConfirmPassword)
             throw new ArgumentException("New password and confirmation do not match.");
 
+        var otpAttemptLimitConfig = await _unitOfWork.GetSystemConfigurationRepository()
+            .GetOneAsync(c => c.ConfigKey.Contains("otp attempt") && c.ConfigType == "security");
+
+        var maxAttempts = otpAttemptLimitConfig != null && int.TryParse(otpAttemptLimitConfig.ConfigValue, out var parsedAttempts) ? parsedAttempts : 3;
+
         var account = await _unitOfWork.GetAccountRepository()
             .GetOneAsync(a => a.Email == request.Email && a.Status.ToLower() != "deleted");
 
         if (account == null)
             throw new NotFoundException("Account not found.");
 
-        var otp = account.OTPCodes?
+        // Get the latest OTP for this account
+        var otpCodes = await _unitOfWork.GetOTPCodeRepository()
+            .GetListAsync(o => o.AccountId == account.Id);
+
+        var otp = otpCodes?
             .OrderByDescending(o => o.ExpiresAt)
             .FirstOrDefault(o => o.Code == request.OTP);
 
         if (otp == null)
             throw new UnauthorizedAccessException("Invalid OTP.");
 
-        if (otp.ExpiresAt < DateTime.Now)
+        var currentTime = DateTime.Now;
+
+        if (currentTime > otp.ExpiresAt) // Current time is AFTER expiration = expired
             throw new UnauthorizedAccessException("OTP has expired.");
 
-        if (otp.Attempt >= 3)
+        // Check max attempts
+        if (otp.Attempt >= maxAttempts) // Use configurable max attempts
             throw new UnauthorizedAccessException("Maximum OTP attempts exceeded.");
 
-        // All checks passed — increment attempt (for history) and expire OTP
-        otp.Attempt++;
-        otp.ExpiresAt = DateTime.Now;
 
         string hashedPassword = HashStringSHA256(request.NewPassword);
         account.Password = hashedPassword;
-
+        otp.ExpiresAt = currentTime;
         await _unitOfWork.GetOTPCodeRepository().UpdateAsync(otp);
         await _unitOfWork.GetAccountRepository().UpdateAsync(account);
         await _unitOfWork.SaveChangesAsync();
 
         return true;
+    }
+
+    // Optional: Helper method to clean up expired OTPs
+    public async System.Threading.Tasks.Task CleanupExpiredOtpsAsync()
+    {
+        var expiredOtps = await _unitOfWork.GetOTPCodeRepository()
+            .GetListAsync(o => o.ExpiresAt < DateTime.Now);
+
+        foreach (var expiredOtp in expiredOtps)
+        {
+            await _unitOfWork.GetOTPCodeRepository().DeleteAsync(expiredOtp);
+        }
+
+        await _unitOfWork.SaveChangesAsync();
     }
 
 

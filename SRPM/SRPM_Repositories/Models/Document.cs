@@ -5,7 +5,6 @@ namespace SRPM_Repositories.Models;
 public class Document
 {
     [Key] public Guid Id { get; set; } = Guid.NewGuid();
-
     [Required] public string Name { get; set; } = null!;
     [Required, MaxLength(30)] public string Type { get; set; } = null!;//Final E-Doc | Ly lich khoa hoc
     [Required] public bool IsTemplate { get; set; } = false;

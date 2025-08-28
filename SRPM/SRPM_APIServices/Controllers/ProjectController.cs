@@ -110,7 +110,6 @@ public class ProjectController : Controller
             var updated = await _service.UpdateAsync(id, request, status);
             if (updated == null)
                 return NotFound($"Project with ID {id} not found.");
-
             return Ok(updated);
         }
         catch (UnauthorizedAccessException ex)

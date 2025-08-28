@@ -159,12 +159,13 @@ public class AuthController : Controller
         {
             var result = await _accountService.ForgotPasswordAsync(email);
 
-            if (!result)
+            if (!result.isSuccess)
                 return StatusCode(500, "Failed to send password reset email. Try again later.");
 
             return Ok(new
             {
-                Message = "A password reset email has been sent if this email is associated with a valid account."
+                Message = "A password reset email has been sent if this email is associated with a valid account.",
+                result.TTL
             });
         }
         catch (Exception ex)
