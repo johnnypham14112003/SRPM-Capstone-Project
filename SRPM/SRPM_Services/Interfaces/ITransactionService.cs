@@ -12,4 +12,5 @@ public interface ITransactionService
     Task<PagingResult<RS_Transaction>?> ListTransaction(Q_Transaction queryInput);
     Task<bool> UpdateTransaction(RQ_Transaction inputData);
     Task<bool> DeleteTransaction(Guid id);
+    Task<bool> UpdateStatusTransaction(Guid transactionId, string status);
 }
