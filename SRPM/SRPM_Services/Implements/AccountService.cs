@@ -69,7 +69,7 @@ public class AccountService : IAccountService
 
         // Check if email matches any allowed domain
         bool isValidDomain = allowedDomains.Any(domain =>
-            payload.Email.EndsWith("@" + domain, StringComparison.OrdinalIgnoreCase));
+            payload.Email.EndsWith("@" + domain.ConfigValue, StringComparison.OrdinalIgnoreCase));
 
         if (!isValidDomain)
         {
