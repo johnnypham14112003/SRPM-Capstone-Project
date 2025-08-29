@@ -158,7 +158,7 @@ public class AccountService : IAccountService
             var allowedDomains = await _unitOfWork.GetSystemConfigurationRepository()
             .GetListAsync(c => c.ConfigKey.Contains("access system") && c.ConfigType == "email");
             bool isValidDomain = allowedDomains.Any(domain =>
-                email.EndsWith("@" + domain, StringComparison.OrdinalIgnoreCase));
+                email.EndsWith("@" + domain.ConfigValue, StringComparison.OrdinalIgnoreCase));
 
             if (!isValidDomain)
             {
