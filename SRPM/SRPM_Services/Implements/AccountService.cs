@@ -62,12 +62,17 @@ public class AccountService : IAccountService
         if (string.IsNullOrWhiteSpace(payload.Email))
             throw new ArgumentException("Email is required for Google login.");
 
-        string expectedDomain = "@" + _allowedEmailDomain;
+        // Get allowed email domains from system config
+        var allowedDomains = await _unitOfWork.GetSystemConfigurationRepository()
+            .GetListAsync(c => c.ConfigKey.Contains("access system") && c.ConfigType == "email");
         var accountRepo = _unitOfWork.GetAccountRepository();
 
-        if (!payload.Email.EndsWith(expectedDomain, StringComparison.OrdinalIgnoreCase))
-        {
+        // Check if email matches any allowed domain
+        bool isValidDomain = allowedDomains.Any(domain =>
+            payload.Email.EndsWith("@" + domain, StringComparison.OrdinalIgnoreCase));
 
+        if (!isValidDomain)
+        {
             var existingAccount = await accountRepo.GetValidEmailAccountAsync(payload.Email);
             if (existingAccount == null)
             {
@@ -150,9 +155,16 @@ public class AccountService : IAccountService
             if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(password))
                 throw new ArgumentException("Email and password are required.");
 
-            string expectedDomain = "@" + _allowedEmailDomain;
-            if (!email.EndsWith(expectedDomain, StringComparison.OrdinalIgnoreCase))
-                throw new UnauthorizedAccessException($"Email must end with {expectedDomain}.");
+            var allowedDomains = await _unitOfWork.GetSystemConfigurationRepository()
+            .GetListAsync(c => c.ConfigKey.Contains("access system") && c.ConfigType == "email");
+            bool isValidDomain = allowedDomains.Any(domain =>
+                email.EndsWith("@" + domain, StringComparison.OrdinalIgnoreCase));
+
+            if (!isValidDomain)
+            {
+                var allowedDomainsString = string.Join(", ", allowedDomains.Select(d => "@" + d));
+                throw new UnauthorizedAccessException($"Email must end with one of: {allowedDomainsString}.");
+            }
 
             var account = await _unitOfWork.GetAccountRepository()
                 .GetOneAsync(a => a.Email == email, hasTrackings: false);

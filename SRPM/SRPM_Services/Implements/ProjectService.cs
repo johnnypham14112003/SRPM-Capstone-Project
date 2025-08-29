@@ -191,11 +191,43 @@ public class ProjectService : IProjectService
         var sanitizedAbbr = (entity.Abbreviations ?? "XXX").Trim().ToUpperInvariant();
         entity.Code = $"RP-{DateTime.Now:yyyy_MM}_{sanitizedAbbr}";
 
-        // Assign defaults if needed
+        // Get system configurations
+        var defaultProjectMembers = await _unitOfWork.GetSystemConfigurationRepository()
+            .GetOneAsync(c => c.ConfigKey.Contains("project") && c.ConfigType == "member");
+
+        var defaultProjectDuration = await _unitOfWork.GetSystemConfigurationRepository()
+            .GetOneAsync(c => c.ConfigKey.Contains("duration") && c.ConfigType == "project");
+
+        // Parse config values
+        int maxAllowedMembers = int.Parse(defaultProjectMembers.ConfigValue);
+        int maxAllowedDuration = int.Parse(defaultProjectDuration.ConfigValue);
+
+        // Validate and apply system configurations with fallback defaults
         entity.Budget = entity.Budget <= 0 ? 0m : entity.Budget;
         entity.Progress = entity.Progress <= 0 ? 0m : entity.Progress;
-        entity.MaximumMember = entity.MaximumMember <= 0 ? 5 : entity.MaximumMember;
         entity.Language = string.IsNullOrWhiteSpace(entity.Language) ? "English" : entity.Language;
+
+        // Validate MaximumMember
+        if (entity.MaximumMember <= 0)
+        {
+            entity.MaximumMember = maxAllowedMembers;
+        }
+        else if (entity.MaximumMember > maxAllowedMembers)
+        {
+            throw new ArgumentOutOfRangeException(nameof(entity.MaximumMember),
+                $"Maximum members ({entity.MaximumMember}) exceed allowed limit ({maxAllowedMembers}).");
+        }
+
+        // Validate Duration
+        if (entity.Duration <= 0)
+        {
+            entity.Duration = maxAllowedDuration;
+        }
+        else if (entity.Duration > maxAllowedDuration)
+        {
+            throw new ArgumentOutOfRangeException(nameof(entity.Duration),
+                $"Duration ({entity.Duration}) exceeds allowed limit ({maxAllowedDuration}).");
+        }
 
         var accountId = Guid.Parse(_userContextService.GetCurrentUserId());
 
@@ -210,8 +242,15 @@ public class ProjectService : IProjectService
         );
 
         // Validate role and assign genre + creator
-        var hostRole = userRoles.FirstOrDefault(r => r.Role?.Name == "Host Institution" && r.Status != Status.Deleted.ToString().ToLowerInvariant() && r.ProjectId == null && r.AppraisalCouncil == null);
-        var staffRole = userRoles.FirstOrDefault(r => r.Role?.Name == "Staff" && r.Status != Status.Deleted.ToString().ToLowerInvariant() && r.ProjectId == null && r.AppraisalCouncil == null);
+        var hostRole = userRoles.FirstOrDefault(r => r.Role?.Name == "Host Institution" &&
+            r.Status != Status.Deleted.ToString().ToLowerInvariant() &&
+            r.ProjectId == null &&
+            r.AppraisalCouncil == null);
+
+        var staffRole = userRoles.FirstOrDefault(r => r.Role?.Name == "Staff" &&
+            r.Status != Status.Deleted.ToString().ToLowerInvariant() &&
+            r.ProjectId == null &&
+            r.AppraisalCouncil == null);
 
         var role = hostRole ?? staffRole;
 
@@ -222,7 +261,6 @@ public class ProjectService : IProjectService
 
         entity.Genre = (role == hostRole) ? "normal" : "propose";
         entity.CreatorId = role.Id;
-
         entity.Status = Status.Created.ToString().ToLowerInvariant();
 
         await _unitOfWork.GetProjectRepository().AddAsync(entity);
