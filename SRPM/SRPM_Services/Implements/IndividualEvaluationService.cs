@@ -29,22 +29,19 @@ public class IndividualEvaluationService : IIndividualEvaluationService
         if (id == Guid.Empty)
             throw new BadRequestException("Cannot view a null IndividualEvaluation Id!");
 
-        var list = await _unitOfWork.GetIndividualEvaluationRepository()
-            .GetListAsync(
+        var existIndividualEvaluation = await _unitOfWork.GetIndividualEvaluationRepository()
+            .GetOneAsync(
                  ie => ie.Id == id,
                 include: ie =>
                 {
-                    ie = ie.Include(a => a.Reviewer).ThenInclude(b => b.Account);
-                    ie = ie.Include(a => a.EvaluationStage);
-                    ie = ie.Include(a => a.Documents);
-                    ie = ie.Include(c => c.ProjectsSimilarity).ThenInclude(d => d.Project);
-                    return ie;
+                    ie = ie.Include(indi => indi.Reviewer).ThenInclude(ur => ur.Account);
+                    ie = ie.Include(indi => indi.Documents);
+                    ie = ie.Include(indi => indi.ProjectsSimilarity).ThenInclude(ps => ps.Project);
+                    return ie.AsSplitQuery();
                 },
                 hasTrackings: false
-            );
-
-        var existIndividualEvaluation = list.FirstOrDefault()
-            ?? throw new NotFoundException($"Not found this IndividualEvaluation Id: '{id}'!");
+            )
+            ??throw new NotFoundException($"Not found any individual evaluation match this Id! {id}");
 
         var individualEva = existIndividualEvaluation.Adapt<RS_IndividualEvaluation>();
 

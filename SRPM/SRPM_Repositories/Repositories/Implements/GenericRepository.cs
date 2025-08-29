@@ -61,7 +61,6 @@ public class GenericRepository<T> : IGenericRepository<T> where T : class
         return await query.ToListAsync();
     }
 
-
     public async Task<List<TResult>?> GetListAdvanceAsync<TResult>(
         Expression<Func<T, bool>> whereLinQ,
         Expression<Func<T, TResult>> selectLinQ,
