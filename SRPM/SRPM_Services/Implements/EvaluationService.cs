@@ -74,10 +74,11 @@ public class EvaluationService : IEvaluationService
             ?? throw new NotFoundException($"Not Found Project Id '{newEvaluation.ProjectId}' to create evaluation!");
 
         var datePart = DateTime.Now.ToString("ddMMyyyy");
-        var abbreviations = project.Abbreviations;
+        var formatName = string.IsNullOrWhiteSpace(project.Abbreviations) ?
+                project.Code : project.Abbreviations;
 
-        //EVA-SRPM13072025
-        var formatCode = $"EVA-{abbreviations}{datePart}";
+        //EVA13072025-SRPM13072025
+        var formatCode = $"EVA{datePart}-{formatName}";
 
         var evaluationDTO = newEvaluation.Adapt<Evaluation>();
         evaluationDTO.Code = formatCode;
@@ -140,14 +141,15 @@ public class EvaluationService : IEvaluationService
                     d => d.ProjectId == project.Id && d.Type.ToLower().Equals("bm1"), null, false);
 
                 var datePart = DateTime.Now.ToString("ddMMyyyy");
-                var abbreviations = project.Abbreviations;
+                var formatName = string.IsNullOrWhiteSpace(project.Abbreviations)?
+                project.Code : project.Abbreviations;
 
-                //EVA-SRPM13072025
-                var formatCode = $"EVA-{abbreviations}{datePart}";
+                //EVA13072025-SRPM13072025
+                var formatCode = $"EVA{datePart}-{formatName}";
 
                 //========================[ Create Evaluation ]========================
                 var existEva = await unitOfWork.GetEvaluationRepository().GetOneAsync(
-                    eva => eva.Title.Equals($"Evaluation Of {abbreviations}") &&
+                    eva => eva.Title.Equals($"Final Evaluation - {formatName}") &&
                     eva.ProjectId == projectId);
 
                 //Check if exist Evaluation
@@ -159,7 +161,7 @@ public class EvaluationService : IEvaluationService
                     {
                         Id = evaId,
                         Code = formatCode,
-                        Title = $"Evaluation Of {abbreviations}",
+                        Title = $"Final Evaluation - {formatName}",
                         ProjectId = projectId
                     });
                 }
