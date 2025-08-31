@@ -12,6 +12,7 @@ namespace SRPM_Services.BusinessModels.ResponseModels
         public Guid Id { get; set; }
         public string EnglishTitle { get; set; } = null!;
         public string VietnameseTitle { get; set; } = null!;
+        public string? Abbreviations { get; set; }
         public string Category { get; set; } = null!;
         public string Type { get; set; } = null!;
         public string Genre { get; set; } = null!;

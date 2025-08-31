@@ -314,30 +314,32 @@ public class ProjectService : IProjectService
     public async Task<bool> DeleteAsync(Guid id)
     {
         var repo = _unitOfWork.GetProjectRepository();
-
         var entity = await repo.GetOneAsync(
             p => p.Id == id,
             include: q => q
                 .Include(p => p.Members)
                 .Include(p => p.Notifications)
-                .Include(p => p.Milestones)
-                .Include(p => p.Evaluations)
+                .Include(p => p.Milestones).ThenInclude(t => t.Tasks)
+                .Include(p => p.Evaluations).ThenInclude(e => e.EvaluationStages).ThenInclude(es => es.IndividualEvaluations)
                 .Include(p => p.ProjectsSimilarity)
                 .Include(p => p.ProjectMajors)
                 .Include(p => p.ProjectTags)
                 .Include(p => p.Documents)
                 .Include(p => p.Transactions)
-                .Include(p => p.ProjectResult),
+                .Include(p => p.ProjectResult).AsSplitQuery(),
             hasTrackings: true
         );
 
         if (entity == null) return false;
 
-        // Delete related entities
+        // Get repositories
         var memberRepo = _unitOfWork.GetUserRoleRepository();
         var notificationRepo = _unitOfWork.GetNotificationRepository();
         var milestoneRepo = _unitOfWork.GetMilestoneRepository();
         var evaluationRepo = _unitOfWork.GetEvaluationRepository();
+        var evaluationStageRepo = _unitOfWork.GetEvaluationStageRepository(); // You'll need this
+        var individualEvaluationRepo = _unitOfWork.GetIndividualEvaluationRepository(); // And this if applicable
+        var taskRepo = _unitOfWork.GetTaskRepository(); // Add task repository
         var similarityRepo = _unitOfWork.GetProjectSimilarityRepository();
         var majorRepo = _unitOfWork.GetProjectMajorRepository();
         var tagRepo = _unitOfWork.GetProjectTagRepository();
@@ -345,17 +347,78 @@ public class ProjectService : IProjectService
         var transactionRepo = _unitOfWork.GetTransactionRepository();
         var resultRepo = _unitOfWork.GetProjectResultRepository();
 
+        // Delete in the correct order (child entities first)
+
+        // 1. First, handle documents that reference IndividualEvaluations
+        if (entity.Evaluations?.Any() == true)
+        {
+            var individualEvaluationIds = entity.Evaluations
+                .SelectMany(e => e.EvaluationStages)
+                .SelectMany(es => es.IndividualEvaluations)
+                .Select(ie => ie.Id)
+                .ToList();
+
+            if (individualEvaluationIds.Any())
+            {
+                // Find documents that reference these individual evaluations
+                var documentsLinkedToIndividualEvaluations = await documentRepo.GetListAsync(
+                    d => d.IndividualEvaluationId.HasValue && individualEvaluationIds.Contains(d.IndividualEvaluationId.Value)
+                );
+
+                if (documentsLinkedToIndividualEvaluations.Any())
+                {
+                    await documentRepo.DeleteRangeAsync(documentsLinkedToIndividualEvaluations);
+                }
+            }
+        }
+
+        // 2. Delete IndividualEvaluations
+        if (entity.Evaluations?.Any() == true)
+        {
+            var individualEvaluations = entity.Evaluations
+                .SelectMany(e => e.EvaluationStages)
+                .SelectMany(es => es.IndividualEvaluations)
+                .ToList();
+
+            if (individualEvaluations.Any())
+                await individualEvaluationRepo.DeleteRangeAsync(individualEvaluations);
+        }
+
+        // 3. Delete EvaluationStages
+        if (entity.Evaluations?.Any() == true)
+        {
+            var evaluationStages = entity.Evaluations
+                .SelectMany(e => e.EvaluationStages)
+                .ToList();
+
+            if (evaluationStages.Any())
+                await evaluationStageRepo.DeleteRangeAsync(evaluationStages);
+        }
+
+        // 4. Now delete Evaluations
+        if (entity.Evaluations?.Any() == true)
+            await evaluationRepo.DeleteRangeAsync(entity.Evaluations);
+
+        // Delete other related entities
         if (entity.Members?.Any() == true)
             await memberRepo.DeleteRangeAsync(entity.Members);
 
         if (entity.Notifications?.Any() == true)
             await notificationRepo.DeleteRangeAsync(entity.Notifications);
 
+        // Delete Tasks linked to Milestones
+        if (entity.Milestones?.Any() == true)
+        {
+            var tasks = entity.Milestones
+                .SelectMany(m => m.Tasks)
+                .ToList();
+
+            if (tasks.Any())
+                await taskRepo.DeleteRangeAsync(tasks);
+        }
+
         if (entity.Milestones?.Any() == true)
             await milestoneRepo.DeleteRangeAsync(entity.Milestones);
-
-        if (entity.Evaluations?.Any() == true)
-            await evaluationRepo.DeleteRangeAsync(entity.Evaluations);
 
         if (entity.ProjectsSimilarity?.Any() == true)
             await similarityRepo.DeleteRangeAsync(entity.ProjectsSimilarity);
@@ -366,8 +429,14 @@ public class ProjectService : IProjectService
         if (entity.ProjectTags?.Any() == true)
             await tagRepo.DeleteRangeAsync(entity.ProjectTags);
 
+        // 5. Delete remaining documents directly linked to the project
         if (entity.Documents?.Any() == true)
-            await documentRepo.DeleteRangeAsync(entity.Documents);
+        {
+            // Filter out documents that were already deleted above
+            var remainingDocuments = entity.Documents.Where(d => !d.IndividualEvaluationId.HasValue).ToList();
+            if (remainingDocuments.Any())
+                await documentRepo.DeleteRangeAsync(remainingDocuments);
+        }
 
         if (entity.Transactions?.Any() == true)
             await transactionRepo.DeleteRangeAsync(entity.Transactions);
@@ -375,7 +444,7 @@ public class ProjectService : IProjectService
         if (entity.ProjectResult != null)
             await resultRepo.DeleteAsync(entity.ProjectResult);
 
-        // Delete the main project
+        // Finally, delete the main project
         await repo.DeleteAsync(entity);
 
         // Save all changes
