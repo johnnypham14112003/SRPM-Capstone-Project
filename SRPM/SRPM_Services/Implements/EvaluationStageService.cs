@@ -93,6 +93,13 @@ public class EvaluationStageService : IEvaluationStageService
         { newEvaluationStage.StageOrder = 1; }
         else
         {
+            // If RQ didn’t specify an order, append to end
+            if (newEvaluationStage.StageOrder == null)
+            {
+                var maxOrder = listStageExist.Max(s => s.StageOrder);
+                newEvaluationStage.StageOrder = maxOrder + 1;
+            }
+
             listStageExist = listStageExist.OrderBy(s => s.StageOrder).ToList();
 
             // Shift Stages (>=newOrder) - loop in condition list
