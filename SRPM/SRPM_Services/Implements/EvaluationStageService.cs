@@ -128,13 +128,21 @@ public class EvaluationStageService : IEvaluationStageService
         var listStageExist = await _unitOfWork.GetEvaluationStageRepository()
         .GetListAsync(es => es.EvaluationId == eStageToUpdate.EvaluationId)
         ?? throw new NotFoundException("Not found any EvaluationStage of this Evaluation to update");
+
         listStageExist = listStageExist.OrderBy(s => s.StageOrder).ToList();
 
         //Default Order if only it in an Evaluation
         if (listStageExist.Count() == 1) newEvaluationStage.StageOrder = 1;
 
         int oldOrder = eStageToUpdate.StageOrder;
-        int newOrder = newEvaluationStage.StageOrder;
+        int newOrder = 0;
+        // If RQ didn’t specify an order, append to end
+        if (newEvaluationStage.StageOrder == null)
+        {
+            var maxOrder = listStageExist.Max(s => s.StageOrder);
+            newEvaluationStage.StageOrder = maxOrder + 1;
+        }
+        else newOrder = (int)newEvaluationStage.StageOrder;
 
         //Pretend Order in array [1, 2, 3, 4, 5]
         //if new order move left, then shift all from newOrder to oldOrder -> shift right(++)
