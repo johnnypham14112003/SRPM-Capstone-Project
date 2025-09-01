@@ -82,6 +82,7 @@ public static class DIContainer
 
     private static IServiceCollection InjectBusinessServices(this IServiceCollection services)
     {
+        services.AddSignalR();
         services.AddScoped<IAccountService, AccountService>();
         services.AddScoped<IAppraisalCouncilService, AppraisalCouncilService>();
         services.AddScoped<IDocumentService, DocumentService>();
