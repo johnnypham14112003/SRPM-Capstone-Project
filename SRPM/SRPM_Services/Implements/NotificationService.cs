@@ -79,7 +79,7 @@ public class NotificationService : INotificationService
                 break;
             case "userrole":
                 _ = await _unitOfWork.GetUserRoleRepository().GetOneAsync(ur => ur.Id == newNotification.ObjecNotificationId, null, false)
-                    ?? throw new NotFoundException("Create Notification Failed: Not found any GroupUser relate to this Id");
+                    ?? throw new NotFoundException("Create Notification Failed: Not found any User relate to this Id");
                 notificationDTO.UserRoleId = newNotification.ObjecNotificationId;
                 break;
             case "document":
@@ -198,7 +198,7 @@ public class NotificationService : INotificationService
         await _hubContext.Clients.All.SendAsync("ReceiveNotification", notification);
     }
 
-public async Task<PagingResult<RS_Notification>?> ListRequestNotification(Q_RequestNoti queryInput)
+    public async Task<PagingResult<RS_Notification>?> ListRequestNotification(Q_RequestNoti queryInput)
     {
         //Re-assign value if it smaller than 1
         queryInput.PageIndex = queryInput.PageIndex < 1 ? 1 : queryInput.PageIndex;

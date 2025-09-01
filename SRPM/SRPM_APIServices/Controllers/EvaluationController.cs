@@ -26,6 +26,13 @@ public class EvaluationController : Controller
         return Ok(result);
     }
 
+    [HttpGet("list-by-project-council")]
+    public async Task<IActionResult> ListFiltered([FromQuery] Guid projectId, [FromQuery] Guid councilId)
+    {
+        var result = await _evaluationService.GetListByProjectCouncilAsync(projectId, councilId);
+        return Ok(result);
+    }
+
     // api/evaluation/123e4567-e89b-12d3-a456-426614174000?incl=1
     [HttpGet("{id}")]
     public async Task<IActionResult> ViewDetailEvaluation([FromRoute] Guid id, [FromQuery] byte incl)
