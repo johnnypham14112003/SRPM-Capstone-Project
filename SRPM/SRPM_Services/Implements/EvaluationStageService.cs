@@ -1,6 +1,7 @@
 ﻿using Mapster;
 using Microsoft.EntityFrameworkCore;
 using SRPM_Repositories.Models;
+using SRPM_Repositories.Repositories.Implements;
 using SRPM_Repositories.Repositories.Interfaces;
 using SRPM_Services.BusinessModels;
 using SRPM_Services.BusinessModels.RequestModels;
@@ -58,22 +59,28 @@ public class EvaluationStageService : IEvaluationStageService
     public async Task<(bool success, Guid evaluationStageId)> CreateAsync(RQ_EvaluationStage newEvaluationStage)
     {
         //Check Null Data
-        bool hasInvalidFields = new[] { newEvaluationStage.Name, newEvaluationStage.Phrase, newEvaluationStage.Type , newEvaluationStage.Status }
+        bool hasInvalidFields = new[] { newEvaluationStage.Name, newEvaluationStage.Phrase, newEvaluationStage.Type, newEvaluationStage.Status }
         .Any(string.IsNullOrWhiteSpace);
         if (hasInvalidFields) throw new BadRequestException("EvaluationStage Name or Status cannot be empty!");
 
-        var existEvaluation = await _unitOfWork.GetEvaluationRepository().GetByIdAsync(newEvaluationStage.EvaluationId)
+        //Validate Parent "Evaluation"
+        _ = await _unitOfWork.GetEvaluationRepository().GetByIdAsync(newEvaluationStage.EvaluationId)
             ?? throw new BadRequestException("This EvaluationId is not exist to create its stages");
 
-        //Validate milestone
-        if (newEvaluationStage.MilestoneId.HasValue)
+        //Validate milestone stage of a evaluation
+        if (newEvaluationStage.MilestoneId.HasValue && newEvaluationStage.Type.ToLower().Trim().Equals("milestone"))
         {
-            var existMilestone = await _unitOfWork.GetMilestoneRepository()
-                .GetOneAsync(t => t.Id==newEvaluationStage.MilestoneId,
-                t =>t.Include(tran => tran.EvaluationStages), false)
-                ??throw new NotFoundException("Not found this Milestone to create evaluation stage!");
+            //Validate milestone
+            _ = await _unitOfWork.GetMilestoneRepository().GetOneAsync(t => t.Id == newEvaluationStage.MilestoneId, null, false)
+                ?? throw new NotFoundException("Not found this Milestone to create evaluation stage!");
 
-            if (existMilestone.EvaluationStages is not null)
+            //Find eva stage by eva Id and milestone Id
+            var existEvaluationStage = await _unitOfWork.GetEvaluationStageRepository()
+                .GetOneAsync(es =>
+                es.EvaluationId == newEvaluationStage.EvaluationId &&
+                es.MilestoneId == newEvaluationStage.MilestoneId);
+
+            if (existEvaluationStage is not null)
                 throw new BadRequestException("Cannot create more than 1 evaluation stage of a milestone!");
         }
 
@@ -139,7 +146,7 @@ public class EvaluationStageService : IEvaluationStageService
         {
             foreach (var stage in listStageExist.Where(es => es.StageOrder <= newOrder && es.StageOrder > oldOrder))
             {
-                stage.StageOrder --;
+                stage.StageOrder--;
                 await _unitOfWork.GetEvaluationStageRepository().UpdateAsync(stage);
             }
         }
