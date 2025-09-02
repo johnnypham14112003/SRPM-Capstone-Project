@@ -197,7 +197,7 @@ public class AppraisalCouncilService : IAppraisalCouncilService
                         {
                             Title = "Evaluation With Appraisal Council",
                             ProjectId = project.Id,
-                            AppraisalCouncilId = appraisalCouncilId
+                            AppraisalCouncilId = null
                         });
                     }
                     else
