@@ -35,6 +35,21 @@ public class EvaluationRepository : GenericRepository<Evaluation>, IEvaluationRe
                     .FirstOrDefaultAsync(e => e.Id == id);
         }
     }
+    public async Task<List<Evaluation>?> FilterByEvaAndCouncil(Guid projectId, Guid councilId)
+    {
+        return await _context.Evaluation
+            .AsNoTracking()
+            .Where(e => e.ProjectId == projectId &&
+                (e.AppraisalCouncilId == councilId || 
+                e.EvaluationStages.Any(es => es.AppraisalCouncilId == councilId)
+                )
+            )
+            .Include(e => e.EvaluationStages
+                .Where(es => es.AppraisalCouncilId == councilId))
+            .Include(e => e.Documents)
+            .AsSplitQuery()
+            .ToListAsync();
+    }
 
     public async Task<(List<Evaluation>? listEvaluation, int totalFound)> ListPaging
         (string? keyWord, string? status,
