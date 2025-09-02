@@ -93,9 +93,28 @@ public class EvaluationService : IEvaluationService
         var existEvaluation = await _unitOfWork.GetEvaluationRepository().GetOneAsync(e => e.Id == newEvaluation.Id)
             ?? throw new NotFoundException("Not found any Evaluation match this Id!");
 
+        var tempEva = existEvaluation;
+
         //Transfer new Data to old Data
         newEvaluation.Adapt(existEvaluation);
-        return await _unitOfWork.GetEvaluationRepository().SaveChangeAsync();
+
+        //Unchangeable
+        existEvaluation.Id = tempEva.Id;
+        existEvaluation.ProjectId = tempEva.ProjectId;
+        existEvaluation.CreateDate = tempEva.CreateDate;
+
+        if (newEvaluation.Status.Trim().Equals("passed", StringComparison.OrdinalIgnoreCase))
+        {
+            var existProject = await _unitOfWork.GetProjectRepository().GetOneAsync(p => p.Id == existEvaluation.ProjectId);
+            existProject!.Status = Status.Completed.ToString().ToLower();
+        }
+        else if (newEvaluation.Status.Trim().Equals("failed", StringComparison.OrdinalIgnoreCase))
+        {
+            var existProject = await _unitOfWork.GetProjectRepository().GetOneAsync(p => p.Id == existEvaluation.ProjectId);
+            existProject!.Status = Status.Rejected.ToString().ToLower();
+        }
+
+        return await _unitOfWork.SaveChangesAsync();
     }
 
     public async Task<bool> DeleteAsync(Guid id)
