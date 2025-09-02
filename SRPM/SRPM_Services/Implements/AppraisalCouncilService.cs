@@ -176,7 +176,7 @@ public class AppraisalCouncilService : IAppraisalCouncilService
             if (clonedProjects == null || !clonedProjects.Any())
                 throw new NotFoundException("No cloned projects found for the given source project.");
 
-            // Step 3: Loop through each project and assign council to its evaluation stages
+            // Step 3: Loop through each project and assign council to first stage of evaluations
             foreach (var project in clonedProjects)
             {
                 var resultCouncil = await _unitOfWork.GetAppraisalCouncilRepository()
@@ -206,18 +206,19 @@ public class AppraisalCouncilService : IAppraisalCouncilService
                         {
                             eva.AppraisalCouncilId = appraisalCouncilId;
 
-                            //Then if eva have stage which don't have council -> assign council to each stage
-                            var stagesWithoutCouncil = eva.EvaluationStages?
-                                .Where(stage => stage.AppraisalCouncilId == null)
-                                .ToList();
+                            //Find only the first stage (Outline Approval) and assign council
+                            var firstStage = eva.EvaluationStages?
+                                .Where(stage =>
+                                    stage.Name == "Outline Approval" &&
+                                    stage.StageOrder == 1 &&
+                                    stage.Type == "project" &&
+                                    stage.Status == "created" &&
+                                    stage.AppraisalCouncilId == null)
+                                .FirstOrDefault();
 
-                            if (stagesWithoutCouncil is not null && stagesWithoutCouncil.Count != 0)
+                            if (firstStage is not null)
                             {
-                                foreach (var stage in stagesWithoutCouncil)
-                                {
-                                    stage.AppraisalCouncilId = appraisalCouncilId;
-                                }
-
+                                firstStage.AppraisalCouncilId = appraisalCouncilId;
                             }
                         }
                     }

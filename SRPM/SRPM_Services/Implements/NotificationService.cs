@@ -36,7 +36,7 @@ public class NotificationService : INotificationService
     public async Task<(bool, Guid)> CreateNew(RQ_Notification newNotification)
     {
         // Your existing validation code
-        bool hasInvalidFields = new[] { newNotification.Title, newNotification.Type }
+         bool hasInvalidFields = new[] { newNotification.Title, newNotification.Type }
             .Any(string.IsNullOrWhiteSpace);
 
         if (hasInvalidFields) throw new BadRequestException("Cannot create blank notification");

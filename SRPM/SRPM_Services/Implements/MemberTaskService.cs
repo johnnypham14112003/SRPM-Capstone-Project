@@ -64,8 +64,6 @@ public class MemberTaskService : IMemberTaskService
         {
             try
             {
-
-                // Step 2: Get the Task to retrieve its MilestoneId
                 var task = await _unitOfWork.GetTaskRepository().GetByIdAsync(request.TaskId);
                 if (task == null)
                     throw new BadRequestException("Task not found");
