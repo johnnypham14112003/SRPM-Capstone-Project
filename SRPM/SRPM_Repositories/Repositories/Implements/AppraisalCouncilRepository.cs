@@ -100,7 +100,7 @@ public class AppraisalCouncilRepository : GenericRepository<AppraisalCouncil>, I
         return (projectSources, proposals, null);
     }
 
-    public async Task<(AppraisalCouncil? council, string? error)> GetCouncilBelongToProject(Guid projectId)
+    public async Task<(AppraisalCouncil? council, string? error)> GetCouncilBelongToProject(Guid projectId, int? stageOrder = null)
     {
         var project = await _context.Project.FirstOrDefaultAsync(p => p.Id == projectId);
         if (project is null) return (null, "Not found this project Id");
@@ -113,12 +113,31 @@ public class AppraisalCouncilRepository : GenericRepository<AppraisalCouncil>, I
             .FirstOrDefaultAsync();
         if (proposal is null) return (null, "Not found any proposal of this project");
 
-        var council = await _context.Evaluation
-        .Where(e => e.ProjectId == proposal.Id && e.AppraisalCouncilId != null)
-        .Select(e => e.AppraisalCouncil)
-        .FirstOrDefaultAsync();
+        AppraisalCouncil? council;
 
-        if (council is null) return (null, "No council found for this project");
+        if (stageOrder.HasValue)
+        {
+            // Get council for specific stage order
+            council = await _context.EvaluationStage
+                .Where(es => es.Evaluation.ProjectId == proposal.Id &&
+                            es.StageOrder == stageOrder.Value &&
+                            es.AppraisalCouncilId != null)
+                .Select(es => es.AppraisalCouncil)
+                .FirstOrDefaultAsync();
+
+            if (council is null) return (null, $"No council found for stage order {stageOrder.Value} in this project");
+        }
+        else
+        {
+            // Original logic - get any council from evaluations
+            council = await _context.Evaluation
+                .Where(e => e.ProjectId == proposal.Id && e.AppraisalCouncilId != null)
+                .Select(e => e.AppraisalCouncil)
+                .FirstOrDefaultAsync();
+
+            if (council is null) return (null, "No council found for this project");
+        }
+
         return (council, null);
     }
 

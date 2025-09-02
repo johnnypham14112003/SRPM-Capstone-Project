@@ -141,10 +141,10 @@ public class AppraisalCouncilService : IAppraisalCouncilService
 
         return proposals;
     }
-    public async Task<RS_AppraisalCouncil?> GetCouncilInEvaluationAsync(Guid projectId)
+    public async Task<RS_AppraisalCouncil?> GetCouncilInEvaluationAsync(Guid projectId, int? stageOrder)
     {
         var result = await _unitOfWork.GetAppraisalCouncilRepository()
-        .GetCouncilBelongToProject(projectId);
+        .GetCouncilBelongToProject(projectId, stageOrder);
 
         if (result.council is null) throw new NotFoundException(result.error);
 

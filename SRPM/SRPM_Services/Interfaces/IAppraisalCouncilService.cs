@@ -13,7 +13,7 @@ public interface IAppraisalCouncilService
     Task<bool> UpdateCouncilInfo(RQ_AppraisalCouncil newCouncil);
     Task<bool> DeleteCouncil(Guid id);
     Task<List<RS_ProjectsOfCouncil>?> GetProjectsFromCouncilAsync(Guid councilId);
-    Task<RS_AppraisalCouncil?> GetCouncilInEvaluationAsync(Guid projectId);
+    Task<RS_AppraisalCouncil?> GetCouncilInEvaluationAsync(Guid projectId, int? stageOrder);
     Task<bool> AssignCouncilToClonedStages(Guid sourceProjectId, Guid appraisalCouncilId);
     Task<PagingResult<RS_AppraisalCouncil>> GetAllOnlineUserAppraisalCouncilAsync(int pageIndex, int pageSize);
     Task<List<RS_Project>> GetProposalsFromCouncilAsync(Guid councilId);
