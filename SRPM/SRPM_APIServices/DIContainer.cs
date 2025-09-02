@@ -472,11 +472,21 @@ public static class DIContainer
 
     private static IServiceCollection ConfigCORS(this IServiceCollection services)
     {
-        services.AddCors(options => options.AddPolicy("AllowAll", b =>
-            b.WithOrigins("https://localhost:5173")  // ⬅️ Change this
-             .AllowAnyHeader()
-             .AllowAnyMethod()
-             .AllowCredentials()));
+        services.AddCors(options =>
+        {
+            options.AddPolicy("AllowAll", builder =>
+            {
+                builder.WithOrigins(
+                    "http://localhost:5173",
+                    "http://localhost:3000",
+                    "http://127.0.0.1:5500",
+                    "https://fe-capstone-tan.vercel.app"
+                )
+                .AllowAnyHeader()
+                .AllowAnyMethod()
+                .AllowCredentials(); 
+            });
+        });
         return services;
     }
 
@@ -587,13 +597,15 @@ public static class DIContainer
     }
     public static IApplicationBuilder UseCustomCors(this IApplicationBuilder app)
     {
-        var allowedOrigins = new[] {
-            "http://localhost:5173",
-            "http://localhost:3000",
-            "https://fe-capstone-tan.vercel.app"
-        };
+        var allowedOrigins = new[]
+        {
+        "http://localhost:5173",
+        "http://localhost:3000",
+        "http://127.0.0.1:5500",
+        "https://fe-capstone-tan.vercel.app"
+    };
 
-        app.UseCors("CustomPolicy");
+        app.UseCors("AllowAll");
 
         app.Use(async (context, next) =>
         {
@@ -604,6 +616,7 @@ public static class DIContainer
                 context.Response.Headers.Append("Access-Control-Allow-Origin", origin);
                 context.Response.Headers.Append("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
                 context.Response.Headers.Append("Access-Control-Allow-Headers", "Content-Type, Authorization");
+                context.Response.Headers.Append("Access-Control-Allow-Credentials", "true"); 
             }
 
             if (context.Request.Method == "OPTIONS")
