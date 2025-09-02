@@ -26,10 +26,10 @@ public class EvaluationController : Controller
         return Ok(result);
     }
 
-    [HttpGet("list-by-project-council")]
-    public async Task<IActionResult> ListFiltered([FromQuery] Guid projectId, [FromQuery] Guid councilId)
+    [HttpGet("list-proposal-by-council/{councilId}")]
+    public async Task<IActionResult> ListFiltered([FromRoute] Guid councilId)
     {
-        var result = await _evaluationService.GetListByProjectCouncilAsync(projectId, councilId);
+        var result = await _evaluationService.GetListProposalByCouncilAsync(councilId);
         return Ok(result);
     }
 

@@ -14,5 +14,5 @@ public interface IEvaluationService
     Task<bool> DeleteAsync(Guid id);
     Task<string> FirstAIEvaluation(Guid projectId);
     Task<string> RegenAIEvaluation(Guid projectId, Guid individualEvalutionId);
-    Task<List<RS_Evaluation>?> GetListByProjectCouncilAsync(Guid projectId, Guid councilId);
+    Task<List<RS_Project>?> GetListProposalByCouncilAsync(Guid councilId);
 }

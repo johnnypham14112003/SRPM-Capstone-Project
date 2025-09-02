@@ -368,19 +368,17 @@ public class EvaluationService : IEvaluationService
             }));
     }
 
-    public async Task<List<RS_Evaluation>?> GetListByProjectCouncilAsync(Guid projectId, Guid councilId)
+    public async Task<List<RS_Project>?> GetListProposalByCouncilAsync(Guid councilId)
     {
-        //Validate project Id
-        _ = await _unitOfWork.GetProjectRepository().GetByIdAsync(projectId)
-            ?? throw new NotFoundException("Not found this Project Id to get Evaluation List!");
+        //Validate council Id
+        _ = await _unitOfWork.GetAppraisalCouncilRepository().GetByIdAsync(councilId)
+            ?? throw new NotFoundException("Not found this Council Id!");
 
-        _ = await _unitOfWork.GetAppraisalCouncilRepository().GetByIdAsync(projectId)
-            ?? throw new NotFoundException("Not found this Council Id to get Evaluation List!");
+        //Get list project include evaluation and stage match council Id
+        var filteredProposal = await _unitOfWork.GetEvaluationRepository().FilterProposalByCouncil(councilId)
+            ?? throw new NotFoundException($"Not found any Proposal that relate to this councilId: {councilId}");
 
-        var filteredEvaluation = await _unitOfWork.GetEvaluationRepository().FilterByEvaAndCouncil(projectId, councilId)
-            ?? throw new NotFoundException("Not found any Evaluation that relate to this projectId");
-
-        var resultDTO = filteredEvaluation.Adapt<List<RS_Evaluation>?>();
+        var resultDTO = filteredProposal.Adapt<List<RS_Project>?>();
 
         return resultDTO;
     }
