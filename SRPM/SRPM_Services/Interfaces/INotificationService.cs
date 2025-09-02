@@ -16,4 +16,6 @@ public interface INotificationService
     Task<bool> UpdateNotification(RQ_Notification newNotification);
     Task<bool> DeleteNotification(Guid id);
     Task<bool> SendNotificationMail(RQ_NotificationEmail notiEmail);
+    Task SendRealTimeNotificationToUsers(List<Guid> userIds, object notification);
+    Task SendRealTimeGlobalNotification(object notification);
 }

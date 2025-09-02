@@ -141,7 +141,7 @@ public class EvaluationService : IEvaluationService
                     d => d.ProjectId == project.Id && d.Type.ToLower().Equals("bm1"), null, false);
 
                 var datePart = DateTime.Now.ToString("ddMMyyyy");
-                var formatName = string.IsNullOrWhiteSpace(project.Abbreviations)?
+                var formatName = string.IsNullOrWhiteSpace(project.Abbreviations) ?
                 project.Code : project.Abbreviations;
 
                 //EVA13072025-SRPM13072025
@@ -366,6 +366,21 @@ public class EvaluationService : IEvaluationService
                 }
                 await unitOfWork.SaveChangesAsync();
             }));
+    }
+
+    public async Task<List<RS_Project>?> GetListProposalByCouncilAsync(Guid councilId)
+    {
+        //Validate council Id
+        _ = await _unitOfWork.GetAppraisalCouncilRepository().GetByIdAsync(councilId)
+            ?? throw new NotFoundException("Not found this Council Id!");
+
+        //Get list project include evaluation and stage match council Id
+        var filteredProposal = await _unitOfWork.GetEvaluationRepository().FilterProposalByCouncil(councilId)
+            ?? throw new NotFoundException($"Not found any Proposal that relate to this councilId: {councilId}");
+
+        var resultDTO = filteredProposal.Adapt<List<RS_Project>?>();
+
+        return resultDTO;
     }
 
     //=============================================================================================

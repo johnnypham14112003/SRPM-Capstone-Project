@@ -1,4 +1,5 @@
 using Mapster;
+using Microsoft.AspNetCore.SignalR;
 using SRPM_Repositories.Models;
 using SRPM_Repositories.Repositories.Implements;
 using SRPM_Repositories.Repositories.Interfaces;
@@ -9,6 +10,7 @@ using SRPM_Services.BusinessModels.RequestModels.Query;
 using SRPM_Services.BusinessModels.ResponseModels;
 using SRPM_Services.Extensions.Exceptions;
 using SRPM_Services.Extensions.FluentEmail;
+using SRPM_Services.Extensions.Hubs;
 using SRPM_Services.Interfaces;
 
 namespace SRPM_Services.Implements;
@@ -18,95 +20,125 @@ public class NotificationService : INotificationService
     private readonly IUnitOfWork _unitOfWork;
     private readonly IUserContextService _userContextService;
     private readonly IEmailService _emailService;
+    private readonly IHubContext<NotificationHub> _hubContext;
 
     public NotificationService(IUnitOfWork unitOfWork,
         IUserContextService userContextService,
-        IEmailService emailService)
+        IEmailService emailService, IHubContext<NotificationHub> hubContext)
     {
         _unitOfWork = unitOfWork;
         _userContextService = userContextService;
         _emailService = emailService;
+        _hubContext = hubContext;
     }
 
     //=============================================================================
-
     public async Task<(bool, Guid)> CreateNew(RQ_Notification newNotification)
     {
-        //Check Null Data
+        // Your existing validation code
         bool hasInvalidFields = new[] { newNotification.Title, newNotification.Type }
-        .Any(string.IsNullOrWhiteSpace);
+            .Any(string.IsNullOrWhiteSpace);
 
         if (hasInvalidFields) throw new BadRequestException("Cannot create blank notification");
 
-        //Transfer Data
-        Notification notificationDTO = newNotification.Adapt<Notification>();//Assign handmade in switch below
+        // Your existing data transfer
+        Notification notificationDTO = newNotification.Adapt<Notification>();
 
-        //Get Exist Object Id then assign
+        // Your existing switch statement (unchanged)
         switch (notificationDTO.Type.ToLower())
         {
             case "project":
                 _ = await _unitOfWork.GetProjectRepository().GetOneAsync(p => p.Id == newNotification.ObjecNotificationId, null, false)
-                    ?? throw new NotFoundException("Create Notification Faild: Not found any Project relate to this Id");
+                    ?? throw new NotFoundException("Create Notification Failed: Not found any Project relate to this Id");
                 notificationDTO.ProjectId = newNotification.ObjecNotificationId;
                 break;
             case "appraisalcouncil":
                 _ = await _unitOfWork.GetAppraisalCouncilRepository().GetOneAsync(ac => ac.Id == newNotification.ObjecNotificationId, null, false)
-                    ?? throw new NotFoundException("Create Notification Faild: Not found any AppraisalCouncil relate to this Id");
+                    ?? throw new NotFoundException("Create Notification Failed: Not found any AppraisalCouncil relate to this Id");
                 notificationDTO.AppraisalCouncilId = newNotification.ObjecNotificationId;
                 break;
             case "transaction":
                 _ = await _unitOfWork.GetTransactionRepository().GetOneAsync(tr => tr.Id == newNotification.ObjecNotificationId, null, false)
-                    ?? throw new NotFoundException("Create Notification Faild: Not found any Transaction relate to this Id");
+                    ?? throw new NotFoundException("Create Notification Failed: Not found any Transaction relate to this Id");
                 notificationDTO.TransactionId = newNotification.ObjecNotificationId;
                 break;
             case "individualevaluation":
                 _ = await _unitOfWork.GetIndividualEvaluationRepository().GetOneAsync(ie => ie.Id == newNotification.ObjecNotificationId, null, false)
-                    ?? throw new NotFoundException("Create Notification Faild: Not found any IndividualEvaluation relate to this Id");
+                    ?? throw new NotFoundException("Create Notification Failed: Not found any IndividualEvaluation relate to this Id");
                 notificationDTO.IndividualEvaluationId = newNotification.ObjecNotificationId;
                 break;
             case "evaluationstage":
                 _ = await _unitOfWork.GetEvaluationStageRepository().GetOneAsync(es => es.Id == newNotification.ObjecNotificationId, null, false)
-                    ?? throw new NotFoundException("Create Notification Faild: Not found any EvaluationStage relate to this Id");
+                    ?? throw new NotFoundException("Create Notification Failed: Not found any EvaluationStage relate to this Id");
                 notificationDTO.EvaluationStageId = newNotification.ObjecNotificationId;
                 break;
             case "evaluation":
                 _ = await _unitOfWork.GetEvaluationRepository().GetOneAsync(e => e.Id == newNotification.ObjecNotificationId, null, false)
-                    ?? throw new NotFoundException("Create Notification Faild: Not found any Evaluation relate to this Id");
+                    ?? throw new NotFoundException("Create Notification Failed: Not found any Evaluation relate to this Id");
                 notificationDTO.EvaluationId = newNotification.ObjecNotificationId;
                 break;
             case "userrole":
                 _ = await _unitOfWork.GetUserRoleRepository().GetOneAsync(ur => ur.Id == newNotification.ObjecNotificationId, null, false)
-                    ?? throw new NotFoundException("Create Notification Faild: Not found any GroupUser relate to this Id");
+                    ?? throw new NotFoundException("Create Notification Failed: Not found any User relate to this Id");
                 notificationDTO.UserRoleId = newNotification.ObjecNotificationId;
                 break;
             case "document":
                 _ = await _unitOfWork.GetDocumentRepository().GetOneAsync(d => d.Id == newNotification.ObjecNotificationId, null, false)
-                    ?? throw new NotFoundException("Create Notification Faild: Not found any Document relate to this Id");
+                    ?? throw new NotFoundException("Create Notification Failed: Not found any Document relate to this Id");
                 notificationDTO.DocumentId = newNotification.ObjecNotificationId;
                 break;
             case "membertask":
                 _ = await _unitOfWork.GetMemberTaskRepository().GetOneAsync(mt => mt.Id == newNotification.ObjecNotificationId, null, false)
-                    ?? throw new NotFoundException("Create Notification Faild: Not found any MemberTask relate to this Id");
+                    ?? throw new NotFoundException("Create Notification Failed: Not found any MemberTask relate to this Id");
                 notificationDTO.MemberTaskId = newNotification.ObjecNotificationId;
                 break;
             case "task":
                 _ = await _unitOfWork.GetTaskRepository().GetOneAsync(ta => ta.Id == newNotification.ObjecNotificationId, null, false)
-                    ?? throw new NotFoundException("Create Notification Faild: Not found any Task relate to this Id");
+                    ?? throw new NotFoundException("Create Notification Failed: Not found any Task relate to this Id");
                 notificationDTO.TaskId = newNotification.ObjecNotificationId;
                 break;
             default: //"systemconfiguration"
                 _ = await _unitOfWork.GetSystemConfigurationRepository().GetOneAsync(sc => sc.Id == newNotification.ObjecNotificationId, null, false)
-                    ?? throw new NotFoundException("Create Notification Faild: Not found any SystemConfiguration relate to this Id");
+                    ?? throw new NotFoundException("Create Notification Failed: Not found any SystemConfiguration relate to this Id");
                 notificationDTO.SystemConfigurationId = newNotification.ObjecNotificationId;
                 break;
         }
 
+        // Save to database (existing code)
         await _unitOfWork.GetNotificationRepository().AddAsync(notificationDTO);
         var saveSuccess = await _unitOfWork.GetNotificationRepository().SaveChangeAsync();
 
-        //If is global send then do it instancely
-        if (notificationDTO.IsGlobalSend) { await NotificateToUser(null, notificationDTO.Id); }
-        else { await NotificateToUser(newNotification.ListAccountId, notificationDTO.Id); }
+        // Create real-time notification data
+        var realtimeNotificationData = new
+        {
+            Id = notificationDTO.Id,
+            Title = notificationDTO.Title,
+            Type = notificationDTO.Type,
+            CreateDate = notificationDTO.CreateDate,
+            ObjectId = newNotification.ObjecNotificationId,
+            IsGlobal = notificationDTO.IsGlobalSend
+        };
+
+        // Send database notifications and real-time notifications
+        if (notificationDTO.IsGlobalSend)
+        {
+            // Save to database for all users
+            await NotificateToUser(null, notificationDTO.Id);
+
+            // Send real-time global notification
+            await SendRealTimeGlobalNotification(realtimeNotificationData);
+        }
+        else
+        {
+            // Save to database for specific users
+            await NotificateToUser(newNotification.ListAccountId, notificationDTO.Id);
+
+            // Send real-time notification to specific users
+            if (newNotification.ListAccountId?.Any() == true)
+            {
+                await SendRealTimeNotificationToUsers(newNotification.ListAccountId, realtimeNotificationData);
+            }
+        }
 
         return (saveSuccess, notificationDTO.Id);
     }
@@ -116,11 +148,11 @@ public class NotificationService : INotificationService
         var existNoti = await _unitOfWork.GetNotificationRepository().GetOneAsync(n => n.Id == notificationId, null, false)
                     ?? throw new NotFoundException("Not found any Notification match the Id");
 
-        //Handle if list null -> get all user
+        // Handle if list null -> get all user
         if (ListAccountId is null || !ListAccountId.Any())
             ListAccountId = await _unitOfWork.GetAccountNotificationRepository().ListIdAllAccount();
 
-        //Transfer list AccountId into list AccountNotification
+        // Transfer list AccountId into list AccountNotification
         var accountNotificationDTOs = ListAccountId!.Select(accountId =>
         new AccountNotification
         {
@@ -130,7 +162,40 @@ public class NotificationService : INotificationService
         });
 
         await _unitOfWork.GetAccountNotificationRepository().AddRangeAsync(accountNotificationDTOs);
-        return await _unitOfWork.GetAccountNotificationRepository().SaveChangeAsync();
+        var result = await _unitOfWork.GetAccountNotificationRepository().SaveChangeAsync();
+
+        // NEW: Send real-time notifications after saving to database
+        if (result && ListAccountId.Any())
+        {
+            var realtimeNotificationData = new
+            {
+                Id = existNoti.Id,
+                Title = existNoti.Title,
+                Type = existNoti.Type,
+                CreateDate = existNoti.CreateDate,
+                IsGlobal = false
+            };
+
+            await SendRealTimeNotificationToUsers(ListAccountId, realtimeNotificationData);
+        }
+
+        return result;
+    }
+
+    // NEW: Real-time notification methods
+    public async System.Threading.Tasks.Task SendRealTimeNotificationToUsers(List<Guid> userIds, object notification)
+    {
+        var groups = userIds.Select(id => $"user_{id}").ToList();
+
+        foreach (var group in groups)
+        {
+            await _hubContext.Clients.Group(group).SendAsync("ReceiveNotification", notification);
+        }
+    }
+
+    public async System.Threading.Tasks.Task SendRealTimeGlobalNotification(object notification)
+    {
+        await _hubContext.Clients.All.SendAsync("ReceiveNotification", notification);
     }
 
     public async Task<PagingResult<RS_Notification>?> ListRequestNotification(Q_RequestNoti queryInput)

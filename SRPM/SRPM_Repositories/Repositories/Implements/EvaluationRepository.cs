@@ -35,6 +35,30 @@ public class EvaluationRepository : GenericRepository<Evaluation>, IEvaluationRe
                     .FirstOrDefaultAsync(e => e.Id == id);
         }
     }
+    public async Task<List<Project>?> FilterProposalByCouncil(Guid councilId)
+    {
+        return await _context.Project
+            //Filter projects that have at least one matching council in Evaluations or EvaluationStages
+            .Where(p => p.Evaluations
+                .Any(ev => ev.AppraisalCouncilId == councilId ||
+                    ev.EvaluationStages.Any(es => es.AppraisalCouncilId == councilId)
+                )
+            )
+
+            //Include only those Evaluations that match
+            .Include(p => p.Evaluations
+                .Where(ev => ev.AppraisalCouncilId == councilId ||
+                             ev.EvaluationStages.Any(est => est.AppraisalCouncilId == councilId)
+                )
+            )
+                //For each included Evaluation, include only its matching EvaluationStages
+                .ThenInclude(eva => eva.EvaluationStages
+                    .Where(es => es.AppraisalCouncilId == councilId)
+                )
+            .AsSplitQuery()
+            .AsNoTracking()
+            .ToListAsync();
+    }
 
     public async Task<(List<Evaluation>? listEvaluation, int totalFound)> ListPaging
         (string? keyWord, string? status,
