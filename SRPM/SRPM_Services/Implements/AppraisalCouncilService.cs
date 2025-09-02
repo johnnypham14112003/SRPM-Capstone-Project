@@ -204,7 +204,6 @@ public class AppraisalCouncilService : IAppraisalCouncilService
                     {//Other exist eva don't have council
                         foreach (var eva in listEvaOfProjectWithoutCouncil)
                         {
-                            eva.AppraisalCouncilId = appraisalCouncilId;
 
                             //Find only the first stage (Outline Approval) and assign council
                             var firstStage = eva.EvaluationStages?
