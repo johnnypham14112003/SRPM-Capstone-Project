@@ -74,22 +74,46 @@ public class AppraisalCouncilRepository : GenericRepository<AppraisalCouncil>, I
         if (council is null) return (null, null, "Not found any council with that councilId");
 
         //get proposal from evaluation
-        var proposals = council.Evaluations
-            .Where(e => e.Project != null && e.Project.Genre.ToLower().Equals("proposal"))
-            .GroupBy(e => e.Project.Id)
-            .Select(g =>
-            {
-                var project = g.First().Project!;
-                project.Evaluations = g.ToList(); // Gán evaluations vào project
-                return project;
-            })
-            .ToList();
+        //var proposals = council.Evaluations
+        //    .Where(e => e.Project != null && e.Project.Genre.ToLower().Equals("proposal"))
+        //    .GroupBy(e => e.Project.Id)
+        //    .Select(g =>
+        //    {
+        //        var project = g.First().Project!;
+        //        project.Evaluations = g.ToList(); // Gán evaluations vào project
+        //        return project;
+        //    })
+        //    .ToList();
+
+        var proposals = await _context.Project
+            //Filter projects that have at least one matching council in Evaluations or EvaluationStages
+            .Where(p => p.Evaluations
+                .Any(ev => ev.AppraisalCouncilId == councilId ||
+                    ev.EvaluationStages.Any(es => es.AppraisalCouncilId == councilId)
+                )
+            )
+
+            //Include only those Evaluations that match
+            .Include(p => p.Evaluations
+                .Where(ev => ev.AppraisalCouncilId == councilId ||
+                             ev.EvaluationStages.Any(est => est.AppraisalCouncilId == councilId)
+                )
+            )
+                //For each included Evaluation, include only its matching EvaluationStages
+                .ThenInclude(eva => eva.EvaluationStages
+                    .Where(es => es.AppraisalCouncilId == councilId)
+                )
+            .AsSplitQuery()
+            .AsNoTracking()
+            .ToListAsync();
 
         // Get list code of proposal
         var proposalCodes = proposals
             .Select(p => p.Code)
             .Distinct()
             .ToList();
+
+
 
         var projectSources = await _context.Project
         .Where(p => proposalCodes.Contains(p.Code) && !p.Genre.ToLower().Equals("proposal"))
