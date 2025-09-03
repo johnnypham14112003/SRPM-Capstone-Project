@@ -482,7 +482,8 @@ public static class DIContainer
                     "http://127.0.0.1:5500",
                     "https://fe-capstone-tan.vercel.app",
                     "https://asp-deep-badly.ngrok-free.app",
-                    //"https://asp-deep-badly.ngrok-free.app"
+                    "https://srpm.id.vn",
+                    "http://srpm.id.vn"
                 )
                 .AllowAnyHeader()
                 .AllowAnyMethod()
