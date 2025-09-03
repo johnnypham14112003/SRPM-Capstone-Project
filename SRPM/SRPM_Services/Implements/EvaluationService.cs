@@ -111,7 +111,7 @@ public class EvaluationService : IEvaluationService
         else if (newEvaluation.Status.Trim().Equals("failed", StringComparison.OrdinalIgnoreCase))
         {
             var existProject = await _unitOfWork.GetProjectRepository().GetOneAsync(p => p.Id == existEvaluation.ProjectId);
-            existProject!.Status = Status.Rejected.ToString().ToLower();
+            existProject!.Status = Status.Cancelled.ToString().ToLower();
         }
 
         return await _unitOfWork.SaveChangesAsync();
