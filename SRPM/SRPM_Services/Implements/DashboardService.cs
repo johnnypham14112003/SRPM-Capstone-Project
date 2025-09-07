@@ -88,14 +88,14 @@ namespace SRPM_Services.Implements
             var cancelledCount = await repository.CountAsync(p =>
                 p.Status == Status.Cancelled.ToString().ToLowerInvariant() &&
                 p.Genre != null &&
-                (p.Genre.ToLower() == "propose" || p.Genre.ToLower() == "normal") &&
+                (p.Genre.ToLower() == "proposal") &&
                 p.CreatedAt >= from && p.CreatedAt <= to
             );
 
             var completedCount = await repository.CountAsync(p =>
                 p.Status == Status.Completed.ToString().ToLowerInvariant() &&
                 p.Genre != null &&
-                (p.Genre.ToLower() == "propose" || p.Genre.ToLower() == "normal") &&
+                (p.Genre.ToLower() == "proposal") &&
                 p.CreatedAt >= from && p.CreatedAt <= to
             );
 

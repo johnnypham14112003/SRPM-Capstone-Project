@@ -141,10 +141,10 @@ public class AppraisalCouncilService : IAppraisalCouncilService
 
         return proposals;
     }
-    public async Task<RS_AppraisalCouncil?> GetCouncilInEvaluationAsync(Guid projectId)
+    public async Task<RS_AppraisalCouncil?> GetCouncilInEvaluationAsync(Guid projectId, int? stageOrder)
     {
         var result = await _unitOfWork.GetAppraisalCouncilRepository()
-        .GetCouncilBelongToProject(projectId);
+        .GetCouncilBelongToProject(projectId, stageOrder);
 
         if (result.council is null) throw new NotFoundException(result.error);
 
@@ -197,14 +197,13 @@ public class AppraisalCouncilService : IAppraisalCouncilService
                         {
                             Title = "Evaluation With Appraisal Council",
                             ProjectId = project.Id,
-                            AppraisalCouncilId = appraisalCouncilId
+                            AppraisalCouncilId = null
                         });
                     }
                     else
                     {//Other exist eva don't have council
                         foreach (var eva in listEvaOfProjectWithoutCouncil)
                         {
-                            eva.AppraisalCouncilId = appraisalCouncilId;
 
                             //Find only the first stage (Outline Approval) and assign council
                             var firstStage = eva.EvaluationStages?

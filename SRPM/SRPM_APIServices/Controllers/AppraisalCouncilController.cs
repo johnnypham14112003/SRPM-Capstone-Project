@@ -115,9 +115,9 @@ public class AppraisalCouncilController : Controller
     }
 
     [HttpGet("project/{projectId}")]
-    public async Task<IActionResult> GetCouncilOfProject([FromRoute] Guid projectId)
+    public async Task<IActionResult> GetCouncilOfProject([FromRoute] Guid projectId, int? stageOrder)
     {
-        var council = await _appraisalCouncilService.GetCouncilInEvaluationAsync(projectId);
+        var council = await _appraisalCouncilService.GetCouncilInEvaluationAsync(projectId, stageOrder);
 
         return council is not null? Ok(council) : NotFound("Not found any Appraisal Council belong to this ProjectId");
     }

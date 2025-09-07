@@ -74,22 +74,46 @@ public class AppraisalCouncilRepository : GenericRepository<AppraisalCouncil>, I
         if (council is null) return (null, null, "Not found any council with that councilId");
 
         //get proposal from evaluation
-        var proposals = council.Evaluations
-            .Where(e => e.Project != null && e.Project.Genre.ToLower().Equals("proposal"))
-            .GroupBy(e => e.Project.Id)
-            .Select(g =>
-            {
-                var project = g.First().Project!;
-                project.Evaluations = g.ToList(); // Gán evaluations vào project
-                return project;
-            })
-            .ToList();
+        //var proposals = council.Evaluations
+        //    .Where(e => e.Project != null && e.Project.Genre.ToLower().Equals("proposal"))
+        //    .GroupBy(e => e.Project.Id)
+        //    .Select(g =>
+        //    {
+        //        var project = g.First().Project!;
+        //        project.Evaluations = g.ToList(); // Gán evaluations vào project
+        //        return project;
+        //    })
+        //    .ToList();
+
+        var proposals = await _context.Project
+            //Filter projects that have at least one matching council in Evaluations or EvaluationStages
+            .Where(p => p.Evaluations
+                .Any(ev => ev.AppraisalCouncilId == councilId ||
+                    ev.EvaluationStages.Any(es => es.AppraisalCouncilId == councilId)
+                )
+            )
+
+            //Include only those Evaluations that match
+            .Include(p => p.Evaluations
+                .Where(ev => ev.AppraisalCouncilId == councilId ||
+                             ev.EvaluationStages.Any(est => est.AppraisalCouncilId == councilId)
+                )
+            )
+                //For each included Evaluation, include only its matching EvaluationStages
+                .ThenInclude(eva => eva.EvaluationStages
+                    .Where(es => es.AppraisalCouncilId == councilId)
+                )
+            .AsSplitQuery()
+            .AsNoTracking()
+            .ToListAsync();
 
         // Get list code of proposal
         var proposalCodes = proposals
             .Select(p => p.Code)
             .Distinct()
             .ToList();
+
+
 
         var projectSources = await _context.Project
         .Where(p => proposalCodes.Contains(p.Code) && !p.Genre.ToLower().Equals("proposal"))
@@ -100,7 +124,7 @@ public class AppraisalCouncilRepository : GenericRepository<AppraisalCouncil>, I
         return (projectSources, proposals, null);
     }
 
-    public async Task<(AppraisalCouncil? council, string? error)> GetCouncilBelongToProject(Guid projectId)
+    public async Task<(AppraisalCouncil? council, string? error)> GetCouncilBelongToProject(Guid projectId, int? stageOrder = null)
     {
         var project = await _context.Project.FirstOrDefaultAsync(p => p.Id == projectId);
         if (project is null) return (null, "Not found this project Id");
@@ -113,12 +137,31 @@ public class AppraisalCouncilRepository : GenericRepository<AppraisalCouncil>, I
             .FirstOrDefaultAsync();
         if (proposal is null) return (null, "Not found any proposal of this project");
 
-        var council = await _context.Evaluation
-        .Where(e => e.ProjectId == proposal.Id && e.AppraisalCouncilId != null)
-        .Select(e => e.AppraisalCouncil)
-        .FirstOrDefaultAsync();
+        AppraisalCouncil? council;
 
-        if (council is null) return (null, "No council found for this project");
+        if (stageOrder.HasValue)
+        {
+            // Get council for specific stage order
+            council = await _context.EvaluationStage
+                .Where(es => es.Evaluation.ProjectId == proposal.Id &&
+                            es.StageOrder == stageOrder.Value &&
+                            es.AppraisalCouncilId != null)
+                .Select(es => es.AppraisalCouncil)
+                .FirstOrDefaultAsync();
+
+            if (council is null) return (null, $"No council found for stage order {stageOrder.Value} in this project");
+        }
+        else
+        {
+            // Original logic - get any council from evaluations
+            council = await _context.Evaluation
+                .Where(e => e.ProjectId == proposal.Id && e.AppraisalCouncilId != null)
+                .Select(e => e.AppraisalCouncil)
+                .FirstOrDefaultAsync();
+
+            if (council is null) return (null, "No council found for this project");
+        }
+
         return (council, null);
     }
 
