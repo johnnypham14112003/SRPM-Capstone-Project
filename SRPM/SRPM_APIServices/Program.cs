@@ -11,10 +11,10 @@ var env = builder.Environment;
 var configBuild = builder.Configuration;
 
 // Add services to the container.
-builder.Configuration.AddAzureKeyVault(
-    builder.Configuration["KeyVault:KeyVaultURL"],
-    new DefaultKeyVaultSecretManager()
-);
+//builder.Configuration.AddAzureKeyVault(
+//    builder.Configuration["KeyVault:KeyVaultURL"],
+//    new DefaultKeyVaultSecretManager()
+//);
 
 builder.Services.RegisterServices(config, env, configBuild);
 builder.Services.AddSignalR();
@@ -37,6 +37,6 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
-app.MapHub<NotificationHub>("/notificationhub"); 
+app.MapHub<NotificationHub>("/notificationhub");
 
 app.Run();
