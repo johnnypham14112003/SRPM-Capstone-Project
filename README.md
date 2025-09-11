@@ -14,6 +14,7 @@ The goal of this project is to help manage research progress while allowing user
 - Fluent Email
 - Google APIs
 - OpenAI APIs
+- SignalR
 
 ## Developers
 
